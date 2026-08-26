@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ክፍያ — የቅዱሳት መጻሕፍት ትምህርት ቤት</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div class="harag"></div>
+<div class="shell">
+  <nav class="nav">
+    <a class="brand" href="index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+        <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
+      </svg>
+      የቅዱሳት መጻሕፍት ትምህርት ቤት
+    </a>
+    <div class="nav-links">
+      <a href="dashboard.html">ትምህርቶች</a>
+      <a href="billing.html" aria-current="page">ክፍያ</a>
+    </div>
+  </nav>
+</div>
+
+<main class="shell section" style="max-width:640px">
+
+  <p class="eyebrow">ወርኃዊ ክፍያ</p>
+  <h1 style="font-size:2rem">የተማሪ ደንበኝነት</h1>
+  <p class="muted small">ክፍያው በVisa፣ Mastercard እና American Express ካርዶች ይፈጸማል፣ በStripe በኩል በደህንነት ተጠብቆ።</p>
+
+  <!-- ---------------- plan recap ---------------- -->
+  <div class="panel" style="margin-top:20px">
+    <div class="between">
+      <div>
+        <p class="eyebrow">ዕቅድ</p>
+        <h2 style="margin:0">$25 <span class="muted" style="font-size:1rem;font-weight:400">/ ወር / ተማሪ</span></h2>
+      </div>
+      <p style="margin:0;text-align:end">
+        <span class="muted small">ተማሪ</span><br>
+        <b id="studentName">…</b>
+      </p>
+    </div>
+
+    <div class="harag harag--thin" style="margin:18px 0"></div>
+
+    <p class="muted small" style="margin:0 0 10px">ይህ ክፍያ የሚያካትተው፦</p>
+    <ul class="muted small" style="margin:0 0 4px;padding-inline-start:20px;line-height:1.9">
+      <li>ሁሉንም የቪዲዮ ትምህርቶች (<span id="lessonCount">…</span> ትምህርቶች እስካሁን፣ በየሳምንቱ ይጨመራል)</li>
+      <li>ከትምህርት በኋላ የሚሰጡ ጥያቄዎችና ወዲያውኑ ማብራሪያ</li>
+      <li>የጥናት ሰዓትና የመሻሻል ክትትል ለወላጆች</li>
+      <li>በማንኛውም ጊዜ ያለ ቅጣት ማቋረጥ ይችላሉ</li>
+    </ul>
+  </div>
+
+  <!-- ---------------- accepted cards ---------------- -->
+  <div class="panel" style="margin-top:16px">
+    <p class="eyebrow">ተቀባይነት ያላቸው ካርዶች</p>
+    <div class="cards">
+      <span class="card-chip card-chip--visa"><i></i>VISA</span>
+      <span class="card-chip card-chip--mc"><i></i>Mastercard</span>
+      <span class="card-chip card-chip--amex"><i></i>Amex</span>
+    </div>
+    <p class="help" style="margin-top:12px">
+      የካርድ ቁጥርዎን በዚህ ገጽ ላይ አናስገባም — ወደ Stripe ደህንነቱ የተጠበቀ ገጽ ይወሰዳሉ፣ ካርድዎ በዚህ ድረ-ገጽ ላይ በጭራሽ አይቀመጥም።
+    </p>
+  </div>
+
+  <!-- ---------------- billing details ---------------- -->
+  <form id="form" class="panel" style="margin-top:16px" novalidate>
+    <p class="eyebrow" style="margin-bottom:14px">የክፍያ መረጃ</p>
+
+    <div class="field">
+      <label for="name">በካርድ ላይ ያለው ስም</label>
+      <input class="input" id="name" required autocomplete="cc-name">
+    </div>
+    <div class="field">
+      <label for="email">ደረሰኝ የሚላክበት ኢሜይል</label>
+      <input class="input" id="email" type="email" readonly autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="country">ሀገር</label>
+      <input class="input" id="country" readonly>
+    </div>
+
+    <p id="err" class="note note--red" style="display:none"></p>
+    <p id="cfg" class="note small" style="display:none;margin-bottom:14px"></p>
+
+    <button class="btn btn--gold btn--block" type="submit">ወደ ደህንነቱ የተጠበቀ ክፍያ ይቀጥሉ →</button>
+
+    <button class="btn btn--ghost btn--block" type="button" id="demoPay" style="margin-top:10px">
+      🔧 ማሳያ ክፍያ (Stripe ገና እስካልተያያዘ ድረስ ለሙከራ)
+    </button>
+  </form>
+
+  <!-- ---------------- what this funds / EOTC purpose note ---------------- -->
+  <div class="purpose" style="margin-top:22px">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+      <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
+    </svg>
+    <div>
+      <h3 style="margin:0 0 6px;font-size:1rem">ይህ ክፍያ ለምን ይውላል?</h3>
+      <p class="muted small" style="margin:0">
+        ይህ ትምህርት ቤት ትርፍ ለማግኘት የተከፈተ ንግድ አይደለም — በስደት ያሉ ልጆቻችን፣ ሃይማኖተ አበውን፣ ጸሎትን፣ ጾምንና ምጽዋትን፣
+        ሥርዓተ ቅዳሴን፣ ንስሐንና ስለ ቅዱሳን መላእክት በአባቶቻቸው ቋንቋ እንዲማሩ የሚያግዝ አገልግሎት ነው። ወርኃዊ ክፍያዎ የሚሸፍነው፦
+        የመምህራንን ድካም፣ የትምህርትና የጥያቄ ዝግጅትን፣ እንዲሁም ይህን የጥናት ክትትል ሥርዓት ክፍት አድርጎ ማቆየትን ነው።
+      </p>
+      <p class="blessing">✚ እግዚአብሔር አገልግሎታችሁን ይባርክ ✚</p>
+    </div>
+  </div>
+
+</main>
+
+<div class="harag harag--thin"></div>
+<footer class="footer">
+  <div class="shell between">
+    <span>የቅዱሳት መጻሕፍት ትምህርት ቤት · TewahedoDevs</span>
+    <span class="small">ለጥያቄ፡ info@example.org</span>
+  </div>
+</footer>
+
+<script type="module">
+import { Store, requireAuth, STRIPE_PAYMENT_LINK, markPaidDemo } from './assets/js/store.js';
+import { LESSONS } from './assets/js/lessons.js';
+
+const $ = id => document.getElementById(id);
+const u = requireAuth();
+
+if (u) {
+  Store.touch();
+  $('studentName').textContent = u.fullName;
+  $('lessonCount').textContent = LESSONS.length;
+  $('name').value = u.guardian || '';
+  $('email').value = u.email || '';
+  $('country').value = u.country || '—';
+
+  if (!STRIPE_PAYMENT_LINK) {
+    $('cfg').style.display = 'block';
+    $('cfg').textContent = 'ማስታወሻ ለአስተዳዳሪ፡ የStripe Payment Link ገና በassets/js/store.js ውስጥ አልተቀመጠም። እስከዚያ ድረስ ከታች ያለውን የማሳያ ክፍያ ይጠቀሙ።';
+  }
+
+  $('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    $('err').style.display = 'none';
+    if (!$('name').value.trim()) {
+      $('err').textContent = 'በካርድ ላይ ያለውን ስም ያስገቡ።'; $('err').style.display = 'block'; return;
+    }
+    if (!STRIPE_PAYMENT_LINK) {
+      $('err').textContent = 'የክፍያ ግንኙነት ገና አልተዘጋጀም። ከታች ያለውን የማሳያ ክፍያ ይጠቀሙ ወይም README ውስጥ ያለውን የStripe ደረጃ ይመልከቱ።';
+      $('err').style.display = 'block';
+      return;
+    }
+    const url = new URL(STRIPE_PAYMENT_LINK);
+    if (u.email) url.searchParams.set('prefilled_email', u.email);
+    url.searchParams.set('client_reference_id', u.uid);
+    location.href = url.toString();
+  });
+
+  $('demoPay').addEventListener('click', () => {
+    markPaidDemo();
+    location.href = 'dashboard.html';
+  });
+}
+</script>
+</body>
+</html>
