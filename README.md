@@ -108,7 +108,7 @@ dashboard, then paste its URL into `STRIPE_PAYMENT_LINK` at the top of `assets/j
 `billing.html` (linked from the pay banner on `dashboard.html`) picks it up automatically and
 sends the parent to Stripe's hosted checkout with their email pre-filled — no card data ever
 touches this site. Until it's configured, `billing.html` shows a "ማሳያ ክፍያ" demo button instead,
-same spirit as the demo login on `login.html`.
+same spirit as the demo login on `index.html`.
 
 At first, flip `paid` by hand from the admin page after Stripe emails you.
 
@@ -121,9 +121,9 @@ to Firebase Hosting / Netlify Functions. Nothing else about the site has to move
 ## Files
 
 ```
-index.html        landing + pricing
+index.html        landing + pricing + sign in (#signin, demo: sara@example.com, blank password)
 register.html     parent creates account, student profile under it
-login.html        sign in  (demo: sara@example.com, blank password)
+login.html        redirects to index.html#signin (kept for old links/bookmarks)
 dashboard.html    student: lesson list, hours, average score
 billing.html      $25/mo plan, accepted cards, Stripe hand-off, demo pay
 lesson.html       video + watch-time heartbeat + quiz

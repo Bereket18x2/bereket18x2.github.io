@@ -24,7 +24,7 @@
     </a>
     <div class="nav-links">
       <a href="index.html" aria-current="page">መነሻ</a>
-      <a href="login.html">ግባ</a>
+      <a href="#signin">ግባ</a>
       <a class="btn btn--gold" href="register.html">ተመዝገብ</a>
     </div>
   </nav>
@@ -43,6 +43,35 @@
     <div class="row" style="margin-top:26px">
       <a class="btn btn--gold" href="register.html">ልጅዎን ያስመዝግቡ</a>
       <a class="btn btn--ghost" href="dashboard.html">ትምህርቶቹን ይመልከቱ</a>
+    </div>
+  </section>
+
+  <div class="harag harag--thin"></div>
+
+  <section class="section" id="signin" style="padding-top:44px;padding-bottom:44px">
+    <div class="grid-2">
+      <div>
+        <p class="eyebrow">ግቢ</p>
+        <h2 style="margin:0 0 8px">አስቀድመው ተመዝግበዋል?</h2>
+        <p class="muted small" style="margin:0;max-width:40ch">
+          እዚሁ ገጽ ላይ ይግቡ — ወደ ሌላ ገጽ አይወሰዱም። ትምህርቶችዎ ወዲያውኑ ይታያሉ።
+        </p>
+      </div>
+      <form id="loginForm" class="panel" novalidate>
+        <div class="field">
+          <label for="loginEmail">ኢሜይል</label>
+          <input class="input" id="loginEmail" type="email" required autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="loginPassword">የይለፍ ቃል</label>
+          <input class="input" id="loginPassword" type="password" required autocomplete="current-password">
+        </div>
+        <p id="loginErr" class="note note--red" style="display:none"></p>
+        <button class="btn btn--gold btn--block" type="submit">ግባ</button>
+        <p class="muted small" style="margin:14px 0 0">
+          ለሙከራ፡ <b>sara@example.com</b> — የይለፍ ቃል ባዶ ይሁን።
+        </p>
+      </form>
     </div>
   </section>
 
@@ -113,5 +142,26 @@
   </div>
 </footer>
 
+<script type="module">
+import { Store } from './assets/js/store.js?v=3';
+
+const err = document.getElementById('loginErr');
+document.getElementById('loginForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  err.style.display = 'none';
+  try {
+    Store.signIn({
+      email: document.getElementById('loginEmail').value.trim(),
+      password: document.getElementById('loginPassword').value
+    });
+    location.href = 'dashboard.html';
+  } catch (ex) { err.textContent = ex.message; err.style.display = 'block'; }
+});
+
+// arriving via a link that still points at #signin should land right on the form
+if (location.hash === '#signin') {
+  document.getElementById('signin').scrollIntoView({ block: 'start' });
+}
+</script>
 </body>
 </html>
