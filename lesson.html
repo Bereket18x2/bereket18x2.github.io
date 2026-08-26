@@ -81,8 +81,8 @@
 </main>
 
 <script type="module">
-import { Store, requireAuth } from './assets/js/store.js';
-import { findLesson } from './assets/js/lessons.js';
+import { Store, requireAuth } from './assets/js/store.js?v=3';
+import { findLesson } from './assets/js/lessons.js?v=3';
 
 const u = requireAuth();
 const id = new URLSearchParams(location.search).get('id') || 'l1';
