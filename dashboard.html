@@ -113,11 +113,7 @@ if (u) {
     e.preventDefault(); Store.signOut(); location.href = 'index.html';
   });
 
-  // phase 2: replace with your Stripe Payment Link URL
-  document.getElementById('payLink').addEventListener('click', e => {
-    e.preventDefault();
-    alert('የክፍያ ማገናኛ ገና አልተዘጋጀም። በREADME ውስጥ ያለውን የStripe ደረጃ ይመልከቱ።');
-  });
+  document.getElementById('payLink').setAttribute('href', 'billing.html');
 }
 </script>
 </body>

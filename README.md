@@ -102,9 +102,15 @@ Firebase API keys in client code are public by design. Security is the rules, no
 
 ## Phase 3 — Payments
 
-Start with a **Stripe Payment Link** — no backend, works on GitHub Pages, live in ten minutes.
-Wire it to the `payLink` button in `dashboard.html`. At first, flip `paid` by hand from the
-admin page after Stripe emails you.
+Start with a **Stripe Payment Link** — no backend, works on GitHub Pages, live in ten minutes,
+and accepts Visa, Mastercard, and American Express by default. Create one in the Stripe
+dashboard, then paste its URL into `STRIPE_PAYMENT_LINK` at the top of `assets/js/store.js`.
+`billing.html` (linked from the pay banner on `dashboard.html`) picks it up automatically and
+sends the parent to Stripe's hosted checkout with their email pre-filled — no card data ever
+touches this site. Until it's configured, `billing.html` shows a "ማሳያ ክፍያ" demo button instead,
+same spirit as the demo login on `login.html`.
+
+At first, flip `paid` by hand from the admin page after Stripe emails you.
 
 To automate it you need a server for the webhook, which GitHub Pages can't do. That's the
 point where you either add a Firebase Cloud Function (needs the Blaze plan) or move hosting
@@ -119,6 +125,7 @@ index.html        landing + pricing
 register.html     parent creates account, student profile under it
 login.html        sign in  (demo: sara@example.com, blank password)
 dashboard.html    student: lesson list, hours, average score
+billing.html      $25/mo plan, accepted cards, Stripe hand-off, demo pay
 lesson.html       video + watch-time heartbeat + quiz
 admin.html        host: roster, hours, last online, scores
 assets/js/store.js    ← the only file that touches storage

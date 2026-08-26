@@ -7,6 +7,14 @@
 
 const KEY = 'eotc.v1';
 
+// Paste your Stripe Payment Link here once you've made one, e.g.
+// 'https://buy.stripe.com/xxxxxxxx'. A Stripe Payment Link needs no backend,
+// works on GitHub Pages, and accepts Visa, Mastercard, and American Express
+// out of the box — see the README's "Phase 3 — Payments" section.
+// Leave blank and billing.html shows a "not configured yet" state instead
+// of a broken button.
+export const STRIPE_PAYMENT_LINK = '';
+
 // in-memory fallback so the app still runs where localStorage is blocked
 let _mem = null;
 const safeRead = () => {
@@ -130,6 +138,19 @@ export const Store = {
   },
 
   reset() { save(seed()); }
+};
+
+// phase 1 only, no Stripe webhook yet: a clearly-labeled demo action so the
+// billing screen is real and clickable, same spirit as the demo login on
+// login.html. Remove once phase 3's webhook flips `paid` for real, or use
+// admin.html to flip it by hand in the meantime (see README).
+export const markPaidDemo = () => {
+  const d = db();
+  const u = d.users[d.currentUid];
+  if (!u) return null;
+  u.paid = true;
+  save(d);
+  return u;
 };
 
 /* ---------------- shared formatting ---------------- */

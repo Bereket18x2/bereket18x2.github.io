@@ -193,6 +193,43 @@ a  { color: var(--saffron); }
   font-size: .85rem; color: var(--verdant); margin-top: 6px;
 }
 
+/* ---------- accepted-card chips ---------- */
+.cards { display: flex; gap: 8px; flex-wrap: wrap; }
+.card-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 12px; border-radius: 6px;
+  font-family: var(--f-util); font-size: .78rem; font-weight: 700;
+  letter-spacing: .02em; color: #fff;
+  border: 1px solid var(--line);
+}
+.card-chip i {
+  width: 20px; height: 14px; border-radius: 2px; flex: none;
+  display: inline-block;
+}
+.card-chip--visa   { background: #1A1F71; }
+.card-chip--visa i { background: linear-gradient(90deg,#fff 0 100%); }
+.card-chip--mc     { background: #16171A; }
+.card-chip--mc i   { background: none; position: relative; }
+.card-chip--mc i::before, .card-chip--mc i::after {
+  content: ''; position: absolute; top: 1px; width: 12px; height: 12px; border-radius: 50%;
+}
+.card-chip--mc i::before { left: 0; background: #EB001B; }
+.card-chip--mc i::after  { left: 6px; background: #F79E1B; mix-blend-mode: screen; }
+.card-chip--amex   { background: #006FCF; }
+.card-chip--amex i { background: #fff; }
+
+/* ---------- purpose / trust note ---------- */
+.purpose {
+  display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start;
+  background: var(--ink-2); border: 1px solid var(--line); border-inline-start: 3px solid var(--saffron);
+  border-radius: var(--r); padding: 18px;
+}
+.purpose svg { flex: none; margin-top: 2px; }
+.blessing {
+  font-family: var(--f-display); color: var(--saffron);
+  text-align: center; font-size: .95rem; padding: 10px 0 0;
+}
+
 .note {
   border-inline-start: 3px solid var(--saffron);
   background: rgba(232,167,60,.07);
