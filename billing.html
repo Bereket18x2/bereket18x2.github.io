@@ -29,6 +29,11 @@
 <main class="shell" style="max-width:640px">
 
   <div class="heaven">
+    <span class="spark" style="width:5px;height:5px;left:18%;top:30%;animation-delay:.2s"></span>
+    <span class="spark" style="width:4px;height:4px;left:32%;top:55%;animation-delay:1.4s"></span>
+    <span class="spark" style="width:6px;height:6px;left:68%;top:35%;animation-delay:.8s"></span>
+    <span class="spark" style="width:4px;height:4px;left:80%;top:58%;animation-delay:2.1s"></span>
+    <span class="spark" style="width:5px;height:5px;left:50%;top:20%;animation-delay:3s"></span>
     <span class="halo-ring">
       <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
         <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
@@ -88,7 +93,7 @@
 
       <div class="card-stage">
         <div class="card3d" id="card3d">
-          <div class="card3d__face card3d__front">
+          <div class="card3d__face card3d__front" id="cardFrontFace">
             <div class="card3d__top">
               <div class="card3d__chip"></div>
               <div class="card3d__brand" id="cardBrand">CARD</div>
@@ -119,18 +124,22 @@
         <div class="field field--full">
           <label for="ccName">የካርድ ያዥ ስም</label>
           <input class="input" id="ccName" placeholder="ለምሳሌ፡ Sara Tesfaye" autocomplete="cc-name">
+          <p class="field-msg" id="ccNameMsg"></p>
         </div>
         <div class="field field--full">
           <label for="ccNumber">የካርድ ቁጥር</label>
           <input class="input" id="ccNumber" inputmode="numeric" placeholder="•••• •••• •••• ••••" autocomplete="cc-number" maxlength="23">
+          <p class="field-msg" id="ccNumberMsg"></p>
         </div>
         <div class="field">
           <label for="ccExp">ያበቃበት (MM/YY)</label>
           <input class="input" id="ccExp" inputmode="numeric" placeholder="MM/YY" autocomplete="cc-exp" maxlength="5">
+          <p class="field-msg" id="ccExpMsg"></p>
         </div>
         <div class="field">
           <label for="ccCvv">CVV</label>
           <input class="input" id="ccCvv" inputmode="numeric" placeholder="•••" autocomplete="cc-csc" maxlength="4">
+          <p class="field-msg" id="ccCvvMsg"></p>
         </div>
       </div>
 
@@ -246,20 +255,50 @@ if (!u) {
     if (brand === 'AMEX') return digits.replace(/(\d{4})(\d{0,6})(\d{0,5})/, (_, a, b, c) => [a, b, c].filter(Boolean).join(' '));
     return digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
   };
+  // standard Luhn checksum — catches typos/mashed keyboards, not fraud;
+  // Stripe's own page re-validates for real when the card actually charges
+  const luhnOk = (digits) => {
+    let sum = 0, dbl = false;
+    for (let i = digits.length - 1; i >= 0; i--) {
+      let d = +digits[i];
+      if (dbl) { d *= 2; if (d > 9) d -= 9; }
+      sum += d; dbl = !dbl;
+    }
+    return sum % 10 === 0;
+  };
+
+  const valid = { name: false, number: false, exp: false, cvv: false };
+  const mark = (input, msgEl, state, msg) => {
+    input.classList.remove('is-valid', 'is-invalid');
+    msgEl.classList.remove('valid', 'invalid');
+    msgEl.textContent = '';
+    if (state === 'valid') { input.classList.add('is-valid'); msgEl.classList.add('valid'); msgEl.textContent = msg || '✓ ትክክል'; }
+    else if (state === 'invalid') { input.classList.add('is-invalid'); msgEl.classList.add('invalid'); msgEl.textContent = msg; }
+  };
 
   $('ccName').addEventListener('input', () => {
-    $('cardNameDisplay').textContent = $('ccName').value.trim().toUpperCase() || 'YOUR NAME';
+    const name = $('ccName').value.trim();
+    $('cardNameDisplay').textContent = name.toUpperCase() || 'YOUR NAME';
+    if (!name) { valid.name = false; mark($('ccName'), $('ccNameMsg'), 'none'); }
+    else if (name.length < 3 || !name.includes(' ')) { valid.name = false; mark($('ccName'), $('ccNameMsg'), 'invalid', '✕ ሙሉ ስም (የመጀመሪያና የአባት ስም) ያስገቡ'); }
+    else { valid.name = true; mark($('ccName'), $('ccNameMsg'), 'valid'); }
   });
 
   $('ccNumber').addEventListener('input', () => {
     const raw = $('ccNumber').value.replace(/\D/g, '');
     const brand = brandOf(raw);
-    const digits = raw.slice(0, brand === 'AMEX' ? 15 : 16);
+    const expectedLen = brand === 'AMEX' ? 15 : brand === 'CARD' ? 16 : 16;
+    const digits = raw.slice(0, expectedLen);
     const grouped = groupNumber(digits, brand);
     $('ccNumber').value = grouped;
     $('cardBrand').textContent = brand;
     $('cardNumberDisplay').textContent = grouped || '•••• •••• •••• ••••';
     $('ccCvv').maxLength = brand === 'AMEX' ? 4 : 3;
+
+    if (!digits) { valid.number = false; mark($('ccNumber'), $('ccNumberMsg'), 'none'); }
+    else if (digits.length < expectedLen) { valid.number = false; mark($('ccNumber'), $('ccNumberMsg'), 'none'); }
+    else if (!luhnOk(digits)) { valid.number = false; mark($('ccNumber'), $('ccNumberMsg'), 'invalid', '✕ ልክ ያልሆነ የካርድ ቁጥር'); }
+    else { valid.number = true; mark($('ccNumber'), $('ccNumberMsg'), 'valid', `✓ ትክክለኛ ${brand} ቁጥር`); }
   });
 
   $('ccExp').addEventListener('input', () => {
@@ -267,19 +306,55 @@ if (!u) {
     if (digits.length >= 3) digits = digits.slice(0, 2) + '/' + digits.slice(2);
     $('ccExp').value = digits;
     $('cardExpDisplay').textContent = digits || 'MM/YY';
+
+    if (digits.length < 5) { valid.exp = false; mark($('ccExp'), $('ccExpMsg'), 'none'); return; }
+    const [mm, yy] = digits.split('/').map(Number);
+    const now = new Date();
+    const curYY = now.getFullYear() % 100, curMM = now.getMonth() + 1;
+    if (mm < 1 || mm > 12) { valid.exp = false; mark($('ccExp'), $('ccExpMsg'), 'invalid', '✕ ወር ከ01–12 መሆን አለበት'); }
+    else if (yy < curYY || (yy === curYY && mm < curMM)) { valid.exp = false; mark($('ccExp'), $('ccExpMsg'), 'invalid', '✕ ካርዱ ጊዜው አልፏል'); }
+    else { valid.exp = true; mark($('ccExp'), $('ccExpMsg'), 'valid'); }
   });
 
   $('ccCvv').addEventListener('input', () => {
     $('ccCvv').value = $('ccCvv').value.replace(/\D/g, '');
-    $('cardCvvDisplay').textContent = $('ccCvv').value || '•••';
+    const v = $('ccCvv').value;
+    $('cardCvvDisplay').textContent = v || '•••';
+    const need = +$('ccCvv').maxLength;
+    if (!v) { valid.cvv = false; mark($('ccCvv'), $('ccCvvMsg'), 'none'); }
+    else if (v.length < need) { valid.cvv = false; mark($('ccCvv'), $('ccCvvMsg'), 'none'); }
+    else { valid.cvv = true; mark($('ccCvv'), $('ccCvvMsg'), 'valid'); }
   });
-  $('ccCvv').addEventListener('focus', () => $('card3d').classList.add('is-flipped'));
-  $('ccCvv').addEventListener('blur', () => $('card3d').classList.remove('is-flipped'));
+  $('ccCvv').addEventListener('focus', () => $('card3d').style.setProperty('--flip', '180deg'));
+  $('ccCvv').addEventListener('blur', () => $('card3d').style.setProperty('--flip', '0deg'));
+
+  /* ---------------- tilt + gloss follow the pointer — pure decoration ---------------- */
+  const stage = document.querySelector('.card-stage');
+  const card3d = $('card3d');
+  stage.addEventListener('pointermove', (e) => {
+    const r = stage.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+    card3d.style.setProperty('--tiltX', ((0.5 - py) * 12).toFixed(2) + 'deg');
+    card3d.style.setProperty('--tiltY', ((px - 0.5) * 16).toFixed(2) + 'deg');
+    card3d.style.setProperty('--mx', (px * 100).toFixed(1) + '%');
+    card3d.style.setProperty('--my', (py * 100).toFixed(1) + '%');
+  });
+  stage.addEventListener('pointerleave', () => {
+    card3d.style.setProperty('--tiltX', '0deg');
+    card3d.style.setProperty('--tiltY', '0deg');
+  });
 
   /* ---------------- submit → hand off to Stripe (or the phase-1 demo) ---------------- */
   $('form').addEventListener('submit', (e) => {
     e.preventDefault();
     $('err').style.display = 'none';
+
+    if (!valid.name || !valid.number || !valid.exp || !valid.cvv) {
+      $('err').textContent = 'እባክዎ ትክክለኛ የካርድ ያዥ ስም፣ ቁጥር፣ ማብቂያ ቀንና CVV ያስገቡ — ከላይ ያሉት ቀይ ማሳሰቢያዎች የትኛው መስተካከል እንዳለበት ያሳያሉ።';
+      $('err').style.display = 'block';
+      (!valid.name ? $('ccName') : !valid.number ? $('ccNumber') : !valid.exp ? $('ccExp') : $('ccCvv')).focus();
+      return;
+    }
     if (!STRIPE_PAYMENT_LINK) {
       $('err').textContent = 'የክፍያ ግንኙነት ገና አልተዘጋጀም። ከታች ያለውን የማሳያ ክፍያ ይጠቀሙ ወይም README ውስጥ ያለውን የStripe ደረጃ ይመልከቱ።';
       $('err').style.display = 'block';
