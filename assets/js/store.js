@@ -168,8 +168,9 @@ export const fmtAgo = (ts) => {
   return `ከ${Math.floor(s / 86400)} ቀን በፊት`;
 };
 
-export const requireAuth = () => {
-  const u = Store.current();
-  if (!u) { location.href = 'login.html'; return null; }
-  return u;
-};
+// Returns the signed-in user, or null. Does NOT redirect — an instant,
+// unexplained bounce to login.html reads as "the site is broken." Callers
+// show an in-page sign-in prompt instead and let the visitor choose when
+// to leave. See the #authGate pattern in dashboard.html / billing.html /
+// lesson.html.
+export const requireAuth = () => Store.current();

@@ -41,7 +41,17 @@
     </p>
   </div>
 
-  <div class="section" style="padding-top:0">
+  <div id="authGate" class="panel" style="display:none">
+    <p class="eyebrow">መግቢያ ያስፈልጋል</p>
+    <h2 style="margin:0 0 8px;font-size:1.3rem">ክፍያ ለመፈጸም ይግቡ</h2>
+    <p class="muted small">ክፍያው የሚያያዘው ከተማሪ መለያዎ ጋር ስለሆነ መጀመሪያ መግባት ያስፈልጋል።</p>
+    <div class="row" style="margin-top:16px">
+      <a class="btn btn--gold" href="login.html">ግባ</a>
+      <a class="btn btn--ghost" href="register.html">አዲስ መለያ ክፈት</a>
+    </div>
+  </div>
+
+  <div id="authedContent" class="section" style="padding-top:0;display:none">
 
     <!-- ---------------- plan recap ---------------- -->
     <div class="panel">
@@ -209,7 +219,10 @@ import { LESSONS } from './assets/js/lessons.js';
 const $ = id => document.getElementById(id);
 const u = requireAuth();
 
-if (u) {
+if (!u) {
+  $('authGate').style.display = 'block';
+} else {
+  $('authedContent').style.display = 'block';
   Store.touch();
   $('studentName').textContent = u.fullName;
   $('lessonCount').textContent = LESSONS.length;

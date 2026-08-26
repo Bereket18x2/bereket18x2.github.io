@@ -29,43 +29,55 @@
 
 <main class="shell section">
 
-  <p class="eyebrow">የተማሪ ገጽ</p>
-  <h1 id="hello" style="font-size:2rem;margin-bottom:26px">…</h1>
-
-  <div id="payNote" class="note note--red" style="display:none;margin-bottom:22px">
-    ክፍያ አልተፈጸመም። ትምህርቶቹን ለመክፈት ወርኃዊ ክፍያውን ያጠናቅቁ።
-    <a href="#" id="payLink" style="display:inline-block;margin-top:8px">ክፍያ ፈጽም →</a>
+  <div id="authGate" class="panel" style="display:none">
+    <p class="eyebrow">መግቢያ ያስፈልጋል</p>
+    <h1 style="font-size:1.6rem;margin:0 0 8px">ትምህርቶችዎን ለማየት ይግቡ</h1>
+    <p class="muted small">የተማሪ ትምህርቶች፣ የጥናት ሰዓትና ውጤት የሚታዩት ከገቡ በኋላ ብቻ ነው።</p>
+    <div class="row" style="margin-top:16px">
+      <a class="btn btn--gold" href="login.html">ግባ</a>
+      <a class="btn btn--ghost" href="register.html">አዲስ መለያ ክፈት</a>
+    </div>
   </div>
 
-  <div class="grid-2">
+  <div id="authedContent" style="display:none">
+    <p class="eyebrow">የተማሪ ገጽ</p>
+    <h1 id="hello" style="font-size:2rem;margin-bottom:26px">…</h1>
 
-    <div>
-      <div class="between" style="margin-bottom:14px">
-        <h2 style="margin:0;font-size:1.25rem">ትምህርቶች</h2>
-        <span class="pill" id="doneCount">…</span>
-      </div>
-      <div id="list"></div>
+    <div id="payNote" class="note note--red" style="display:none;margin-bottom:22px">
+      ክፍያ አልተፈጸመም። ትምህርቶቹን ለመክፈት ወርኃዊ ክፍያውን ያጠናቅቁ።
+      <a href="#" id="payLink" style="display:inline-block;margin-top:8px">ክፍያ ፈጽም →</a>
     </div>
 
-    <aside class="stack">
-      <div class="panel">
-        <p class="eyebrow">አጠቃላይ የጥናት ሰዓት</p>
-        <div class="stat" id="hours">…</div>
-        <div class="meter"><i id="bar" style="width:0%"></i></div>
-        <p class="muted small" style="margin:10px 0 0" id="progressTxt">…</p>
+    <div class="grid-2">
+
+      <div>
+        <div class="between" style="margin-bottom:14px">
+          <h2 style="margin:0;font-size:1.25rem">ትምህርቶች</h2>
+          <span class="pill" id="doneCount">…</span>
+        </div>
+        <div id="list"></div>
       </div>
 
-      <div class="panel">
-        <p class="eyebrow">አማካይ ውጤት</p>
-        <div class="stat" id="avg">…<small>%</small></div>
-      </div>
+      <aside class="stack">
+        <div class="panel">
+          <p class="eyebrow">አጠቃላይ የጥናት ሰዓት</p>
+          <div class="stat" id="hours">…</div>
+          <div class="meter"><i id="bar" style="width:0%"></i></div>
+          <p class="muted small" style="margin:10px 0 0" id="progressTxt">…</p>
+        </div>
 
-      <div class="panel">
-        <p class="eyebrow">መጨረሻ የገቡበት</p>
-        <p style="margin:0" id="seen">…</p>
-      </div>
-    </aside>
+        <div class="panel">
+          <p class="eyebrow">አማካይ ውጤት</p>
+          <div class="stat" id="avg">…<small>%</small></div>
+        </div>
 
+        <div class="panel">
+          <p class="eyebrow">መጨረሻ የገቡበት</p>
+          <p style="margin:0" id="seen">…</p>
+        </div>
+      </aside>
+
+    </div>
   </div>
 </main>
 
@@ -74,7 +86,10 @@ import { Store, fmtHours, fmtAgo, requireAuth } from './assets/js/store.js';
 import { LESSONS } from './assets/js/lessons.js';
 
 const u = requireAuth();
-if (u) {
+if (!u) {
+  document.getElementById('authGate').style.display = 'block';
+} else {
+  document.getElementById('authedContent').style.display = 'block';
   Store.touch();
 
   document.getElementById('hello').textContent = `እንኳን ደህና መጡ፣ ${u.fullName}`;
