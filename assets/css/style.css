@@ -285,6 +285,130 @@ td.num { font-family: var(--f-util); }
   .folio .pill { grid-column: 2; justify-self: start; }
 }
 
+/* ===========================================================
+   "Heaven" — the celestial treatment for the billing page:
+   radiant light from above, a halo behind the cross, a live
+   3D card preview. Everything here is presentation only.
+   =========================================================== */
+
+.heaven {
+  position: relative;
+  padding: 64px 0 20px;
+  text-align: center;
+  overflow: hidden;
+}
+.heaven::before {
+  content: '';
+  position: absolute; left: 50%; top: -180px;
+  width: 900px; height: 500px; transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(232,167,60,.30) 0%, rgba(232,167,60,.10) 40%, transparent 72%);
+  pointer-events: none;
+}
+.heaven::after {
+  content: '';
+  position: absolute; left: 50%; top: -60px;
+  width: 640px; height: 640px; transform: translateX(-50%);
+  background-image: repeating-conic-gradient(from 0deg, rgba(232,167,60,.16) 0deg 3deg, transparent 3deg 18deg);
+  border-radius: 50%;
+  animation: rays-spin 90s linear infinite;
+  pointer-events: none;
+}
+@keyframes rays-spin { to { transform: translateX(-50%) rotate(360deg); } }
+
+.halo-ring {
+  position: relative; z-index: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 64px; height: 64px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(232,167,60,.22), transparent 70%);
+  box-shadow: 0 0 0 1px var(--line), 0 0 40px 6px rgba(232,167,60,.25);
+  margin-bottom: 14px;
+}
+.heaven h1, .heaven p { position: relative; z-index: 1; }
+
+/* ---------- live 3D card preview ---------- */
+.card-note {
+  display: flex; align-items: center; gap: 8px;
+  font-size: .82rem; color: var(--parch-dim);
+  background: rgba(59,130,102,.08); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 10px 14px; margin: 0 0 18px;
+}
+.card-note svg { flex: none; }
+
+.card-stage { perspective: 1400px; margin-bottom: 22px; }
+.card3d {
+  position: relative;
+  width: 100%; max-width: 380px; aspect-ratio: 1.586 / 1;
+  margin: 0 auto;
+  transform-style: preserve-3d;
+  transition: transform .6s cubic-bezier(.4,.2,.2,1);
+}
+.card3d.is-flipped { transform: rotateY(180deg); }
+
+.card3d__face {
+  position: absolute; inset: 0;
+  border-radius: 16px; padding: 22px 24px;
+  backface-visibility: hidden;
+  color: #F6E9C9;
+  box-shadow: 0 18px 40px -14px rgba(0,0,0,.55), 0 0 0 1px rgba(232,167,60,.25), 0 0 50px -10px rgba(232,167,60,.35);
+  background:
+    repeating-linear-gradient(115deg, rgba(255,255,255,.05) 0 2px, transparent 2px 26px),
+    linear-gradient(135deg, #2A1B04 0%, #55131B 45%, #19202F 100%);
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.card3d__back { transform: rotateY(180deg); justify-content: flex-start; padding: 0; }
+
+.card3d__top { display: flex; justify-content: space-between; align-items: flex-start; }
+.card3d__chip {
+  width: 42px; height: 32px; border-radius: 6px;
+  background: linear-gradient(135deg, #F5D68A, #C1841E);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
+}
+.card3d__brand {
+  font-family: var(--f-util); font-weight: 700; font-size: 1rem;
+  letter-spacing: .04em; color: var(--saffron);
+}
+.card3d__number {
+  font-family: var(--f-util); font-size: clamp(1.05rem, 4.6vw, 1.35rem);
+  letter-spacing: .12em; white-space: nowrap;
+}
+.card3d__row { display: flex; justify-content: space-between; gap: 14px; }
+.card3d__label { font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; opacity: .65; margin-bottom: 3px; }
+.card3d__value { font-family: var(--f-util); font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.card3d__stripe { width: 100%; height: 44px; background: #111; margin-top: 24px; }
+.card3d__cvv-row { margin: 22px 24px; display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+.card3d__cvv-band { flex: 1; height: 34px; background: repeating-linear-gradient(45deg, #E9DFC8 0 6px, #DDD0AE 6px 12px); border-radius: 3px; }
+.card3d__cvv {
+  min-width: 46px; text-align: center; background: #fff; color: #111;
+  font-family: var(--f-util); font-size: .95rem; border-radius: 3px; padding: 7px 10px;
+}
+
+.card-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.card-fields .field--full { grid-column: 1 / -1; }
+
+/* ---------- trust row ---------- */
+.trust-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+.trust-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: .78rem; color: var(--parch-dim);
+  border: 1px solid var(--line); border-radius: 100px; padding: 6px 12px;
+}
+.trust-chip svg { flex: none; }
+
+/* ---------- FAQ ---------- */
+.faq { border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.faq + .faq { margin-top: 8px; }
+.faq summary {
+  cursor: pointer; padding: 14px 16px; list-style: none;
+  font-weight: 600; font-size: .95rem; color: var(--parch);
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--ink-2);
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: '+'; color: var(--saffron); font-size: 1.2rem; }
+.faq[open] summary::after { content: '–'; }
+.faq p { padding: 2px 16px 16px; margin: 0; color: var(--parch-dim); font-size: .9rem; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }

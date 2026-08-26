@@ -26,92 +26,172 @@
   </nav>
 </div>
 
-<main class="shell section" style="max-width:640px">
+<main class="shell" style="max-width:640px">
 
-  <p class="eyebrow">ወርኃዊ ክፍያ</p>
-  <h1 style="font-size:2rem">የተማሪ ደንበኝነት</h1>
-  <p class="muted small">ክፍያው በVisa፣ Mastercard እና American Express ካርዶች ይፈጸማል፣ በStripe በኩል በደህንነት ተጠብቆ።</p>
-
-  <!-- ---------------- plan recap ---------------- -->
-  <div class="panel" style="margin-top:20px">
-    <div class="between">
-      <div>
-        <p class="eyebrow">ዕቅድ</p>
-        <h2 style="margin:0">$25 <span class="muted" style="font-size:1rem;font-weight:400">/ ወር / ተማሪ</span></h2>
-      </div>
-      <p style="margin:0;text-align:end">
-        <span class="muted small">ተማሪ</span><br>
-        <b id="studentName">…</b>
-      </p>
-    </div>
-
-    <div class="harag harag--thin" style="margin:18px 0"></div>
-
-    <p class="muted small" style="margin:0 0 10px">ይህ ክፍያ የሚያካትተው፦</p>
-    <ul class="muted small" style="margin:0 0 4px;padding-inline-start:20px;line-height:1.9">
-      <li>ሁሉንም የቪዲዮ ትምህርቶች (<span id="lessonCount">…</span> ትምህርቶች እስካሁን፣ በየሳምንቱ ይጨመራል)</li>
-      <li>ከትምህርት በኋላ የሚሰጡ ጥያቄዎችና ወዲያውኑ ማብራሪያ</li>
-      <li>የጥናት ሰዓትና የመሻሻል ክትትል ለወላጆች</li>
-      <li>በማንኛውም ጊዜ ያለ ቅጣት ማቋረጥ ይችላሉ</li>
-    </ul>
-  </div>
-
-  <!-- ---------------- accepted cards ---------------- -->
-  <div class="panel" style="margin-top:16px">
-    <p class="eyebrow">ተቀባይነት ያላቸው ካርዶች</p>
-    <div class="cards">
-      <span class="card-chip card-chip--visa"><i></i>VISA</span>
-      <span class="card-chip card-chip--mc"><i></i>Mastercard</span>
-      <span class="card-chip card-chip--amex"><i></i>Amex</span>
-    </div>
-    <p class="help" style="margin-top:12px">
-      የካርድ ቁጥርዎን በዚህ ገጽ ላይ አናስገባም — ወደ Stripe ደህንነቱ የተጠበቀ ገጽ ይወሰዳሉ፣ ካርድዎ በዚህ ድረ-ገጽ ላይ በጭራሽ አይቀመጥም።
+  <div class="heaven">
+    <span class="halo-ring">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+        <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
+      </svg>
+    </span>
+    <p class="eyebrow" style="justify-content:center">ወርኃዊ ክፍያ</p>
+    <h1 style="font-size:2rem">የተማሪ ደንበኝነት</h1>
+    <p class="muted small" style="max-width:44ch;margin:0 auto">
+      Visa፣ Mastercard እና American Express ተቀባይነት አላቸው — ክፍያው በStripe አማካኝነት በደህንነት ይፈጸማል።
     </p>
   </div>
 
-  <!-- ---------------- billing details ---------------- -->
-  <form id="form" class="panel" style="margin-top:16px" novalidate>
-    <p class="eyebrow" style="margin-bottom:14px">የክፍያ መረጃ</p>
+  <div class="section" style="padding-top:0">
 
-    <div class="field">
-      <label for="name">በካርድ ላይ ያለው ስም</label>
-      <input class="input" id="name" required autocomplete="cc-name">
+    <!-- ---------------- plan recap ---------------- -->
+    <div class="panel">
+      <div class="between">
+        <div>
+          <p class="eyebrow">ዕቅድ</p>
+          <h2 style="margin:0">$25 <span class="muted" style="font-size:1rem;font-weight:400">/ ወር / ተማሪ</span></h2>
+        </div>
+        <p style="margin:0;text-align:end">
+          <span class="muted small">ተማሪ</span><br>
+          <b id="studentName">…</b>
+        </p>
+      </div>
+
+      <div class="harag harag--thin" style="margin:18px 0"></div>
+
+      <p class="muted small" style="margin:0 0 10px">ይህ ክፍያ የሚያካትተው፦</p>
+      <ul class="muted small" style="margin:0;padding-inline-start:20px;line-height:1.9">
+        <li>ሁሉንም የቪዲዮ ትምህርቶች (<span id="lessonCount">…</span> ትምህርቶች እስካሁን፣ በየሳምንቱ ይጨመራል)</li>
+        <li>ከትምህርት በኋላ የሚሰጡ ጥያቄዎችና ወዲያውኑ ማብራሪያ</li>
+        <li>የጥናት ሰዓትና የመሻሻል ክትትል ለወላጆች</li>
+        <li>በማንኛውም ጊዜ ያለ ቅጣት ማቋረጥ ይችላሉ</li>
+      </ul>
     </div>
-    <div class="field">
-      <label for="email">ደረሰኝ የሚላክበት ኢሜይል</label>
-      <input class="input" id="email" type="email" readonly autocomplete="email">
-    </div>
-    <div class="field">
-      <label for="country">ሀገር</label>
-      <input class="input" id="country" readonly>
-    </div>
 
-    <p id="err" class="note note--red" style="display:none"></p>
-    <p id="cfg" class="note small" style="display:none;margin-bottom:14px"></p>
+    <!-- ---------------- live card preview + form ---------------- -->
+    <form id="form" class="panel" style="margin-top:16px" novalidate>
+      <p class="eyebrow">የክፍያ ካርድ</p>
 
-    <button class="btn btn--gold btn--block" type="submit">ወደ ደህንነቱ የተጠበቀ ክፍያ ይቀጥሉ →</button>
-
-    <button class="btn btn--ghost btn--block" type="button" id="demoPay" style="margin-top:10px">
-      🔧 ማሳያ ክፍያ (Stripe ገና እስካልተያያዘ ድረስ ለሙከራ)
-    </button>
-  </form>
-
-  <!-- ---------------- what this funds / EOTC purpose note ---------------- -->
-  <div class="purpose" style="margin-top:22px">
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
-      <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
-    </svg>
-    <div>
-      <h3 style="margin:0 0 6px;font-size:1rem">ይህ ክፍያ ለምን ይውላል?</h3>
-      <p class="muted small" style="margin:0">
-        ይህ ትምህርት ቤት ትርፍ ለማግኘት የተከፈተ ንግድ አይደለም — በስደት ያሉ ልጆቻችን፣ ሃይማኖተ አበውን፣ ጸሎትን፣ ጾምንና ምጽዋትን፣
-        ሥርዓተ ቅዳሴን፣ ንስሐንና ስለ ቅዱሳን መላእክት በአባቶቻቸው ቋንቋ እንዲማሩ የሚያግዝ አገልግሎት ነው። ወርኃዊ ክፍያዎ የሚሸፍነው፦
-        የመምህራንን ድካም፣ የትምህርትና የጥያቄ ዝግጅትን፣ እንዲሁም ይህን የጥናት ክትትል ሥርዓት ክፍት አድርጎ ማቆየትን ነው።
+      <p class="card-note">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B8266" stroke-width="2" stroke-linecap="round"><path d="M12 15v2M7 10V7a5 5 0 0 1 10 0v3"/><rect x="5" y="10" width="14" height="10" rx="2"/></svg>
+        ይህ ካርድ ቅድመ-እይታ ብቻ ነው። እዚህ የገባ ቁጥር በዚህ ድረ-ገጽ ላይ አይቀመጥም፣ ወደ የትም አይላክም — እውነተኛው ክፍያ በሚቀጥለው ገጽ በStripe ደህንነቱ በተጠበቀ ገጽ ላይ ይፈጸማል።
       </p>
-      <p class="blessing">✚ እግዚአብሔር አገልግሎታችሁን ይባርክ ✚</p>
-    </div>
-  </div>
 
+      <div class="card-stage">
+        <div class="card3d" id="card3d">
+          <div class="card3d__face card3d__front">
+            <div class="card3d__top">
+              <div class="card3d__chip"></div>
+              <div class="card3d__brand" id="cardBrand">CARD</div>
+            </div>
+            <div class="card3d__number" id="cardNumberDisplay">•••• •••• •••• ••••</div>
+            <div class="card3d__row">
+              <div>
+                <div class="card3d__label">ስም</div>
+                <div class="card3d__value" id="cardNameDisplay">YOUR NAME</div>
+              </div>
+              <div>
+                <div class="card3d__label">ያበቃበት</div>
+                <div class="card3d__value" id="cardExpDisplay">MM/YY</div>
+              </div>
+            </div>
+          </div>
+          <div class="card3d__face card3d__back">
+            <div class="card3d__stripe"></div>
+            <div class="card3d__cvv-row">
+              <div class="card3d__cvv-band"></div>
+              <div class="card3d__cvv" id="cardCvvDisplay">•••</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-fields">
+        <div class="field field--full">
+          <label for="ccName">የካርድ ያዥ ስም</label>
+          <input class="input" id="ccName" placeholder="ለምሳሌ፡ Sara Tesfaye" autocomplete="cc-name">
+        </div>
+        <div class="field field--full">
+          <label for="ccNumber">የካርድ ቁጥር</label>
+          <input class="input" id="ccNumber" inputmode="numeric" placeholder="•••• •••• •••• ••••" autocomplete="cc-number" maxlength="23">
+        </div>
+        <div class="field">
+          <label for="ccExp">ያበቃበት (MM/YY)</label>
+          <input class="input" id="ccExp" inputmode="numeric" placeholder="MM/YY" autocomplete="cc-exp" maxlength="5">
+        </div>
+        <div class="field">
+          <label for="ccCvv">CVV</label>
+          <input class="input" id="ccCvv" inputmode="numeric" placeholder="•••" autocomplete="cc-csc" maxlength="4">
+        </div>
+      </div>
+
+      <div class="trust-row">
+        <span class="trust-chip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="2" stroke-linecap="round"><path d="M12 15v2M7 10V7a5 5 0 0 1 10 0v3"/><rect x="5" y="10" width="14" height="10" rx="2"/></svg>
+          256-bit SSL
+        </span>
+        <span class="trust-chip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="2" stroke-linecap="round"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6z"/></svg>
+          PCI-DSS via Stripe
+        </span>
+        <span class="trust-chip">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+          በማንኛውም ጊዜ ማቋረጥ ይቻላል
+        </span>
+      </div>
+
+      <div class="field" style="margin-top:4px">
+        <label for="email">ደረሰኝ የሚላክበት ኢሜይል</label>
+        <input class="input" id="email" type="email" readonly autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="country">ሀገር</label>
+        <input class="input" id="country" readonly>
+      </div>
+
+      <p id="err" class="note note--red" style="display:none"></p>
+      <p id="cfg" class="note small" style="display:none;margin-bottom:14px"></p>
+
+      <button class="btn btn--gold btn--block" type="submit">✦ ወደ ደህንነቱ የተጠበቀ ክፍያ ይቀጥሉ →</button>
+      <button class="btn btn--ghost btn--block" type="button" id="demoPay" style="margin-top:10px">
+        🔧 ማሳያ ክፍያ (Stripe ገና እስካልተያያዘ ድረስ ለሙከራ)
+      </button>
+    </form>
+
+    <!-- ---------------- FAQ ---------------- -->
+    <div style="margin-top:16px">
+      <details class="faq">
+        <summary>ይህ ክፍያ ደህንነቱ የተጠበቀ ነው?</summary>
+        <p>አዎ። የካርድ መረጃዎ የሚያልፈው በStripe ደህንነቱ በተጠበቀ ገጽ ብቻ ነው፤ ይህ ድረ-ገጽ የካርድ ቁጥር በጭራሽ አያከማችም።</p>
+      </details>
+      <details class="faq">
+        <summary>በማንኛውም ጊዜ ማቋረጥ እችላለሁ?</summary>
+        <p>አዎ፣ ምንም ቅጣት ሳይኖር በማንኛውም ጊዜ ማቋረጥ ይችላሉ። ቀጣዩ ወር ክፍያ ብቻ ይቆማል።</p>
+      </details>
+      <details class="faq">
+        <summary>ክፍያው ቢወድቅ ምን ይሆናል?</summary>
+        <p>ትምህርቶቹ ይቆያሉ፣ ነገር ግን ተጨማሪ ትምህርት ለማየት ክፍያውን ደግመው እስኪያጠናቅቁ ድረስ ገጹ ያሳውቅዎታል።</p>
+      </details>
+    </div>
+
+    <!-- ---------------- what this funds / EOTC purpose note ---------------- -->
+    <div class="purpose" style="margin-top:16px">
+      <span class="halo-ring" style="width:44px;height:44px;margin-bottom:0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+          <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
+        </svg>
+      </span>
+      <div>
+        <h3 style="margin:0 0 6px;font-size:1rem">ይህ ክፍያ ለምን ይውላል?</h3>
+        <p class="muted small" style="margin:0">
+          ይህ ትምህርት ቤት ትርፍ ለማግኘት የተከፈተ ንግድ አይደለም — በስደት ያሉ ልጆቻችን፣ ሃይማኖተ አበውን፣ ጸሎትን፣ ጾምንና ምጽዋትን፣
+          ሥርዓተ ቅዳሴን፣ ንስሐንና ስለ ቅዱሳን መላእክት በአባቶቻቸው ቋንቋ እንዲማሩ የሚያግዝ አገልግሎት ነው። ወርኃዊ ክፍያዎ የሚሸፍነው፦
+          የመምህራንን ድካም፣ የትምህርትና የጥያቄ ዝግጅትን፣ እንዲሁም ይህን የጥናት ክትትል ሥርዓት ክፍት አድርጎ ማቆየትን ነው።
+        </p>
+        <p class="blessing">✚ እግዚአብሔር አገልግሎታችሁን ይባርክ ✚</p>
+      </div>
+    </div>
+
+  </div>
 </main>
 
 <div class="harag harag--thin"></div>
@@ -133,21 +213,60 @@ if (u) {
   Store.touch();
   $('studentName').textContent = u.fullName;
   $('lessonCount').textContent = LESSONS.length;
-  $('name').value = u.guardian || '';
   $('email').value = u.email || '';
   $('country').value = u.country || '—';
+  if (u.guardian) $('ccName').value = u.guardian;
 
   if (!STRIPE_PAYMENT_LINK) {
     $('cfg').style.display = 'block';
     $('cfg').textContent = 'ማስታወሻ ለአስተዳዳሪ፡ የStripe Payment Link ገና በassets/js/store.js ውስጥ አልተቀመጠም። እስከዚያ ድረስ ከታች ያለውን የማሳያ ክፍያ ይጠቀሙ።';
   }
 
+  /* ---------------- live card preview — display only, nothing persisted ---------------- */
+  const brandOf = (digits) => {
+    if (/^3[47]/.test(digits)) return 'AMEX';
+    if (/^4/.test(digits)) return 'VISA';
+    if (/^(5[1-5]|2[2-7])/.test(digits)) return 'MASTERCARD';
+    return 'CARD';
+  };
+  const groupNumber = (digits, brand) => {
+    if (brand === 'AMEX') return digits.replace(/(\d{4})(\d{0,6})(\d{0,5})/, (_, a, b, c) => [a, b, c].filter(Boolean).join(' '));
+    return digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+  };
+
+  $('ccName').addEventListener('input', () => {
+    $('cardNameDisplay').textContent = $('ccName').value.trim().toUpperCase() || 'YOUR NAME';
+  });
+
+  $('ccNumber').addEventListener('input', () => {
+    const raw = $('ccNumber').value.replace(/\D/g, '');
+    const brand = brandOf(raw);
+    const digits = raw.slice(0, brand === 'AMEX' ? 15 : 16);
+    const grouped = groupNumber(digits, brand);
+    $('ccNumber').value = grouped;
+    $('cardBrand').textContent = brand;
+    $('cardNumberDisplay').textContent = grouped || '•••• •••• •••• ••••';
+    $('ccCvv').maxLength = brand === 'AMEX' ? 4 : 3;
+  });
+
+  $('ccExp').addEventListener('input', () => {
+    let digits = $('ccExp').value.replace(/\D/g, '').slice(0, 4);
+    if (digits.length >= 3) digits = digits.slice(0, 2) + '/' + digits.slice(2);
+    $('ccExp').value = digits;
+    $('cardExpDisplay').textContent = digits || 'MM/YY';
+  });
+
+  $('ccCvv').addEventListener('input', () => {
+    $('ccCvv').value = $('ccCvv').value.replace(/\D/g, '');
+    $('cardCvvDisplay').textContent = $('ccCvv').value || '•••';
+  });
+  $('ccCvv').addEventListener('focus', () => $('card3d').classList.add('is-flipped'));
+  $('ccCvv').addEventListener('blur', () => $('card3d').classList.remove('is-flipped'));
+
+  /* ---------------- submit → hand off to Stripe (or the phase-1 demo) ---------------- */
   $('form').addEventListener('submit', (e) => {
     e.preventDefault();
     $('err').style.display = 'none';
-    if (!$('name').value.trim()) {
-      $('err').textContent = 'በካርድ ላይ ያለውን ስም ያስገቡ።'; $('err').style.display = 'block'; return;
-    }
     if (!STRIPE_PAYMENT_LINK) {
       $('err').textContent = 'የክፍያ ግንኙነት ገና አልተዘጋጀም። ከታች ያለውን የማሳያ ክፍያ ይጠቀሙ ወይም README ውስጥ ያለውን የStripe ደረጃ ይመልከቱ።';
       $('err').style.display = 'block';
