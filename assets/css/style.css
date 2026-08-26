@@ -116,8 +116,15 @@ a  { color: var(--saffron); }
   border: 1px solid transparent; cursor: pointer;
   text-decoration: none; transition: .15s ease;
 }
-.btn--gold   { background: var(--saffron); color: #2A1B04; }
+.btn--gold   { background: var(--saffron); color: #2A1B04; position: relative; overflow: hidden; }
 .btn--gold:hover { background: #F5BC5A; }
+.btn--gold::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 35%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,.65), transparent);
+  transform: skewX(-20deg);
+  animation: btn-shine 3.6s ease-in-out infinite;
+}
+@keyframes btn-shine { 0%, 25% { left: -60%; } 60%, 100% { left: 130%; } }
 .btn--red    { background: var(--crimson); color: #fff; }
 .btn--red:hover { filter: brightness(1.12); }
 .btn--ghost  { background: transparent; color: var(--parch); border-color: var(--line); }
@@ -322,8 +329,24 @@ td.num { font-family: var(--f-util); }
   background: radial-gradient(circle, rgba(232,167,60,.22), transparent 70%);
   box-shadow: 0 0 0 1px var(--line), 0 0 40px 6px rgba(232,167,60,.25);
   margin-bottom: 14px;
+  animation: halo-pulse 3.2s ease-in-out infinite;
+}
+@keyframes halo-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px var(--line), 0 0 30px 4px rgba(232,167,60,.2); }
+  50%      { box-shadow: 0 0 0 1px var(--line), 0 0 58px 14px rgba(232,167,60,.42); }
 }
 .heaven h1, .heaven p { position: relative; z-index: 1; }
+
+/* drifting motes of gold light */
+.spark {
+  position: absolute; z-index: 0; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, #fff 0%, var(--saffron) 55%, transparent 75%);
+  animation: spark-float 7s ease-in-out infinite;
+}
+@keyframes spark-float {
+  0%, 100% { transform: translateY(0) scale(.8); opacity: .25; }
+  50%      { transform: translateY(-34px) scale(1.3); opacity: .9; }
+}
 
 /* ---------- live 3D card preview ---------- */
 .card-note {
@@ -336,24 +359,38 @@ td.num { font-family: var(--f-util); }
 
 .card-stage { perspective: 1400px; margin-bottom: 22px; }
 .card3d {
+  --flip: 0deg; --tiltX: 0deg; --tiltY: 0deg; --mx: 50%; --my: 15%;
   position: relative;
   width: 100%; max-width: 380px; aspect-ratio: 1.586 / 1;
   margin: 0 auto;
   transform-style: preserve-3d;
-  transition: transform .6s cubic-bezier(.4,.2,.2,1);
+  transform: rotateX(var(--tiltX)) rotateY(calc(var(--flip) + var(--tiltY)));
+  transition: transform .45s cubic-bezier(.4,.2,.2,1);
 }
-.card3d.is-flipped { transform: rotateY(180deg); }
 
 .card3d__face {
   position: absolute; inset: 0;
   border-radius: 16px; padding: 22px 24px;
   backface-visibility: hidden;
   color: #F6E9C9;
-  box-shadow: 0 18px 40px -14px rgba(0,0,0,.55), 0 0 0 1px rgba(232,167,60,.25), 0 0 50px -10px rgba(232,167,60,.35);
+  box-shadow: 0 18px 40px -14px rgba(0,0,0,.55), 0 0 0 1px rgba(232,167,60,.3), 0 0 60px -8px rgba(232,167,60,.45);
   background:
+    radial-gradient(420px circle at var(--mx) var(--my), rgba(255,255,255,.16), transparent 55%),
     repeating-linear-gradient(115deg, rgba(255,255,255,.05) 0 2px, transparent 2px 26px),
     linear-gradient(135deg, #2A1B04 0%, #55131B 45%, #19202F 100%);
   display: flex; flex-direction: column; justify-content: space-between;
+  overflow: hidden;
+}
+.card3d__face::before {
+  content: ''; position: absolute; inset: -40%; border-radius: inherit;
+  background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.4) 50%, transparent 60%);
+  background-size: 220% 220%;
+  animation: shine-sweep 6.5s ease-in-out infinite;
+  mix-blend-mode: overlay; pointer-events: none;
+}
+@keyframes shine-sweep {
+  0%, 12%  { background-position: 220% 220%; }
+  55%, 100% { background-position: -60% -60%; }
 }
 .card3d__back { transform: rotateY(180deg); justify-content: flex-start; padding: 0; }
 
@@ -385,6 +422,13 @@ td.num { font-family: var(--f-util); }
 
 .card-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .card-fields .field--full { grid-column: 1 / -1; }
+
+/* ---------- live field validity ---------- */
+.input.is-valid   { border-color: var(--verdant); }
+.input.is-invalid { border-color: var(--crimson); }
+.field-msg { display: block; font-size: .78rem; margin-top: 5px; min-height: 1.1em; }
+.field-msg.valid   { color: var(--verdant); }
+.field-msg.invalid { color: var(--crimson); }
 
 /* ---------- trust row ---------- */
 .trust-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
