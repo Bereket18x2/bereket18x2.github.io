@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ትምህርቶች — የቅዱሳት መጻሕፍት ትምህርት ቤት</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div class="harag"></div>
+<div class="shell">
+  <nav class="nav">
+    <a class="brand" href="index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+        <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
+      </svg>
+      የቅዱሳት መጻሕፍት ትምህርት ቤት
+    </a>
+    <div class="nav-links">
+      <a href="dashboard.html" aria-current="page">ትምህርቶች</a>
+      <a href="admin.html">አስተዳደር</a>
+      <a href="#" id="out">ውጣ</a>
+    </div>
+  </nav>
+</div>
+
+<main class="shell section">
+
+  <p class="eyebrow">የተማሪ ገጽ</p>
+  <h1 id="hello" style="font-size:2rem;margin-bottom:26px">…</h1>
+
+  <div id="payNote" class="note note--red" style="display:none;margin-bottom:22px">
+    ክፍያ አልተፈጸመም። ትምህርቶቹን ለመክፈት ወርኃዊ ክፍያውን ያጠናቅቁ።
+    <a href="#" id="payLink" style="display:inline-block;margin-top:8px">ክፍያ ፈጽም →</a>
+  </div>
+
+  <div class="grid-2">
+
+    <div>
+      <div class="between" style="margin-bottom:14px">
+        <h2 style="margin:0;font-size:1.25rem">ትምህርቶች</h2>
+        <span class="pill" id="doneCount">…</span>
+      </div>
+      <div id="list"></div>
+    </div>
+
+    <aside class="stack">
+      <div class="panel">
+        <p class="eyebrow">አጠቃላይ የጥናት ሰዓት</p>
+        <div class="stat" id="hours">…</div>
+        <div class="meter"><i id="bar" style="width:0%"></i></div>
+        <p class="muted small" style="margin:10px 0 0" id="progressTxt">…</p>
+      </div>
+
+      <div class="panel">
+        <p class="eyebrow">አማካይ ውጤት</p>
+        <div class="stat" id="avg">…<small>%</small></div>
+      </div>
+
+      <div class="panel">
+        <p class="eyebrow">መጨረሻ የገቡበት</p>
+        <p style="margin:0" id="seen">…</p>
+      </div>
+    </aside>
+
+  </div>
+</main>
+
+<script type="module">
+import { Store, fmtHours, fmtAgo, requireAuth } from './assets/js/store.js';
+import { LESSONS } from './assets/js/lessons.js';
+
+const u = requireAuth();
+if (u) {
+  Store.touch();
+
+  document.getElementById('hello').textContent = `እንኳን ደህና መጡ፣ ${u.fullName}`;
+  document.getElementById('seen').textContent = fmtAgo(u.lastSeen);
+  document.getElementById('hours').textContent = fmtHours(u.studySeconds);
+
+  if (!u.paid) document.getElementById('payNote').style.display = 'block';
+
+  const done = LESSONS.filter(l => u.progress[l.id]?.done);
+  document.getElementById('doneCount').textContent = `${done.length} / ${LESSONS.length} ተጠናቋል`;
+  document.getElementById('bar').style.width = (done.length / LESSONS.length * 100) + '%';
+  document.getElementById('progressTxt').textContent =
+    `ከ${LESSONS.length} ትምህርት ${done.length}ቱን ጨርሰዋል።`;
+
+  const scored = done.map(l => u.progress[l.id]);
+  const pct = scored.length
+    ? Math.round(scored.reduce((a, p) => a + p.score / p.of, 0) / scored.length * 100) : 0;
+  document.getElementById('avg').innerHTML = `${pct}<small>%</small>`;
+
+  document.getElementById('list').innerHTML = LESSONS.map(l => {
+    const p = u.progress[l.id];
+    const badge = p?.done
+      ? `<span class="pill pill--done">${p.score}/${p.of}</span>`
+      : `<span class="pill">${l.minutes} ደቂቃ</span>`;
+    return `<a class="folio" href="lesson.html?id=${l.id}" data-done="${p?.done ? 1 : 0}">
+      <span class="geez">${l.num}</span>
+      <span>
+        <h3>${l.title}</h3>
+        <span class="muted small">${l.teacher} · ${l.summary}</span>
+      </span>
+      ${badge}
+    </a>`;
+  }).join('');
+
+  document.getElementById('out').addEventListener('click', e => {
+    e.preventDefault(); Store.signOut(); location.href = 'index.html';
+  });
+
+  // phase 2: replace with your Stripe Payment Link URL
+  document.getElementById('payLink').addEventListener('click', e => {
+    e.preventDefault();
+    alert('የክፍያ ማገናኛ ገና አልተዘጋጀም። በREADME ውስጥ ያለውን የStripe ደረጃ ይመልከቱ።');
+  });
+}
+</script>
+</body>
+</html>

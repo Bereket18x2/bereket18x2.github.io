@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>አስተዳደር — የቅዱሳት መጻሕፍት ትምህርት ቤት</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div class="harag"></div>
+<div class="shell">
+  <nav class="nav">
+    <a class="brand" href="index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+        <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
+      </svg>
+      የቅዱሳት መጻሕፍት ትምህርት ቤት
+    </a>
+    <div class="nav-links">
+      <a href="dashboard.html">ትምህርቶች</a>
+      <a href="admin.html" aria-current="page">አስተዳደር</a>
+    </div>
+  </nav>
+</div>
+
+<main class="shell section">
+  <p class="eyebrow">የመምህራን ገጽ</p>
+  <h1 style="font-size:2rem">ተማሪዎች</h1>
+
+  <div class="grid-3" style="margin:22px 0">
+    <div class="panel"><p class="eyebrow">ጠቅላላ ተማሪ</p><div class="stat" id="kTotal">…</div></div>
+    <div class="panel"><p class="eyebrow">በዚህ ሳምንት ገብተዋል</p><div class="stat" id="kActive">…</div></div>
+    <div class="panel"><p class="eyebrow">ጠቅላላ የጥናት ሰዓት</p><div class="stat" id="kHours">…</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ተማሪ</th><th>ዕድሜ</th><th>ሀገር</th><th>የጥናት ሰዓት</th>
+            <th>ትምህርት</th><th>አማካይ</th><th>መጨረሻ የታየበት</th><th>ሁኔታ</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="note small" style="margin-top:20px">
+    አሁን ይህ ገጽ ማንም ሊከፍተው ይችላል። በምዕራፍ ፪ በFirestore ደንብ (<code>role == 'admin'</code>) ይዘጋል።
+  </p>
+</main>
+
+<script type="module">
+import { Store, fmtHours, fmtAgo } from './assets/js/store.js';
+import { LESSONS } from './assets/js/lessons.js';
+
+const users = Store.allUsers();
+const week = Date.now() - 86400000 * 7;
+
+document.getElementById('kTotal').textContent = users.length;
+document.getElementById('kActive').textContent = users.filter(u => u.lastSeen > week).length;
+document.getElementById('kHours').textContent =
+  Math.round(users.reduce((a, u) => a + u.studySeconds, 0) / 3600) + ' ሰዓት';
+
+document.getElementById('rows').innerHTML = users
+  .sort((a, b) => b.lastSeen - a.lastSeen)
+  .map(u => {
+    const done = LESSONS.filter(l => u.progress[l.id]?.done);
+    const scored = done.map(l => u.progress[l.id]);
+    const avg = scored.length
+      ? Math.round(scored.reduce((a, p) => a + p.score / p.of, 0) / scored.length * 100) : 0;
+    const status = !u.verified ? '<span class="pill">አልተረጋገጠም</span>'
+      : !u.paid ? '<span class="pill" style="color:#B22F30;border-color:#B22F30">ክፍያ የለም</span>'
+      : '<span class="pill pill--done">ንቁ</span>';
+    return `<tr>
+      <td><b>${u.fullName}</b><br><span class="muted small">${u.guardian ?? ''} · ${u.email}</span></td>
+      <td class="num">${u.age ?? '—'}</td>
+      <td>${u.country ?? '—'}</td>
+      <td class="num">${fmtHours(u.studySeconds)}</td>
+      <td class="num">${done.length}/${LESSONS.length}</td>
+      <td class="num">${avg}%</td>
+      <td class="muted">${fmtAgo(u.lastSeen)}</td>
+      <td>${status}</td>
+    </tr>`;
+  }).join('');
+</script>
+</body>
+</html>

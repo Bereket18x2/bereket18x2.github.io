@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ግባ — የቅዱሳት መጻሕፍት ትምህርት ቤት</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div class="harag"></div>
+<div class="shell">
+  <nav class="nav">
+    <a class="brand" href="index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+        <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
+      </svg>
+      የቅዱሳት መጻሕፍት ትምህርት ቤት
+    </a>
+    <div class="nav-links"><a href="register.html">መለያ የለዎትም? ይመዝገቡ</a></div>
+  </nav>
+</div>
+
+<main class="shell section" style="max-width:460px">
+  <p class="eyebrow">መግቢያ</p>
+  <h1 style="font-size:2rem">እንኳን ደህና መጡ</h1>
+
+  <form id="form" class="panel" style="margin-top:20px" novalidate>
+    <div class="field">
+      <label for="email">ኢሜይል</label>
+      <input class="input" id="email" type="email" required autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="password">የይለፍ ቃል</label>
+      <input class="input" id="password" type="password" required autocomplete="current-password">
+    </div>
+    <p id="err" class="note note--red" style="display:none"></p>
+    <button class="btn btn--gold btn--block" type="submit">ግባ</button>
+  </form>
+
+  <p class="note small" style="margin-top:18px">
+    ለሙከራ፡ <b>sara@example.com</b> — የይለፍ ቃል ባዶ ይሁን።
+  </p>
+</main>
+
+<script type="module">
+import { Store } from './assets/js/store.js';
+const err = document.getElementById('err');
+document.getElementById('form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  err.style.display = 'none';
+  try {
+    Store.signIn({
+      email: document.getElementById('email').value.trim(),
+      password: document.getElementById('password').value
+    });
+    location.href = 'dashboard.html';
+  } catch (ex) { err.textContent = ex.message; err.style.display = 'block'; }
+});
+</script>
+</body>
+</html>

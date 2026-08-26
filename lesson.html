@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ትምህርት — የቅዱሳት መጻሕፍት ትምህርት ቤት</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div class="harag"></div>
+<div class="shell">
+  <nav class="nav">
+    <a class="brand" href="index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+        <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
+      </svg>
+      የቅዱሳት መጻሕፍት ትምህርት ቤት
+    </a>
+    <div class="nav-links">
+      <a href="dashboard.html">← ወደ ትምህርቶች</a>
+      <span class="pill pill--live" id="timer">፡ ፡</span>
+    </div>
+  </nav>
+</div>
+
+<main class="shell section">
+
+  <div class="row" style="align-items:baseline;gap:14px">
+    <span class="geez" id="num" style="font-size:2rem"></span>
+    <div>
+      <h1 id="title" style="font-size:1.8rem;margin:0">…</h1>
+      <p class="muted small" id="meta" style="margin:4px 0 0"></p>
+    </div>
+  </div>
+
+  <div class="frame" id="frame" style="margin:22px 0">
+    <div class="frame-empty" id="empty">
+      ቪዲዮው ገና አልተጫነም።<br><span class="small">በ <code>assets/js/lessons.js</code> ውስጥ የYouTube መለያ ያስገቡ።</span>
+      <br><button class="btn btn--ghost" id="sim" style="margin-top:14px">ለሙከራ ጥናት ጀምር</button>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <div class="between" style="margin-bottom:14px">
+        <h2 style="margin:0;font-size:1.25rem">ጥያቄዎች</h2>
+        <span class="pill" id="qcount"></span>
+      </div>
+      <div id="quiz" class="stack"></div>
+      <div id="result" style="display:none;margin-top:20px" class="panel">
+        <p class="eyebrow">ውጤት</p>
+        <div class="stat" id="score"></div>
+        <p class="muted small" id="verdict" style="margin:10px 0 16px"></p>
+        <a class="btn btn--gold" href="dashboard.html">ወደ ትምህርቶች ተመለስ</a>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <p class="eyebrow">በዚህ ትምህርት</p>
+      <p class="small muted" id="summary"></p>
+      <div class="harag harag--thin" style="margin:16px 0"></div>
+      <p class="eyebrow">የተመዘገበ ጊዜ</p>
+      <p class="small muted" style="margin:0">ቪዲዮው በሚጫወትበት ጊዜ ብቻ ነው ሰዓት የሚቆጠረው። ማቆም ወይም ገጹን መዝጋት ቆጠራውን ያቆማል።</p>
+    </aside>
+  </div>
+</main>
+
+<script type="module">
+import { Store, requireAuth } from './assets/js/store.js';
+import { findLesson } from './assets/js/lessons.js';
+
+const u = requireAuth();
+const id = new URLSearchParams(location.search).get('id') || 'l1';
+const L = findLesson(id);
+if (u && !L) location.href = 'dashboard.html';
+
+if (u && L) {
+  document.getElementById('num').textContent = L.num;
+  document.getElementById('title').textContent = L.title;
+  document.getElementById('meta').textContent = `${L.teacher} · ${L.minutes} ደቂቃ`;
+  document.getElementById('summary').textContent = L.summary;
+  document.getElementById('qcount').textContent = `${L.questions.length} ጥያቄ`;
+
+  /* ---------- watch-time heartbeat ----------
+     Seconds are only banked while the video reports PLAYING.
+     A stopwatch the student can leave running is not attendance. */
+  let watched = 0, beat = null;
+  const timerEl = document.getElementById('timer');
+  const paint = () => {
+    const m = String(Math.floor(watched / 60)).padStart(2, '0');
+    const s = String(watched % 60).padStart(2, '0');
+    timerEl.textContent = `${m}፡${s}`;
+  };
+  paint();
+
+  const start = () => {
+    if (beat) return;
+    beat = setInterval(() => {
+      watched += 5;
+      Store.addStudySeconds(5);   // phase 2: Firestore increment(5)
+      paint();
+    }, 5000);
+  };
+  const stop = () => { clearInterval(beat); beat = null; };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+  window.addEventListener('beforeunload', stop);
+
+  /* ---------- video ---------- */
+  if (L.youtube) {
+    document.getElementById('empty').remove();
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+    const host = document.createElement('div');
+    host.id = 'player';
+    document.getElementById('frame').appendChild(host);
+    window.onYouTubeIframeAPIReady = () => {
+      new YT.Player('player', {
+        videoId: L.youtube,
+        playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+        events: {
+          onStateChange: (e) => (e.data === YT.PlayerState.PLAYING) ? start() : stop()
+        }
+      });
+    };
+  } else {
+    document.getElementById('sim').addEventListener('click', (e) => {
+      const on = beat;
+      on ? stop() : start();
+      e.target.textContent = on ? 'ለሙከራ ጥናት ጀምር' : 'ጥናት አቁም';
+    });
+  }
+
+  /* ---------- quiz ---------- */
+  const answers = new Array(L.questions.length).fill(null);
+  document.getElementById('quiz').innerHTML = L.questions.map((q, i) => `
+    <div class="panel" data-q="${i}">
+      <p style="margin:0 0 14px"><b>${i + 1}.</b> ${q.q}</p>
+      ${q.options.map((o, j) =>
+        `<button class="choice" data-i="${i}" data-j="${j}">${o}</button>`).join('')}
+      <p class="note small" data-why="${i}" style="display:none;margin-top:10px">${q.why}</p>
+    </div>`).join('');
+
+  document.getElementById('quiz').addEventListener('click', (e) => {
+    const b = e.target.closest('.choice');
+    if (!b) return;
+    const i = +b.dataset.i, j = +b.dataset.j;
+    if (answers[i] !== null) return;           // one attempt per question
+    answers[i] = j;
+
+    const block = document.querySelector(`[data-q="${i}"]`);
+    block.querySelectorAll('.choice').forEach(c => {
+      c.disabled = true;
+      const cj = +c.dataset.j;
+      if (cj === L.questions[i].answer) c.dataset.state = 'right';
+      else if (cj === j) c.dataset.state = 'wrong';
+    });
+    block.querySelector(`[data-why="${i}"]`).style.display = 'block';
+
+    if (answers.every(a => a !== null)) finish();
+  });
+
+  function finish() {
+    stop();
+    const score = answers.filter((a, i) => a === L.questions[i].answer).length;
+    const of = L.questions.length;
+    Store.saveQuiz(L.id, score, of);
+    document.getElementById('score').innerHTML = `${score}<small> / ${of}</small>`;
+    document.getElementById('verdict').textContent =
+      score === of ? 'እግዚአብሔር ይስጥልኝ — ሁሉንም በትክክል መልሰዋል።'
+      : score >= of - 1 ? 'በጣም ጥሩ። ትምህርቱን በድጋሚ ቢመለከቱት ይረዳል።'
+      : 'ትምህርቱን በድጋሚ ተመልክተው እንደገና ይሞክሩ።';
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+</script>
+</body>
+</html>
