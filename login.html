@@ -9,8 +9,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="shortcut icon" href="assets/favicon.svg">
+<meta property="og:title" content="ግባ — የቅዱሳት መጻሕፍት ትምህርት ቤት">
+<meta property="og:description" content="ወደ የተማሪ መለያዎ ይግቡ።">
+<meta property="og:image" content="https://bereket18x2.github.io/assets/og.png">
+<meta property="og:url" content="https://bereket18x2.github.io/login.html">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="am_ET">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ግባ — የቅዱሳት መጻሕፍት ትምህርት ቤት">
+<meta name="twitter:description" content="ወደ የተማሪ መለያዎ ይግቡ።">
+<meta name="twitter:image" content="https://bereket18x2.github.io/assets/og.png">
 </head>
-<body>
+<body class="sky">
+<canvas id="sky"></canvas>
 <!--
   The sign-in form now lives on index.html (#signin) so visitors never
   leave the homepage to log in. This file stays only so old bookmarks
@@ -23,5 +36,6 @@
   <p class="muted small">ካልተዛወሩ፣ <a href="index.html#signin">እዚህ ይጫኑ</a>።</p>
 </main>
 <script>location.replace('index.html#signin');</script>
+<script src="assets/js/sky.js" defer></script>
 </body>
 </html>

@@ -33,6 +33,22 @@
 }
 .harag--thin { height: 26px; opacity: .35; }
 
+/* ---------- starfield backdrop (assets/js/sky.js) ---------- */
+#sky { position: fixed; inset: 0; z-index: 0; display: block; pointer-events: none; }
+body.sky {
+  background:
+    radial-gradient(1100px 650px at 88% -8%, rgba(178,47,48,.20), transparent 60%),
+    linear-gradient(180deg, #05070D 0%, #0B1020 45%, var(--ink) 100%);
+}
+body.sky > *:not(#sky) { position: relative; z-index: 1; }
+
+/* gold glow seated behind the landing hero, above the starfield */
+.aurora {
+  position: absolute; inset: -40px -20px auto -20px; height: 480px; z-index: -1;
+  background: radial-gradient(640px 380px at 50% 0%, rgba(232,167,60,.18), transparent 72%);
+  pointer-events: none;
+}
+
 * { box-sizing: border-box; }
 
 html { -webkit-text-size-adjust: 100%; }
