@@ -28,43 +28,55 @@
 
 <main class="shell section">
 
-  <div class="row" style="align-items:baseline;gap:14px">
-    <span class="geez" id="num" style="font-size:2rem"></span>
-    <div>
-      <h1 id="title" style="font-size:1.8rem;margin:0">…</h1>
-      <p class="muted small" id="meta" style="margin:4px 0 0"></p>
+  <div id="authGate" class="panel" style="display:none">
+    <p class="eyebrow">መግቢያ ያስፈልጋል</p>
+    <h1 style="font-size:1.6rem;margin:0 0 8px">ይህን ትምህርት ለማየት ይግቡ</h1>
+    <p class="muted small">ቪዲዮውና ጥያቄዎቹ የሚታዩት ከገቡ በኋላ ብቻ ነው።</p>
+    <div class="row" style="margin-top:16px">
+      <a class="btn btn--gold" href="login.html">ግባ</a>
+      <a class="btn btn--ghost" href="register.html">አዲስ መለያ ክፈት</a>
     </div>
   </div>
 
-  <div class="frame" id="frame" style="margin:22px 0">
-    <div class="frame-empty" id="empty">
-      ቪዲዮው ገና አልተጫነም።<br><span class="small">በ <code>assets/js/lessons.js</code> ውስጥ የYouTube መለያ ያስገቡ።</span>
-      <br><button class="btn btn--ghost" id="sim" style="margin-top:14px">ለሙከራ ጥናት ጀምር</button>
-    </div>
-  </div>
-
-  <div class="grid-2">
-    <div>
-      <div class="between" style="margin-bottom:14px">
-        <h2 style="margin:0;font-size:1.25rem">ጥያቄዎች</h2>
-        <span class="pill" id="qcount"></span>
-      </div>
-      <div id="quiz" class="stack"></div>
-      <div id="result" style="display:none;margin-top:20px" class="panel">
-        <p class="eyebrow">ውጤት</p>
-        <div class="stat" id="score"></div>
-        <p class="muted small" id="verdict" style="margin:10px 0 16px"></p>
-        <a class="btn btn--gold" href="dashboard.html">ወደ ትምህርቶች ተመለስ</a>
+  <div id="authedContent" style="display:none">
+    <div class="row" style="align-items:baseline;gap:14px">
+      <span class="geez" id="num" style="font-size:2rem"></span>
+      <div>
+        <h1 id="title" style="font-size:1.8rem;margin:0">…</h1>
+        <p class="muted small" id="meta" style="margin:4px 0 0"></p>
       </div>
     </div>
 
-    <aside class="panel">
-      <p class="eyebrow">በዚህ ትምህርት</p>
-      <p class="small muted" id="summary"></p>
-      <div class="harag harag--thin" style="margin:16px 0"></div>
-      <p class="eyebrow">የተመዘገበ ጊዜ</p>
-      <p class="small muted" style="margin:0">ቪዲዮው በሚጫወትበት ጊዜ ብቻ ነው ሰዓት የሚቆጠረው። ማቆም ወይም ገጹን መዝጋት ቆጠራውን ያቆማል።</p>
-    </aside>
+    <div class="frame" id="frame" style="margin:22px 0">
+      <div class="frame-empty" id="empty">
+        ቪዲዮው ገና አልተጫነም።<br><span class="small">በ <code>assets/js/lessons.js</code> ውስጥ የYouTube መለያ ያስገቡ።</span>
+        <br><button class="btn btn--ghost" id="sim" style="margin-top:14px">ለሙከራ ጥናት ጀምር</button>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="between" style="margin-bottom:14px">
+          <h2 style="margin:0;font-size:1.25rem">ጥያቄዎች</h2>
+          <span class="pill" id="qcount"></span>
+        </div>
+        <div id="quiz" class="stack"></div>
+        <div id="result" style="display:none;margin-top:20px" class="panel">
+          <p class="eyebrow">ውጤት</p>
+          <div class="stat" id="score"></div>
+          <p class="muted small" id="verdict" style="margin:10px 0 16px"></p>
+          <a class="btn btn--gold" href="dashboard.html">ወደ ትምህርቶች ተመለስ</a>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <p class="eyebrow">በዚህ ትምህርት</p>
+        <p class="small muted" id="summary"></p>
+        <div class="harag harag--thin" style="margin:16px 0"></div>
+        <p class="eyebrow">የተመዘገበ ጊዜ</p>
+        <p class="small muted" style="margin:0">ቪዲዮው በሚጫወትበት ጊዜ ብቻ ነው ሰዓት የሚቆጠረው። ማቆም ወይም ገጹን መዝጋት ቆጠራውን ያቆማል።</p>
+      </aside>
+    </div>
   </div>
 </main>
 
@@ -74,10 +86,14 @@ import { findLesson } from './assets/js/lessons.js';
 
 const u = requireAuth();
 const id = new URLSearchParams(location.search).get('id') || 'l1';
-const L = findLesson(id);
-if (u && !L) location.href = 'dashboard.html';
+const L = u ? findLesson(id) : null;
 
-if (u && L) {
+if (!u) {
+  document.getElementById('authGate').style.display = 'block';
+} else if (!L) {
+  location.href = 'dashboard.html';
+} else {
+  document.getElementById('authedContent').style.display = 'block';
   document.getElementById('num').textContent = L.num;
   document.getElementById('title').textContent = L.title;
   document.getElementById('meta').textContent = `${L.teacher} · ${L.minutes} ደቂቃ`;
