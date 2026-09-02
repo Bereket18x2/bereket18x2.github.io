@@ -124,6 +124,14 @@ a  { color: var(--saffron); }
 .nav-links a:hover { color: var(--parch); background: var(--ink-2); }
 .nav-links a[aria-current="page"] { color: var(--saffron); }
 
+.lang-toggle {
+  font-family: var(--f-util); font-size: .78rem; font-weight: 600;
+  color: var(--parch-dim); background: transparent;
+  border: 1px solid var(--line); border-radius: 100px;
+  padding: 5px 12px; cursor: pointer; margin-inline-start: 4px;
+}
+.lang-toggle:hover { color: var(--saffron); border-color: var(--saffron); }
+
 /* ---------- buttons ---------- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
