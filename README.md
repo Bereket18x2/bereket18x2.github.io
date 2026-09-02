@@ -7,6 +7,9 @@ Video lessons → quizzes → attendance and study-hour tracking for the hosts.
 `localStorage` so every screen is real and clickable without a backend.
 **Phase 2:** swap `assets/js/store.js` for Firebase. Nothing else changes.
 
+© TewahedoDevs. All rights reserved — see [LICENSE](LICENSE). Visible on GitHub for
+transparency and GitHub Pages hosting; that is not a license to copy or redeploy it.
+
 ---
 
 ## Deploy to GitHub Pages

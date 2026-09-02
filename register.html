@@ -32,34 +32,37 @@
       </svg>
       የቅዱሳት መጻሕፍት ትምህርት ቤት
     </a>
-    <div class="nav-links"><a href="index.html#signin">አስቀድመው ተመዝግበዋል? ግባ</a></div>
+    <div class="nav-links">
+      <a href="index.html#signin" data-am="አስቀድመው ተመዝግበዋል? ግባ" data-en="Already registered? Sign in">አስቀድመው ተመዝግበዋል? ግባ</a>
+      <button class="lang-toggle" type="button">EN</button>
+    </div>
   </nav>
 </div>
 
 <main class="shell section" style="max-width:560px">
-  <p class="eyebrow">ምዝገባ</p>
-  <h1 style="font-size:2rem">መለያ ይክፈቱ</h1>
-  <p class="muted small">መለያውን የሚከፍተው ወላጅ ወይም አሳዳጊ ነው። የተማሪው መረጃ በዚሁ መለያ ሥር ይመዘገባል።</p>
+  <p class="eyebrow" data-am="ምዝገባ" data-en="Registration">ምዝገባ</p>
+  <h1 style="font-size:2rem" data-am="መለያ ይክፈቱ" data-en="Create an account">መለያ ይክፈቱ</h1>
+  <p class="muted small" data-am="መለያውን የሚከፍተው ወላጅ ወይም አሳዳጊ ነው። የተማሪው መረጃ በዚሁ መለያ ሥር ይመዘገባል።" data-en="The account is opened by a parent or guardian. The student's information is registered under this same account.">መለያውን የሚከፍተው ወላጅ ወይም አሳዳጊ ነው። የተማሪው መረጃ በዚሁ መለያ ሥር ይመዘገባል።</p>
 
   <form id="form" class="panel" style="margin-top:20px" novalidate>
 
-    <p class="eyebrow" style="margin-bottom:14px">፩ · የወላጅ / አሳዳጊ መረጃ</p>
+    <p class="eyebrow" style="margin-bottom:14px" data-am="፩ · የወላጅ / አሳዳጊ መረጃ" data-en="1 · Parent / guardian information">፩ · የወላጅ / አሳዳጊ መረጃ</p>
 
     <div class="field">
-      <label for="guardian">የወላጅ / አሳዳጊ ሙሉ ስም</label>
+      <label for="guardian" data-am="የወላጅ / አሳዳጊ ሙሉ ስም" data-en="Parent / guardian full name">የወላጅ / አሳዳጊ ሙሉ ስም</label>
       <input class="input" id="guardian" required autocomplete="name">
     </div>
 
     <div class="field">
-      <label for="location">የሚኖሩበት ከተማ / ግዛት</label>
+      <label for="location" data-am="የሚኖሩበት ከተማ / ግዛት" data-en="City / state you live in">የሚኖሩበት ከተማ / ግዛት</label>
       <input class="input" id="location" placeholder="ለምሳሌ፡ Washington, DC" required autocomplete="address-level2">
     </div>
 
     <div class="field">
-      <label for="country">ሀገር</label>
+      <label for="country" data-am="ሀገር" data-en="Country">ሀገር</label>
       <select class="input" id="country" required autocomplete="country-name">
-        <option value="">ይምረጡ</option>
-        <optgroup label="የተለመዱ">
+        <option value="" data-am="ይምረጡ" data-en="Choose one">ይምረጡ</option>
+        <optgroup label="የተለመዱ" data-label-am="የተለመዱ" data-label-en="Common">
           <option>Ethiopia</option>
           <option>United States</option>
           <option>Canada</option>
@@ -75,7 +78,7 @@
           <option>South Africa</option>
           <option>Kenya</option>
         </optgroup>
-        <optgroup label="ሁሉም ሀገራት">
+        <optgroup label="ሁሉም ሀገራት" data-label-am="ሁሉም ሀገራት" data-label-en="All countries">
           <option>Afghanistan</option><option>Albania</option><option>Algeria</option><option>Andorra</option>
           <option>Angola</option><option>Antigua and Barbuda</option><option>Argentina</option><option>Armenia</option>
           <option>Australia</option><option>Austria</option><option>Azerbaijan</option><option>Bahamas</option>
@@ -130,47 +133,47 @@
     </div>
 
     <div class="field">
-      <label for="email">ኢሜይል (የወላጅ)</label>
+      <label for="email" data-am="ኢሜይል (የወላጅ)" data-en="Email (parent's)">ኢሜይል (የወላጅ)</label>
       <div class="field-row">
         <input class="input" id="email" type="email" required autocomplete="email">
-        <button class="btn btn--ghost" type="button" id="sendCode">ኮድ ላክ</button>
+        <button class="btn btn--ghost" type="button" id="sendCode" data-am="ኮድ ላክ" data-en="Send code">ኮድ ላክ</button>
       </div>
-      <p class="help">ከመመዝገብዎ በፊት ኢሜይልዎን ማረጋገጥ ያስፈልጋል።</p>
+      <p class="help" data-am="ከመመዝገብዎ በፊት ኢሜይልዎን ማረጋገጥ ያስፈልጋል።" data-en="You need to verify your email before registering.">ከመመዝገብዎ በፊት ኢሜይልዎን ማረጋገጥ ያስፈልጋል።</p>
 
       <div id="codeBlock" style="display:none;margin-top:12px">
         <div class="field-row">
           <input class="input" id="code" inputmode="numeric" maxlength="6" placeholder="፮ አሃዝ ኮድ">
-          <button class="btn btn--ghost" type="button" id="checkCode">አረጋግጥ</button>
+          <button class="btn btn--ghost" type="button" id="checkCode" data-am="አረጋግጥ" data-en="Verify">አረጋግጥ</button>
         </div>
         <p class="note small" id="codeNote" style="margin-top:10px"></p>
       </div>
-      <p class="badge-ok" id="verifiedBadge" style="display:none">✓ ኢሜይል ተረጋግጧል</p>
+      <p class="badge-ok" id="verifiedBadge" style="display:none" data-am="✓ ኢሜይል ተረጋግጧል" data-en="✓ Email verified">✓ ኢሜይል ተረጋግጧል</p>
     </div>
 
     <div class="field">
-      <label for="password">የይለፍ ቃል</label>
+      <label for="password" data-am="የይለፍ ቃል" data-en="Password">የይለፍ ቃል</label>
       <input class="input" id="password" type="password" required minlength="6" autocomplete="new-password">
     </div>
 
     <div class="harag harag--thin" style="margin:22px 0"></div>
 
-    <p class="eyebrow" style="margin-bottom:14px">፪ · የተማሪው መረጃ</p>
+    <p class="eyebrow" style="margin-bottom:14px" data-am="፪ · የተማሪው መረጃ" data-en="2 · Student information">፪ · የተማሪው መረጃ</p>
 
     <div class="field">
-      <label for="fullName">የተማሪው ሙሉ ስም</label>
+      <label for="fullName" data-am="የተማሪው ሙሉ ስም" data-en="Student's full name">የተማሪው ሙሉ ስም</label>
       <input class="input" id="fullName" required autocomplete="off">
     </div>
 
     <div class="field">
-      <label for="age">የተማሪው ዕድሜ</label>
+      <label for="age" data-am="የተማሪው ዕድሜ" data-en="Student's age">የተማሪው ዕድሜ</label>
       <input class="input" id="age" type="number" min="1" max="15" step="1" required inputmode="numeric">
-      <p class="help">ይህ ትምህርት ቤት ዕድሜያቸው ከ፲፮ ዓመት በታች ለሆኑ ልጆች ብቻ ነው።</p>
+      <p class="help" data-am="ይህ ትምህርት ቤት ዕድሜያቸው ከ፲፮ ዓመት በታች ለሆኑ ልጆች ብቻ ነው።" data-en="This school is only for children under 16 years old.">ይህ ትምህርት ቤት ዕድሜያቸው ከ፲፮ ዓመት በታች ለሆኑ ልጆች ብቻ ነው።</p>
     </div>
 
     <p id="err" class="note note--red" style="display:none"></p>
 
-    <button class="btn btn--gold btn--block" type="submit" style="margin-top:8px">መለያ ክፈት</button>
-    <p class="muted small" style="margin:14px 0 0">
+    <button class="btn btn--gold btn--block" type="submit" style="margin-top:8px" data-am="መለያ ክፈት" data-en="Create account">መለያ ክፈት</button>
+    <p class="muted small" style="margin:14px 0 0" data-am="በመመዝገብዎ የትምህርት ቤቱን ሥርዓት እንደተቀበሉ ይቆጠራል። ክፍያ የሚጠየቀው መለያዎ ከተረጋገጠ በኋላ ነው።" data-en="By registering you agree to the school's terms. Payment is requested only after your account is verified.">
       በመመዝገብዎ የትምህርት ቤቱን ሥርዓት እንደተቀበሉ ይቆጠራል። ክፍያ የሚጠየቀው መለያዎ ከተረጋገጠ በኋላ ነው።
     </p>
   </form>
@@ -265,5 +268,6 @@ $('form').addEventListener('submit', (e) => {
 });
 </script>
 <script src="assets/js/sky.js" defer></script>
+<script src="assets/js/i18n.js" defer></script>
 </body>
 </html>
