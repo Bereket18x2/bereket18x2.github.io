@@ -96,7 +96,7 @@ if (u) {
   document.getElementById('authedContent').style.display = 'block';
   Store.touch();
 
-  document.getElementById('hello').textContent = `እንኳን ደህና መጡ፣ ${u.fullName}`;
+  document.getElementById('hello').textContent = `እንኳን ደህና መጡ፣ ${u.studentName}`;
   document.getElementById('seen').textContent = fmtAgo(u.lastSeen);
   document.getElementById('hours').textContent = fmtHours(u.studySeconds);
 

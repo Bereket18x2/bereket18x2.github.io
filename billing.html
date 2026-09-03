@@ -166,10 +166,6 @@
         <label for="email">ደረሰኝ የሚላክበት ኢሜይል</label>
         <input class="input" id="email" type="email" readonly autocomplete="email">
       </div>
-      <div class="field">
-        <label for="country">ሀገር</label>
-        <input class="input" id="country" readonly>
-      </div>
 
       <p id="err" class="note note--red" style="display:none"></p>
       <p id="cfg" class="note small" style="display:none;margin-bottom:14px"></p>
@@ -235,11 +231,10 @@ const u = await requireAuth();
 if (u) {
   $('authedContent').style.display = 'block';
   Store.touch();
-  $('studentName').textContent = u.fullName;
+  $('studentName').textContent = u.studentName;
   $('lessonCount').textContent = LESSONS.length;
   $('email').value = u.email || '';
-  $('country').value = u.country || '—';
-  if (u.guardian) $('ccName').value = u.guardian;
+  if (u.guardianName) $('ccName').value = u.guardianName;
 
   if (!STRIPE_PAYMENT_LINK) {
     $('cfg').style.display = 'block';

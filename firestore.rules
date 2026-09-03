@@ -30,8 +30,11 @@ service cloud.firestore {
       return signedIn() && request.auth.token.email_verified == true;
     }
 
-    // Costs one extra read per evaluation, which is why it is only
-    // called on the admin paths rather than on every student write.
+    // Costs one document read every time it is evaluated. Rules are
+    // short-circuit OR, so this is always placed LAST in a condition —
+    // a student's own write must never pay for a lookup that will
+    // return false anyway. At 120 study-time writes an hour, putting
+    // this first would burn the free read quota for nothing.
     function isAdmin() {
       return signedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
@@ -45,8 +48,8 @@ service cloud.firestore {
     match /users/{uid} {
 
       // Without the isAdmin branch this collection is a public roster of
-      // minors' names, ages, cities, and parents' email addresses. A
-      // student may read only their own row.
+      // minors' names, ages, and parents' email addresses. A student may
+      // read only their own row.
       allow read: if isOwner(uid) || isAdmin();
 
       // Registration writes the first doc, so it cannot require an
@@ -59,7 +62,7 @@ service cloud.firestore {
         && request.resource.data.paid == false
         && request.resource.data.studySeconds == 0;
 
-      // An admin may correct anything (they confirm payment by hand).
+      // Owner branch first — it is the hot path and costs no reads.
       // An owner may maintain their own profile, minus the fields that
       // would let them promote themselves, grant themselves a free
       // subscription, take over another identity, or fake their signup date.
@@ -72,7 +75,11 @@ service cloud.firestore {
       // time. lesson.html flushes every 30s; the +120 ceiling leaves
       // slack for a delayed flush while making it useless for minting
       // fake attendance — an hour of fake study would take 30 writes.
-      allow update: if isAdmin() || (
+      //
+      // The admin branch is last: teachers confirm payment by hand and
+      // may correct anything, but their extra read only happens when the
+      // cheap owner branch has already failed.
+      allow update: if (
         isOwner(uid)
         && !changed().hasAny(['paid', 'role', 'email', 'uid', 'createdAt'])
         && (
@@ -86,7 +93,7 @@ service cloud.firestore {
             && request.resource.data.studySeconds <= resource.data.studySeconds + 120
           )
         )
-      );
+      ) || isAdmin();
 
       // These are records of children. A misfired script in a browser
       // must not be able to erase a student's history; removal is a
@@ -99,17 +106,42 @@ service cloud.firestore {
         // to that child's account and to the teachers, nobody else.
         allow read: if isOwner(uid) || isAdmin();
 
-        // Requiring verified() means a quiz result cannot be written by
-        // an account that never proved it owns its email address, which
-        // is what keeps throwaway signups out of the teachers' roster.
-        // The score bounds stop a client from posting 99/3 and inventing
-        // a perfect record.
-        allow write: if isOwner(uid)
+        // create/update rather than write, because `write` would also
+        // grant delete — and a student who can delete a result can
+        // erase a bad score and retake the quiz clean. Marks are
+        // append-only; store.js already keeps the better of the two.
+        //
+        // Requiring verified() keeps throwaway signups out of the
+        // teachers' roster: no quiz result exists for an account that
+        // never proved it owns its email address.
+        //
+        // A lesson is written TWICE and the two writes carry different
+        // shapes — first videoCompleted/coverage when the video ends,
+        // then score/of when the quiz is submitted. So each field is
+        // validated only if present, rather than demanding the full set
+        // on every write. The bounds still stop a client posting 99/3
+        // or claiming coverage of 4.0.
+        allow create, update: if isOwner(uid)
           && verified()
-          && request.resource.data.score is int
-          && request.resource.data.of is int
-          && request.resource.data.score >= 0
-          && request.resource.data.score <= request.resource.data.of;
+          && (
+            !('score' in request.resource.data)
+            || (
+              request.resource.data.score is int
+              && request.resource.data.of is int
+              && request.resource.data.score >= 0
+              && request.resource.data.score <= request.resource.data.of
+            )
+          )
+          && (
+            !('coverage' in request.resource.data)
+            || (
+              request.resource.data.coverage is number
+              && request.resource.data.coverage >= 0
+              && request.resource.data.coverage <= 1
+            )
+          );
+
+        allow delete: if false;
       }
     }
 

@@ -10,14 +10,14 @@
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="shortcut icon" href="assets/favicon.svg">
 <meta property="og:title" content="ምዝገባ — የቅዱሳት መጻሕፍት ትምህርት ቤት">
-<meta property="og:description" content="ልጅዎን ለቅዱሳት መጻሕፍት ትምህርት ቤት ይመዝግቡ — ወላጅ፣ አድራሻና ተማሪ መረጃ በደቂቃዎች ውስጥ።">
+<meta property="og:description" content="ወላጅ መለያ ይክፈታሉ፤ የተማሪው መረጃ በዚሁ መለያ ሥር ይመዘገባል። የቅዱሳት መጻሕፍት ትምህርት ወይም የዜማ ትምህርት ቤት።">
 <meta property="og:image" content="https://bereket18x2.github.io/assets/og.png">
 <meta property="og:url" content="https://bereket18x2.github.io/register.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="am_ET">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ምዝገባ — የቅዱሳት መጻሕፍት ትምህርት ቤት">
-<meta name="twitter:description" content="ልጅዎን ለቅዱሳት መጻሕፍት ትምህርት ቤት ይመዝግቡ — ወላጅ፣ አድራሻና ተማሪ መረጃ በደቂቃዎች ውስጥ።">
+<meta name="twitter:description" content="ወላጅ መለያ ይክፈታሉ፤ የተማሪው መረጃ በዚሁ መለያ ሥር ይመዘገባል።">
 <meta name="twitter:image" content="https://bereket18x2.github.io/assets/og.png">
 </head>
 <body class="sky">
@@ -42,170 +42,161 @@
 <main class="shell section" style="max-width:560px">
   <p class="eyebrow" data-am="ምዝገባ" data-en="Registration">ምዝገባ</p>
   <h1 style="font-size:2rem" data-am="መለያ ይክፈቱ" data-en="Create an account">መለያ ይክፈቱ</h1>
-  <p class="muted small" data-am="መለያውን የሚከፍተው ወላጅ ወይም አሳዳጊ ነው። የተማሪው መረጃ በዚሁ መለያ ሥር ይመዘገባል።" data-en="The account is opened by a parent or guardian. The student's information is registered under this same account.">መለያውን የሚከፍተው ወላጅ ወይም አሳዳጊ ነው። የተማሪው መረጃ በዚሁ መለያ ሥር ይመዘገባል።</p>
+  <p class="muted small" data-am="መለያውን የሚከፍተው ወላጅ ወይም አሳዳጊ ነው። የተማሪው መረጃ በዚሁ መለያ ሥር ይመዘገባል።" data-en="The account is opened by a parent or guardian. The student is registered as a profile under it.">መለያውን የሚከፍተው ወላጅ ወይም አሳዳጊ ነው። የተማሪው መረጃ በዚሁ መለያ ሥር ይመዘገባል።</p>
 
   <form id="form" class="panel" style="margin-top:20px" novalidate>
 
-    <p class="eyebrow" style="margin-bottom:14px" data-am="፩ · የወላጅ / አሳዳጊ መረጃ" data-en="1 · Parent / guardian information">፩ · የወላጅ / አሳዳጊ መረጃ</p>
+    <!-- ---------------- parent ---------------- -->
+    <p class="eyebrow" style="margin-bottom:14px" data-am="፩ · የወላጅ መረጃ" data-en="1 · Parent details">፩ · የወላጅ መረጃ</p>
 
     <div class="field">
-      <label for="guardian" data-am="የወላጅ / አሳዳጊ ሙሉ ስም" data-en="Parent / guardian full name">የወላጅ / አሳዳጊ ሙሉ ስም</label>
-      <input class="input" id="guardian" required autocomplete="name">
+      <label for="guardianName" data-am="የወላጅ / አሳዳጊ ሙሉ ሕጋዊ ስም" data-en="Parent / guardian full legal name">የወላጅ / አሳዳጊ ሙሉ ሕጋዊ ስም</label>
+      <input class="input" id="guardianName" required autocomplete="name">
+      <p class="field-msg" id="guardianNameMsg"></p>
     </div>
 
     <div class="field">
-      <label for="location" data-am="የሚኖሩበት ከተማ / ግዛት" data-en="City / state you live in">የሚኖሩበት ከተማ / ግዛት</label>
-      <input class="input" id="location" placeholder="ለምሳሌ፡ Washington, DC" required autocomplete="address-level2">
-    </div>
-
-    <div class="field">
-      <label for="country" data-am="ሀገር" data-en="Country">ሀገር</label>
-      <select class="input" id="country" required autocomplete="country-name">
-        <option value="" data-am="ይምረጡ" data-en="Choose one">ይምረጡ</option>
-        <optgroup label="የተለመዱ" data-label-am="የተለመዱ" data-label-en="Common">
-          <option>Ethiopia</option>
-          <option>United States</option>
-          <option>Canada</option>
-          <option>United Kingdom</option>
-          <option>Australia</option>
-          <option>Germany</option>
-          <option>Sweden</option>
-          <option>Norway</option>
-          <option>Italy</option>
-          <option>Israel</option>
-          <option>United Arab Emirates</option>
-          <option>Saudi Arabia</option>
-          <option>South Africa</option>
-          <option>Kenya</option>
-        </optgroup>
-        <optgroup label="ሁሉም ሀገራት" data-label-am="ሁሉም ሀገራት" data-label-en="All countries">
-          <option>Afghanistan</option><option>Albania</option><option>Algeria</option><option>Andorra</option>
-          <option>Angola</option><option>Antigua and Barbuda</option><option>Argentina</option><option>Armenia</option>
-          <option>Australia</option><option>Austria</option><option>Azerbaijan</option><option>Bahamas</option>
-          <option>Bahrain</option><option>Bangladesh</option><option>Barbados</option><option>Belarus</option>
-          <option>Belgium</option><option>Belize</option><option>Benin</option><option>Bhutan</option>
-          <option>Bolivia</option><option>Bosnia and Herzegovina</option><option>Botswana</option><option>Brazil</option>
-          <option>Brunei</option><option>Bulgaria</option><option>Burkina Faso</option><option>Burundi</option>
-          <option>Cabo Verde</option><option>Cambodia</option><option>Cameroon</option><option>Canada</option>
-          <option>Central African Republic</option><option>Chad</option><option>Chile</option><option>China</option>
-          <option>Colombia</option><option>Comoros</option><option>Congo (DRC)</option><option>Congo (Republic)</option>
-          <option>Costa Rica</option><option>Croatia</option><option>Cuba</option><option>Cyprus</option>
-          <option>Czechia</option><option>Denmark</option><option>Djibouti</option><option>Dominica</option>
-          <option>Dominican Republic</option><option>Ecuador</option><option>Egypt</option><option>El Salvador</option>
-          <option>Equatorial Guinea</option><option>Eritrea</option><option>Estonia</option><option>Eswatini</option>
-          <option>Ethiopia</option><option>Fiji</option><option>Finland</option><option>France</option>
-          <option>Gabon</option><option>Gambia</option><option>Georgia</option><option>Germany</option>
-          <option>Ghana</option><option>Greece</option><option>Grenada</option><option>Guatemala</option>
-          <option>Guinea</option><option>Guinea-Bissau</option><option>Guyana</option><option>Haiti</option>
-          <option>Honduras</option><option>Hungary</option><option>Iceland</option><option>India</option>
-          <option>Indonesia</option><option>Iran</option><option>Iraq</option><option>Ireland</option>
-          <option>Israel</option><option>Italy</option><option>Jamaica</option><option>Japan</option>
-          <option>Jordan</option><option>Kazakhstan</option><option>Kenya</option><option>Kiribati</option>
-          <option>Kuwait</option><option>Kyrgyzstan</option><option>Laos</option><option>Latvia</option>
-          <option>Lebanon</option><option>Lesotho</option><option>Liberia</option><option>Libya</option>
-          <option>Liechtenstein</option><option>Lithuania</option><option>Luxembourg</option><option>Madagascar</option>
-          <option>Malawi</option><option>Malaysia</option><option>Maldives</option><option>Mali</option>
-          <option>Malta</option><option>Marshall Islands</option><option>Mauritania</option><option>Mauritius</option>
-          <option>Mexico</option><option>Micronesia</option><option>Moldova</option><option>Monaco</option>
-          <option>Mongolia</option><option>Montenegro</option><option>Morocco</option><option>Mozambique</option>
-          <option>Myanmar</option><option>Namibia</option><option>Nauru</option><option>Nepal</option>
-          <option>Netherlands</option><option>New Zealand</option><option>Nicaragua</option><option>Niger</option>
-          <option>Nigeria</option><option>North Korea</option><option>North Macedonia</option><option>Norway</option>
-          <option>Oman</option><option>Pakistan</option><option>Palau</option><option>Palestine</option>
-          <option>Panama</option><option>Papua New Guinea</option><option>Paraguay</option><option>Peru</option>
-          <option>Philippines</option><option>Poland</option><option>Portugal</option><option>Qatar</option>
-          <option>Romania</option><option>Russia</option><option>Rwanda</option><option>Saint Kitts and Nevis</option>
-          <option>Saint Lucia</option><option>Saint Vincent and the Grenadines</option><option>Samoa</option><option>San Marino</option>
-          <option>Sao Tome and Principe</option><option>Saudi Arabia</option><option>Senegal</option><option>Serbia</option>
-          <option>Seychelles</option><option>Sierra Leone</option><option>Singapore</option><option>Slovakia</option>
-          <option>Slovenia</option><option>Solomon Islands</option><option>Somalia</option><option>South Africa</option>
-          <option>South Korea</option><option>South Sudan</option><option>Spain</option><option>Sri Lanka</option>
-          <option>Sudan</option><option>Suriname</option><option>Sweden</option><option>Switzerland</option>
-          <option>Syria</option><option>Taiwan</option><option>Tajikistan</option><option>Tanzania</option>
-          <option>Thailand</option><option>Timor-Leste</option><option>Togo</option><option>Tonga</option>
-          <option>Trinidad and Tobago</option><option>Tunisia</option><option>Turkey</option><option>Turkmenistan</option>
-          <option>Tuvalu</option><option>Uganda</option><option>Ukraine</option><option>United Arab Emirates</option>
-          <option>United Kingdom</option><option>United States</option><option>Uruguay</option><option>Uzbekistan</option>
-          <option>Vanuatu</option><option>Vatican City</option><option>Venezuela</option><option>Vietnam</option>
-          <option>Yemen</option><option>Zambia</option><option>Zimbabwe</option>
-        </optgroup>
-      </select>
-    </div>
-
-    <div class="field">
-      <label for="email" data-am="ኢሜይል (የወላጅ)" data-en="Email (parent's)">ኢሜይል (የወላጅ)</label>
+      <label for="email" data-am="የወላጅ ኢሜይል — ይህ የመግቢያ አድራሻዎ ነው" data-en="Parent's email — this is your login">የወላጅ ኢሜይል — ይህ የመግቢያ አድራሻዎ ነው</label>
       <input class="input" id="email" type="email" required autocomplete="email">
-      <p class="help" data-am="ከተመዘገቡ በኋላ የማረጋገጫ መልእክት ወደዚህ አድራሻ ይላካል። ትምህርቶቹ የሚከፈቱት ኢሜይሉን ካረጋገጡ በኋላ ነው።" data-en="A verification message is sent to this address after you register. Lessons open once you confirm it.">ከተመዘገቡ በኋላ የማረጋገጫ መልእክት ወደዚህ አድራሻ ይላካል። ትምህርቶቹ የሚከፈቱት ኢሜይሉን ካረጋገጡ በኋላ ነው።</p>
+      <p class="help" data-am="የወላጅ ወይም የአሳዳጊ ኢሜይል መሆን አለበት፤ የልጁ ኢሜይል አይደለም። ወደ መለያው የሚገቡበትና የማረጋገጫ መልእክት የሚደርስዎት በዚህ አድራሻ ነው።" data-en="This must be the parent's or guardian's email, not the child's. It is what you sign in with, and where the verification message is sent.">የወላጅ ወይም የአሳዳጊ ኢሜይል መሆን አለበት፤ የልጁ ኢሜይል አይደለም። ወደ መለያው የሚገቡበትና የማረጋገጫ መልእክት የሚደርስዎት በዚህ አድራሻ ነው።</p>
+      <p class="field-msg" id="emailMsg"></p>
     </div>
 
     <div class="field">
       <label for="password" data-am="የይለፍ ቃል" data-en="Password">የይለፍ ቃል</label>
-      <input class="input" id="password" type="password" required minlength="6" autocomplete="new-password">
+      <input class="input" id="password" type="password" required minlength="8" autocomplete="new-password">
+      <p class="help" data-am="ቢያንስ ፰ ፊደል።" data-en="At least 8 characters.">ቢያንስ ፰ ፊደል።</p>
+      <p class="field-msg" id="passwordMsg"></p>
     </div>
 
     <div class="harag harag--thin" style="margin:22px 0"></div>
 
-    <p class="eyebrow" style="margin-bottom:14px" data-am="፪ · የተማሪው መረጃ" data-en="2 · Student information">፪ · የተማሪው መረጃ</p>
+    <!-- ---------------- student ---------------- -->
+    <p class="eyebrow" style="margin-bottom:14px" data-am="፪ · የተማሪ መረጃ" data-en="2 · Student details">፪ · የተማሪ መረጃ</p>
 
     <div class="field">
-      <label for="fullName" data-am="የተማሪው ሙሉ ስም" data-en="Student's full name">የተማሪው ሙሉ ስም</label>
-      <input class="input" id="fullName" required autocomplete="off">
+      <label for="studentName" data-am="የተማሪው ሙሉ ስም" data-en="Student's full name">የተማሪው ሙሉ ስም</label>
+      <input class="input" id="studentName" required autocomplete="off">
+      <p class="field-msg" id="studentNameMsg"></p>
+    </div>
+
+    <div class="field">
+      <label for="track" data-am="የትምህርት ክፍል" data-en="Course">የትምህርት ክፍል</label>
+      <select class="input" id="track" required>
+        <option value="" data-am="ይምረጡ" data-en="Choose one">ይምረጡ</option>
+        <option value="bible" data-am="የቅዱሳት መጻሕፍት ትምህርት" data-en="Bible study">የቅዱሳት መጻሕፍት ትምህርት</option>
+        <option value="zema" data-am="የዜማ ትምህርት ቤት" data-en="Zema school">የዜማ ትምህርት ቤት</option>
+      </select>
+      <p class="help" id="trackHelp" data-am="የቅዱሳት መጻሕፍት ትምህርት ለ፯–፲፫ ዓመት ልጆች ነው። የዜማ ትምህርት ቤት ከ፯ ዓመት ጀምሮ ለሁሉም ክፍት ነው።" data-en="Bible study is for ages 7–13. Zema school is open from age 7 upward.">የቅዱሳት መጻሕፍት ትምህርት ለ፯–፲፫ ዓመት ልጆች ነው። የዜማ ትምህርት ቤት ከ፯ ዓመት ጀምሮ ለሁሉም ክፍት ነው።</p>
     </div>
 
     <div class="field">
       <label for="age" data-am="የተማሪው ዕድሜ" data-en="Student's age">የተማሪው ዕድሜ</label>
-      <input class="input" id="age" type="number" min="1" max="15" step="1" required inputmode="numeric">
-      <p class="help" data-am="ይህ ትምህርት ቤት ዕድሜያቸው ከ፲፮ ዓመት በታች ለሆኑ ልጆች ብቻ ነው።" data-en="This school is only for children under 16 years old.">ይህ ትምህርት ቤት ዕድሜያቸው ከ፲፮ ዓመት በታች ለሆኑ ልጆች ብቻ ነው።</p>
+      <input class="input" id="age" type="number" min="1" max="120" step="1" required inputmode="numeric">
+      <p class="field-msg" id="ageMsg"></p>
     </div>
+
+    <p class="help" data-am="ስለ ልጅዎ የምንሰበስበው መረጃ ይህ ብቻ ነው — ስም፣ ዕድሜና የትምህርት ክፍል። አድራሻ ወይም የልጅ ኢሜይል አንጠይቅም።" data-en="This is all we collect about your child — name, age, and course. We do not ask for an address or a child's email.">ስለ ልጅዎ የምንሰበስበው መረጃ ይህ ብቻ ነው — ስም፣ ዕድሜና የትምህርት ክፍል። አድራሻ ወይም የልጅ ኢሜይል አንጠይቅም።</p>
 
     <p id="err" class="note note--red" style="display:none"></p>
 
     <button class="btn btn--gold btn--block" type="submit" style="margin-top:8px" data-am="መለያ ክፈት" data-en="Create account">መለያ ክፈት</button>
-    <p class="muted small" style="margin:14px 0 0" data-am="በመመዝገብዎ የትምህርት ቤቱን ሥርዓት እንደተቀበሉ ይቆጠራል። ክፍያ የሚጠየቀው መለያዎ ከተረጋገጠ በኋላ ነው።" data-en="By registering you agree to the school's terms. Payment is requested only after your account is verified.">
-      በመመዝገብዎ የትምህርት ቤቱን ሥርዓት እንደተቀበሉ ይቆጠራል። ክፍያ የሚጠየቀው መለያዎ ከተረጋገጠ በኋላ ነው።
+    <p class="muted small" style="margin:14px 0 0" data-am="በመመዝገብዎ የትምህርት ቤቱን ሥርዓት እንደተቀበሉ ይቆጠራል። ክፍያ የሚጠየቀው ኢሜይልዎን ካረጋገጡ በኋላ ነው።" data-en="By registering you accept the school's terms. Payment is requested after you verify your email.">
+      በመመዝገብዎ የትምህርት ቤቱን ሥርዓት እንደተቀበሉ ይቆጠራል። ክፍያ የሚጠየቀው ኢሜይልዎን ካረጋገጡ በኋላ ነው።
     </p>
   </form>
 </main>
 
 <script type="module">
-import { Store, ready } from './assets/js/store.js?v=4';
+import { Store, ready } from './assets/js/store.js?v=5';
+import { validateName, validateAge, validateTrack, validatePassword, validateEmail, TRACKS }
+  from './assets/js/validators.js?v=5';
 
 const $ = id => document.getElementById(id);
 const err = $('err');
-const showErr = (msg) => { err.textContent = msg; err.style.display = 'block'; };
+const showErr = (msg) => { err.textContent = msg; err.style.display = 'block'; err.scrollIntoView({ block: 'nearest' }); };
 const hideErr = () => { err.style.display = 'none'; };
 
 const submitBtn = $('form').querySelector('button[type="submit"]');
 const submitLabel = submitBtn.textContent;
 
-// already signed in? nothing to register
+// already signed in? there is nothing to register
 ready().then((u) => { if (u) location.href = 'dashboard.html'; });
+
+/* Inline field feedback. The same validators run again on submit and a
+   third time inside store.js — this pass only exists to answer sooner. */
+const mark = (input, msgEl, result) => {
+  input.classList.remove('is-valid', 'is-invalid');
+  msgEl.classList.remove('valid', 'invalid');
+  msgEl.textContent = '';
+  if (!input.value.trim()) return;
+  if (result.ok) { input.classList.add('is-valid'); msgEl.classList.add('valid'); msgEl.textContent = '✓'; }
+  else { input.classList.add('is-invalid'); msgEl.classList.add('invalid'); msgEl.textContent = '✕ ' + result.message; }
+};
+
+$('guardianName').addEventListener('blur', () =>
+  mark($('guardianName'), $('guardianNameMsg'), validateName($('guardianName').value)));
+$('studentName').addEventListener('blur', () =>
+  mark($('studentName'), $('studentNameMsg'), validateName($('studentName').value)));
+$('email').addEventListener('blur', () =>
+  mark($('email'), $('emailMsg'), validateEmail($('email').value)));
+$('password').addEventListener('blur', () =>
+  mark($('password'), $('passwordMsg'), validatePassword($('password').value)));
+
+/* The age rule depends on the course, so say which range applies as soon
+   as a course is chosen rather than waiting for a refusal at submit. */
+const describeTrack = () => {
+  const track = TRACKS[$('track').value];
+  const help = $('trackHelp');
+  if (track) {
+    help.dataset.am = track.eligibilityAm;
+    help.dataset.en = track.eligibilityEn;
+  } else {
+    help.dataset.am = 'የቅዱሳት መጻሕፍት ትምህርት ለ፯–፲፫ ዓመት ልጆች ነው። የዜማ ትምህርት ቤት ከ፯ ዓመት ጀምሮ ለሁሉም ክፍት ነው።';
+    help.dataset.en = 'Bible study is for ages 7–13. Zema school is open from age 7 upward.';
+  }
+  help.textContent = document.documentElement.lang === 'en' ? help.dataset.en : help.dataset.am;
+};
+
+const checkAge = () => {
+  if (!$('age').value.trim() || !$('track').value) {
+    mark($('age'), $('ageMsg'), { ok: true });
+    $('age').classList.remove('is-valid', 'is-invalid');
+    $('ageMsg').textContent = '';
+    return;
+  }
+  mark($('age'), $('ageMsg'), validateAge($('age').value, $('track').value));
+};
+
+$('track').addEventListener('change', () => { describeTrack(); checkAge(); });
+$('age').addEventListener('blur', checkAge);
 
 $('form').addEventListener('submit', async (e) => {
   e.preventDefault();
   hideErr();
-  const v = id => $(id).value.trim();
 
-  if (!v('guardian') || !v('location') || !v('country') || !v('email') || !v('fullName') || !v('age')) {
-    showErr('ሁሉንም ሳጥኖች ይሙሉ።'); return;
-  }
-  if (!$('email').checkValidity()) {
-    showErr('ትክክለኛ ኢሜይል ያስገቡ።'); return;
-  }
-  if (v('password').length < 6) {
-    showErr('የይለፍ ቃል ቢያንስ ፮ ፊደል ሊኖረው ይገባል።'); return;
-  }
-  const age = Number(v('age'));
-  if (!Number.isInteger(age) || age < 1 || age >= 16) {
-    showErr('የተማሪው ዕድሜ ከ፩ እስከ ፲፭ (ከ፲፮ ዓመት በታች) መሆን አለበት።'); return;
-  }
+  const v = id => $(id).value.trim();
+  const checks = [
+    validateName(v('guardianName')),
+    validateEmail(v('email')),
+    validatePassword($('password').value),
+    validateName(v('studentName')),
+    validateTrack(v('track')),
+    validateAge(v('age'), v('track'))
+  ];
+  const firstProblem = checks.find(r => !r.ok);
+  if (firstProblem) { showErr(firstProblem.message); return; }
 
   submitBtn.disabled = true;
   submitBtn.textContent = 'በመመዝገብ ላይ…';
   try {
     await Store.createUser({
-      fullName: v('fullName'), email: v('email'), password: v('password'),
-      age, guardian: v('guardian'), location: v('location'), country: v('country')
+      guardianName: v('guardianName'),
+      email: v('email'),
+      password: $('password').value,
+      studentName: v('studentName'),
+      age: Number(v('age')),
+      track: v('track')
     });
     // Firebase has sent the verification mail; requireAuth paints the gate.
     location.href = 'dashboard.html';
