@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>የቅዱሳት መጻሕፍት ትምህርት ቤት — EOTC Online Bible School</title>
 <meta name="description" content="Amharic-language Orthodox Tewahedo Bible school for children in the diaspora. Video lessons, quizzes, and study tracking.">
+<script>
+  try {
+    var t = localStorage.getItem('eotc.theme');
+    if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'day' : 'night';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'night'); }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
@@ -21,6 +28,18 @@
 <meta name="twitter:title" content="የቅዱሳት መጻሕፍት ትምህርት ቤት — EOTC Online Bible School">
 <meta name="twitter:description" content="Amharic-language Orthodox Tewahedo Bible school for children in the diaspora. Video lessons, quizzes, and study tracking.">
 <meta name="twitter:image" content="https://bereket18x2.github.io/assets/og.png">
+<script type="importmap">
+{
+  "imports": {
+    "@store":      "./assets/js/store.js?v=6",
+    "@lessons":    "./assets/js/lessons.js?v=6",
+    "@validators": "./assets/js/validators.js?v=6",
+    "@coverage":   "./assets/js/coverage.js?v=6",
+    "@stats":      "./assets/js/stats.js?v=6",
+    "@config":     "./assets/js/config.js?v=6"
+  }
+}
+</script>
 </head>
 <body class="sky">
 <canvas id="sky"></canvas>
@@ -30,7 +49,7 @@
 <div class="shell">
   <nav class="nav">
     <a class="brand" href="index.html">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
         <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
       </svg>
       የቅዱሳት መጻሕፍት ትምህርት ቤት
@@ -40,6 +59,7 @@
       <a href="#signin" data-am="ግባ" data-en="Sign in">ግባ</a>
       <a class="btn btn--gold" href="register.html" data-am="ተመዝገብ" data-en="Sign up">ተመዝገብ</a>
       <button class="lang-toggle" type="button">EN</button>
+      <button class="theme-toggle" type="button" aria-label="ገጽታ ቀይር"></button>
     </div>
   </nav>
 </div>
@@ -150,15 +170,15 @@
       </p>
       <div class="trust-row" style="margin-top:16px">
         <span class="trust-chip">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="2" stroke-linecap="round"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6z"/></svg>
           <span data-am="የተመሰከረላቸው መምህራን" data-en="Certified teachers">የተመሰከረላቸው መምህራን</span>
         </span>
         <span class="trust-chip">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/></svg>
           <span data-am="ከቤተ ክርስቲያን ትውፊት ጋር የተጣጣመ" data-en="Aligned with Church tradition">ከቤተ ክርስቲያን ትውፊት ጋር የተጣጣመ</span>
         </span>
         <span class="trust-chip">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
           <span data-am="ዓመታት የማስተማር ልምድ" data-en="Years of teaching experience">ዓመታት የማስተማር ልምድ</span>
         </span>
       </div>
@@ -185,7 +205,7 @@
 
   <section class="section" style="padding-top:0">
     <div class="purpose">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
         <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
       </svg>
       <div>
@@ -208,11 +228,11 @@
       <h3 style="margin:0 0 14px" data-am="በቅርቡ ለApp Store እና Google Play" data-en="Coming soon to the App Store and Google Play">በቅርቡ ለApp Store እና Google Play</h3>
       <div class="row" style="justify-content:center">
         <span class="btn btn--ghost" style="cursor:default;opacity:.85">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.8" stroke-linecap="round" style="margin-inline-end:8px"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="margin-inline-end:8px"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
           App Store — <span data-am="በቅርቡ" data-en="coming soon">በቅርቡ</span>
         </span>
         <span class="btn btn--ghost" style="cursor:default;opacity:.85">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.8" stroke-linecap="round" style="margin-inline-end:8px"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="margin-inline-end:8px"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
           Google Play — <span data-am="በቅርቡ" data-en="coming soon">በቅርቡ</span>
         </span>
       </div>
@@ -230,7 +250,7 @@
 </footer>
 
 <script type="module">
-import { Store, ready } from './assets/js/store.js?v=4';
+import { Store, ready } from '@store';
 
 const $ = (id) => document.getElementById(id);
 const err = $('loginErr');
@@ -281,6 +301,7 @@ if (location.hash === '#signin') {
 }
 </script>
 <script src="assets/js/sky.js" defer></script>
+<script src="assets/js/theme.js" defer></script>
 <script src="assets/js/i18n.js" defer></script>
 </body>
 </html>

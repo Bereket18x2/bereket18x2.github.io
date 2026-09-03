@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ትምህርቶች — የቅዱሳት መጻሕፍት ትምህርት ቤት</title>
+<script>
+  try {
+    var t = localStorage.getItem('eotc.theme');
+    if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'day' : 'night';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'night'); }
+</script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
@@ -19,6 +26,18 @@
 <meta name="twitter:title" content="ትምህርቶች — የቅዱሳት መጻሕፍት ትምህርት ቤት">
 <meta name="twitter:description" content="የቪዲዮ ትምህርቶች፣ ጥያቄዎችና የጥናት ሰዓት ክትትል ለተማሪዎች።">
 <meta name="twitter:image" content="https://bereket18x2.github.io/assets/og.png">
+<script type="importmap">
+{
+  "imports": {
+    "@store":      "./assets/js/store.js?v=6",
+    "@lessons":    "./assets/js/lessons.js?v=6",
+    "@validators": "./assets/js/validators.js?v=6",
+    "@coverage":   "./assets/js/coverage.js?v=6",
+    "@stats":      "./assets/js/stats.js?v=6",
+    "@config":     "./assets/js/config.js?v=6"
+  }
+}
+</script>
 </head>
 <body class="sky">
 <canvas id="sky"></canvas>
@@ -27,116 +46,155 @@
 <div class="shell">
   <nav class="nav">
     <a class="brand" href="index.html">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
         <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
       </svg>
       የቅዱሳት መጻሕፍት ትምህርት ቤት
     </a>
     <div class="nav-links">
       <a href="dashboard.html" aria-current="page">ትምህርቶች</a>
-      <a href="admin.html">አስተዳደር</a>
+      <a href="admin.html" id="adminLink" style="display:none">አስተዳደር</a>
       <a href="#" id="out">ውጣ</a>
+      <button class="theme-toggle" type="button" id="themeToggle" aria-label="ገጽታ ቀይር"></button>
     </div>
   </nav>
 </div>
 
 <main class="shell section">
-
-
   <div id="authedContent" style="display:none">
+
     <p class="eyebrow">የተማሪ ገጽ</p>
-    <h1 id="hello" style="font-size:2rem;margin-bottom:26px">…</h1>
+    <h1 id="hello" style="font-size:2rem;margin-bottom:6px">…</h1>
+    <p class="muted small" id="whoami" style="margin-bottom:26px">…</p>
 
     <div id="payNote" class="note note--red" style="display:none;margin-bottom:22px">
-      ክፍያ አልተፈጸመም። ትምህርቶቹን ለመክፈት ወርኃዊ ክፍያውን ያጠናቅቁ።
-      <a href="#" id="payLink" style="display:inline-block;margin-top:8px">ክፍያ ፈጽም →</a>
+      ክፍያ አልተፈጸመም። ከመጀመሪያው ነጻ ትምህርት በስተቀር ሌሎቹ ተቆልፈዋል።
+      <a href="billing.html" style="display:inline-block;margin-top:8px">ክፍያ ፈጽም →</a>
     </div>
 
-    <div class="grid-2">
-
-      <div>
-        <div class="between" style="margin-bottom:14px">
-          <h2 style="margin:0;font-size:1.25rem">ትምህርቶች</h2>
-          <span class="pill" id="doneCount">…</span>
-        </div>
-        <div id="list"></div>
+    <!-- stat strip -->
+    <div class="grid-3" style="margin-bottom:24px">
+      <div class="panel">
+        <p class="eyebrow">የተጠናቀቁ ትምህርቶች</p>
+        <div class="stat" id="doneStat">…</div>
+        <div class="meter"><i id="bar" style="width:0%"></i></div>
       </div>
-
-      <aside class="stack">
-        <div class="panel">
-          <p class="eyebrow">አጠቃላይ የጥናት ሰዓት</p>
-          <div class="stat" id="hours">…</div>
-          <div class="meter"><i id="bar" style="width:0%"></i></div>
-          <p class="muted small" style="margin:10px 0 0" id="progressTxt">…</p>
-        </div>
-
-        <div class="panel">
-          <p class="eyebrow">አማካይ ውጤት</p>
-          <div class="stat" id="avg">…<small>%</small></div>
-        </div>
-
-        <div class="panel">
-          <p class="eyebrow">መጨረሻ የገቡበት</p>
-          <p style="margin:0" id="seen">…</p>
-        </div>
-      </aside>
-
+      <div class="panel">
+        <p class="eyebrow">አማካይ ውጤት</p>
+        <div class="stat" id="avg">…<small>%</small></div>
+      </div>
+      <div class="panel">
+        <p class="eyebrow">አጠቃላይ የጥናት ሰዓት</p>
+        <div class="stat" id="hours">…</div>
+      </div>
     </div>
+
+    <div class="grid-3" style="margin-bottom:26px">
+      <div class="panel">
+        <p class="eyebrow">ተከታታይ ቀናት</p>
+        <div class="stat" id="streak">…</div>
+        <p class="muted small" style="margin:8px 0 0" id="streakNote"></p>
+      </div>
+      <div class="panel">
+        <p class="eyebrow">የትምህርት ክፍል</p>
+        <div style="font-family:var(--f-display);font-size:1.15rem" id="trackName">…</div>
+        <p class="muted small" style="margin:8px 0 0" id="trackNote"></p>
+      </div>
+      <div class="panel">
+        <p class="eyebrow">መጨረሻ የገቡበት</p>
+        <p style="margin:0" id="seen">…</p>
+      </div>
+    </div>
+
+    <div class="between" style="margin-bottom:14px">
+      <h2 style="margin:0;font-size:1.25rem">ትምህርቶች</h2>
+      <span class="pill" id="doneCount">…</span>
+    </div>
+    <div id="list"></div>
+
   </div>
 </main>
 
 <script type="module">
-import { Store, fmtHours, fmtAgo, requireAuth } from './assets/js/store.js?v=4';
-import { LESSONS } from './assets/js/lessons.js?v=4';
+import { Store, fmtHours, fmtAgo, requireAuth } from '@store';
+import { lessonsFor, isFree } from '@lessons';
+import { TRACKS } from '@validators';
+import { streakFrom, averageScore, completedCount, coverageOfLesson, toDate, toGeez } from '@stats';
 
-// requireAuth handles both failure paths itself: signed out redirects to
-// the sign-in form, unverified paints the verification gate over the page.
+const $ = id => document.getElementById(id);
+
+// The dashboard itself is not behind the paywall — an unpaid parent must
+// be able to see what they have and what is locked.
 const u = await requireAuth();
+
 if (u) {
-  document.getElementById('authedContent').style.display = 'block';
+  $('authedContent').style.display = 'block';
   Store.touch();
 
-  document.getElementById('hello').textContent = `እንኳን ደህና መጡ፣ ${u.studentName}`;
-  document.getElementById('seen').textContent = fmtAgo(u.lastSeen);
-  document.getElementById('hours').textContent = fmtHours(u.studySeconds);
+  const track = TRACKS[u.track];
+  const lessons = lessonsFor(u.track);
+  const progress = u.progress || {};
 
-  if (!u.paid) document.getElementById('payNote').style.display = 'block';
+  $('hello').textContent = `እንኳን ደህና መጡ፣ ${u.studentName}`;
+  $('whoami').textContent = `${u.age} ዓመት · ${track ? track.am : '—'}`;
+  $('seen').textContent = fmtAgo(u.lastSeen);
+  $('hours').textContent = fmtHours(u.studySeconds);
+  $('trackName').textContent = track ? track.am : '—';
+  $('trackNote').textContent = track ? track.eligibilityAm : '';
+  if (u.role === 'admin') $('adminLink').style.display = '';
+  if (!u.paid) $('payNote').style.display = 'block';
 
-  const done = LESSONS.filter(l => u.progress[l.id]?.done);
-  document.getElementById('doneCount').textContent = `${done.length} / ${LESSONS.length} ተጠናቋል`;
-  document.getElementById('bar').style.width = (done.length / LESSONS.length * 100) + '%';
-  document.getElementById('progressTxt').textContent =
-    `ከ${LESSONS.length} ትምህርት ${done.length}ቱን ጨርሰዋል።`;
+  const done = completedCount(progress, lessons);
+  $('doneStat').innerHTML = `${toGeez(done) === String(done) ? done : toGeez(done)}<small> / ${toGeez(lessons.length)}</small>`;
+  $('doneCount').textContent = `${done} / ${lessons.length} ተጠናቋል`;
+  $('bar').style.width = (lessons.length ? (done / lessons.length) * 100 : 0) + '%';
+  $('avg').innerHTML = `${averageScore(progress)}<small>%</small>`;
 
-  const scored = done.map(l => u.progress[l.id]);
-  const pct = scored.length
-    ? Math.round(scored.reduce((a, p) => a + p.score / p.of, 0) / scored.length * 100) : 0;
-  document.getElementById('avg').innerHTML = `${pct}<small>%</small>`;
+  const streak = streakFrom(progress);
+  $('streak').textContent = streak;
+  $('streakNote').textContent = streak
+    ? 'በተከታታይ ቀናት ተምረዋል — እንዲሁ ይቀጥሉ።'
+    : 'ዛሬ አንድ ትምህርት ቢጀምሩ ቆጠራው ይጀምራል።';
 
-  document.getElementById('list').innerHTML = LESSONS.map(l => {
-    const p = u.progress[l.id];
-    const badge = p?.done
-      ? `<span class="pill pill--done">${p.score}/${p.of}</span>`
-      : `<span class="pill">${l.minutes} ደቂቃ</span>`;
-    return `<a class="folio" href="lesson.html?id=${l.id}" data-done="${p?.done ? 1 : 0}">
+  /* Locked lessons are shown, not hidden: a parent should see what the
+     subscription opens. The lock is a UI gate — see docs/PAYMENTS.md. */
+  $('list').innerHTML = lessons.map(l => {
+    const p = progress[l.id];
+    const locked = !u.paid && !isFree(l.id);
+    const cov = coverageOfLesson(progress, l.id);
+    const when = toDate(p?.at) || toDate(p?.completedAt);
+
+    const badge = locked
+      ? '<span class="pill pill--locked">🔒 ተቆልፏል</span>'
+      : p?.done
+        ? `<span class="pill pill--done">${p.score}/${p.of}</span>`
+        : `<span class="pill">${l.minutes} ደቂቃ</span>`;
+
+    const bits = [];
+    if (isFree(l.id)) bits.push('ነጻ ቅምሻ');
+    if (cov !== null) bits.push(`${cov}% ታይቷል`);
+    if (when) bits.push(when.toLocaleDateString());
+    const detail = bits.length ? ` · ${bits.join(' · ')}` : '';
+
+    const href = locked ? 'billing.html' : `lesson.html?id=${l.id}`;
+    return `<a class="folio" href="${href}" data-done="${p?.done ? 1 : 0}" data-locked="${locked ? 1 : 0}">
       <span class="geez">${l.num}</span>
       <span>
         <h3>${l.title}</h3>
-        <span class="muted small">${l.teacher} · ${l.summary}</span>
+        <span class="muted small">${l.teacher}${detail}</span>
       </span>
       ${badge}
     </a>`;
-  }).join('');
+  }).join('') || '<p class="muted">በዚህ ክፍል ገና ትምህርት አልተጨመረም።</p>';
 
-  document.getElementById('out').addEventListener('click', async (e) => {
+  $('out').addEventListener('click', async (e) => {
     e.preventDefault();
     await Store.signOut();
     location.href = 'index.html';
   });
-
-  document.getElementById('payLink').setAttribute('href', 'billing.html');
 }
 </script>
 <script src="assets/js/sky.js" defer></script>
+<script src="assets/js/theme.js" defer></script>
 </body>
 </html>

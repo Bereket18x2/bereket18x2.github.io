@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>አስተዳደር — የቅዱሳት መጻሕፍት ትምህርት ቤት</title>
+<script>
+  try {
+    var t = localStorage.getItem('eotc.theme');
+    if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'day' : 'night';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'night'); }
+</script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
@@ -19,6 +26,18 @@
 <meta name="twitter:title" content="አስተዳደር — የቅዱሳት መጻሕፍት ትምህርት ቤት">
 <meta name="twitter:description" content="የተማሪዎች ሪፖርት፡ የጥናት ሰዓት፣ ውጤትና እንቅስቃሴ።">
 <meta name="twitter:image" content="https://bereket18x2.github.io/assets/og.png">
+<script type="importmap">
+{
+  "imports": {
+    "@store":      "./assets/js/store.js?v=6",
+    "@lessons":    "./assets/js/lessons.js?v=6",
+    "@validators": "./assets/js/validators.js?v=6",
+    "@coverage":   "./assets/js/coverage.js?v=6",
+    "@stats":      "./assets/js/stats.js?v=6",
+    "@config":     "./assets/js/config.js?v=6"
+  }
+}
+</script>
 </head>
 <body class="sky">
 <canvas id="sky"></canvas>
@@ -27,7 +46,7 @@
 <div class="shell">
   <nav class="nav">
     <a class="brand" href="index.html">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
         <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
       </svg>
       የቅዱሳት መጻሕፍት ትምህርት ቤት
@@ -55,7 +74,7 @@
         <thead>
           <tr>
             <th>ተማሪ</th><th>ዕድሜ</th><th>ክፍል</th><th>የጥናት ሰዓት</th>
-            <th>ትምህርት</th><th>አማካይ</th><th>መጨረሻ የታየበት</th><th>ሁኔታ</th>
+            <th>ትምህርት</th><th>አማካይ</th><th>መጨረሻ የታየበት</th><th>ሁኔታ</th><th>ክፍያ</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -64,14 +83,16 @@
   </div>
 
   <p class="note small" style="margin-top:20px">
-    አሁን ይህ ገጽ ማንም ሊከፍተው ይችላል። በምዕራፍ ፪ በFirestore ደንብ (<code>role == 'admin'</code>) ይዘጋል።
+    ይህ ገጽ በFirestore ደንብ (<code>role == 'admin'</code>) የተጠበቀ ነው። ክፍያ ማረጋገጥም
+    የሚቻለው በመምህር መለያ ብቻ ነው — ተማሪ ቢሞክር ደንቡ ይከለክለዋል።
   </p>
 </main>
 
 <script type="module">
-import { Store, fmtHours, fmtAgo, toMillis, requireAuth } from './assets/js/store.js?v=5';
-import { LESSONS } from './assets/js/lessons.js?v=5';
-import { TRACKS } from './assets/js/validators.js?v=5';
+import { Store, fmtHours, fmtAgo, toMillis, requireAuth } from '@store';
+import { lessonsFor } from '@lessons';
+import { TRACKS } from '@validators';
+import { completedCount, averageScore } from '@stats';
 
 const me = await requireAuth();
 
@@ -106,29 +127,61 @@ document.getElementById('kActive').textContent = users.filter(u => toMillis(u.la
 document.getElementById('kHours').textContent =
   Math.round(users.reduce((a, u) => a + (u.studySeconds || 0), 0) / 3600) + ' ሰዓት';
 
-if (users.length) document.getElementById('rows').innerHTML = users
-  .sort((a, b) => toMillis(b.lastSeen) - toMillis(a.lastSeen))
-  .map(u => {
-    const done = LESSONS.filter(l => u.progress[l.id]?.done);
-    const scored = done.map(l => u.progress[l.id]);
-    const avg = scored.length
-      ? Math.round(scored.reduce((a, p) => a + p.score / p.of, 0) / scored.length * 100) : 0;
-    const status = !u.verified ? '<span class="pill">አልተረጋገጠም</span>'
-      : !u.paid ? '<span class="pill" style="color:#B22F30;border-color:#B22F30">ክፍያ የለም</span>'
-      : '<span class="pill pill--done">ንቁ</span>';
-    return `<tr>
-      <td><b>${u.studentName ?? '—'}</b><br><span class="muted small">${u.guardianName ?? ''} · ${u.email}</span></td>
-      <td class="num">${u.age ?? '—'}</td>
-      <td>${TRACKS[u.track]?.am ?? '—'}</td>
-      <td class="num">${fmtHours(u.studySeconds)}</td>
-      <td class="num">${done.length}/${LESSONS.length}</td>
-      <td class="num">${avg}%</td>
-      <td class="muted">${fmtAgo(u.lastSeen)}</td>
-      <td>${status}</td>
-    </tr>`;
-  }).join('');
+function render(users) {
+  document.getElementById('rows').innerHTML = users
+    .sort((a, b) => toMillis(b.lastSeen) - toMillis(a.lastSeen))
+    .map(u => {
+      // count against the student's own course, not the whole catalogue
+      const lessons = lessonsFor(u.track);
+      const done = completedCount(u.progress, lessons);
+      const status = !u.verified ? '<span class="pill">አልተረጋገጠም</span>'
+        : !u.paid ? '<span class="pill pill--locked">ክፍያ የለም</span>'
+        : '<span class="pill pill--done">ንቁ</span>';
+      const payCell = u.paid
+        ? `<button class="btn btn--ghost btn--sm" data-uid="${u.uid}" data-paid="0">ክፍያ ሰርዝ</button>`
+        : `<button class="btn btn--gold btn--sm" data-uid="${u.uid}" data-paid="1">ክፍያ አረጋግጥ</button>`;
+
+      return `<tr>
+        <td><b>${u.studentName ?? '—'}</b><br><span class="muted small">${u.guardianName ?? ''} · ${u.email}</span></td>
+        <td class="num">${u.age ?? '—'}</td>
+        <td>${TRACKS[u.track]?.am ?? '—'}</td>
+        <td class="num">${fmtHours(u.studySeconds)}</td>
+        <td class="num">${done}/${lessons.length}</td>
+        <td class="num">${averageScore(u.progress)}%</td>
+        <td class="muted">${fmtAgo(u.lastSeen)}</td>
+        <td>${status}</td>
+        <td>${payCell}</td>
+      </tr>`;
+    }).join('');
+}
+
+if (users.length) render(users);
+
+/* Confirming payment is a teacher action. The rules are what actually
+   enforce that — this button simply exposes it, and shows whatever the
+   write returns rather than assuming it worked. */
+document.getElementById('rows').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-uid]');
+  if (!btn) return;
+  const uid = btn.dataset.uid;
+  const next = btn.dataset.paid === '1';
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '…';
+  try {
+    await Store.setPaid(uid, next);
+    const row = users.find(x => x.uid === uid);
+    if (row) row.paid = next;
+    render(users);
+  } catch (ex) {
+    btn.disabled = false;
+    btn.textContent = label;
+    alert(ex.message);
+  }
+});
 }
 </script>
 <script src="assets/js/sky.js" defer></script>
+<script src="assets/js/theme.js" defer></script>
 </body>
 </html>
