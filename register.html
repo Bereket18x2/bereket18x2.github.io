@@ -134,20 +134,8 @@
 
     <div class="field">
       <label for="email" data-am="ኢሜይል (የወላጅ)" data-en="Email (parent's)">ኢሜይል (የወላጅ)</label>
-      <div class="field-row">
-        <input class="input" id="email" type="email" required autocomplete="email">
-        <button class="btn btn--ghost" type="button" id="sendCode" data-am="ኮድ ላክ" data-en="Send code">ኮድ ላክ</button>
-      </div>
-      <p class="help" data-am="ከመመዝገብዎ በፊት ኢሜይልዎን ማረጋገጥ ያስፈልጋል።" data-en="You need to verify your email before registering.">ከመመዝገብዎ በፊት ኢሜይልዎን ማረጋገጥ ያስፈልጋል።</p>
-
-      <div id="codeBlock" style="display:none;margin-top:12px">
-        <div class="field-row">
-          <input class="input" id="code" inputmode="numeric" maxlength="6" placeholder="፮ አሃዝ ኮድ">
-          <button class="btn btn--ghost" type="button" id="checkCode" data-am="አረጋግጥ" data-en="Verify">አረጋግጥ</button>
-        </div>
-        <p class="note small" id="codeNote" style="margin-top:10px"></p>
-      </div>
-      <p class="badge-ok" id="verifiedBadge" style="display:none" data-am="✓ ኢሜይል ተረጋግጧል" data-en="✓ Email verified">✓ ኢሜይል ተረጋግጧል</p>
+      <input class="input" id="email" type="email" required autocomplete="email">
+      <p class="help" data-am="ከተመዘገቡ በኋላ የማረጋገጫ መልእክት ወደዚህ አድራሻ ይላካል። ትምህርቶቹ የሚከፈቱት ኢሜይሉን ካረጋገጡ በኋላ ነው።" data-en="A verification message is sent to this address after you register. Lessons open once you confirm it.">ከተመዘገቡ በኋላ የማረጋገጫ መልእክት ወደዚህ አድራሻ ይላካል። ትምህርቶቹ የሚከፈቱት ኢሜይሉን ካረጋገጡ በኋላ ነው።</p>
     </div>
 
     <div class="field">
@@ -180,60 +168,20 @@
 </main>
 
 <script type="module">
-import { Store } from './assets/js/store.js?v=3';
+import { Store, ready } from './assets/js/store.js?v=4';
 
 const $ = id => document.getElementById(id);
 const err = $('err');
 const showErr = (msg) => { err.textContent = msg; err.style.display = 'block'; };
 const hideErr = () => { err.style.display = 'none'; };
 
-let sentCode = null;
-let emailVerified = false;
-let verifiedFor = '';
+const submitBtn = $('form').querySelector('button[type="submit"]');
+const submitLabel = submitBtn.textContent;
 
-// --- phase 1: there is no email server yet, so "sending" a code means
-// generating it here and showing it on the page. Phase 2 swaps this for
-// Firebase sendEmailVerification() and this whole block goes away. ---
-$('sendCode').addEventListener('click', () => {
-  hideErr();
-  const email = $('email').value.trim();
-  if (!email || !$('email').checkValidity()) {
-    showErr('መጀመሪያ ትክክለኛ ኢሜይል ያስገቡ።');
-    return;
-  }
-  sentCode = String(Math.floor(100000 + Math.random() * 900000));
-  emailVerified = false;
-  verifiedFor = '';
-  $('verifiedBadge').style.display = 'none';
-  $('codeBlock').style.display = 'block';
-  $('code').value = '';
-  $('codeNote').textContent = `🔧 ማሳያ ሁነታ፡ ወደ እውነተኛ ኢሜይል አገልግሎት ገና አልተገናኘንም። የእርስዎ ኮድ፦ ${sentCode}`;
-  $('email').setAttribute('readonly', 'true');
-  $('sendCode').textContent = 'ዳግም ላክ';
-});
+// already signed in? nothing to register
+ready().then((u) => { if (u) location.href = 'dashboard.html'; });
 
-$('checkCode').addEventListener('click', () => {
-  hideErr();
-  if (!sentCode) return;
-  if ($('code').value.trim() === sentCode) {
-    emailVerified = true;
-    verifiedFor = $('email').value.trim();
-    $('codeBlock').style.display = 'none';
-    $('verifiedBadge').style.display = 'inline-flex';
-  } else {
-    showErr('ኮዱ ትክክል አይደለም። እንደገና ይሞክሩ።');
-  }
-});
-
-// editing the email after verifying invalidates it
-$('email').addEventListener('input', () => {
-  if (emailVerified && $('email').value.trim() !== verifiedFor) {
-    emailVerified = false;
-    $('verifiedBadge').style.display = 'none';
-  }
-});
-
-$('form').addEventListener('submit', (e) => {
+$('form').addEventListener('submit', async (e) => {
   e.preventDefault();
   hideErr();
   const v = id => $(id).value.trim();
@@ -244,26 +192,27 @@ $('form').addEventListener('submit', (e) => {
   if (!$('email').checkValidity()) {
     showErr('ትክክለኛ ኢሜይል ያስገቡ።'); return;
   }
-  if (!emailVerified || verifiedFor !== v('email')) {
-    showErr('እባክዎ መጀመሪያ ኢሜይልዎን በኮድ ያረጋግጡ።'); return;
-  }
   if (v('password').length < 6) {
     showErr('የይለፍ ቃል ቢያንስ ፮ ፊደል ሊኖረው ይገባል።'); return;
   }
   const age = Number(v('age'));
   if (!Number.isInteger(age) || age < 1 || age >= 16) {
-    showErr('የተማሪው ዕድሜ ከ፲ እስከ ፲፭ (ከ፲፮ ዓመት በታች) መሆን አለበት።'); return;
+    showErr('የተማሪው ዕድሜ ከ፩ እስከ ፲፭ (ከ፲፮ ዓመት በታች) መሆን አለበት።'); return;
   }
 
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'በመመዝገብ ላይ…';
   try {
-    Store.createUser({
+    await Store.createUser({
       fullName: v('fullName'), email: v('email'), password: v('password'),
-      age, guardian: v('guardian'), location: v('location'), country: v('country'),
-      verified: true
+      age, guardian: v('guardian'), location: v('location'), country: v('country')
     });
+    // Firebase has sent the verification mail; requireAuth paints the gate.
     location.href = 'dashboard.html';
   } catch (ex) {
     showErr(ex.message);
+    submitBtn.disabled = false;
+    submitBtn.textContent = submitLabel;
   }
 });
 </script>

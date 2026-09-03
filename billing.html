@@ -59,15 +59,6 @@
     </p>
   </div>
 
-  <div id="authGate" class="panel" style="display:none">
-    <p class="eyebrow">መግቢያ ያስፈልጋል</p>
-    <h2 style="margin:0 0 8px;font-size:1.3rem">ክፍያ ለመፈጸም ይግቡ</h2>
-    <p class="muted small">ክፍያው የሚያያዘው ከተማሪ መለያዎ ጋር ስለሆነ መጀመሪያ መግባት ያስፈልጋል።</p>
-    <div class="row" style="margin-top:16px">
-      <a class="btn btn--gold" href="index.html#signin">ግባ</a>
-      <a class="btn btn--ghost" href="register.html">አዲስ መለያ ክፈት</a>
-    </div>
-  </div>
 
   <div id="authedContent" class="section" style="padding-top:0;display:none">
 
@@ -184,9 +175,9 @@
       <p id="cfg" class="note small" style="display:none;margin-bottom:14px"></p>
 
       <button class="btn btn--gold btn--block" type="submit">✦ ወደ ደህንነቱ የተጠበቀ ክፍያ ይቀጥሉ →</button>
-      <button class="btn btn--ghost btn--block" type="button" id="demoPay" style="margin-top:10px">
-        🔧 ማሳያ ክፍያ (Stripe ገና እስካልተያያዘ ድረስ ለሙከራ)
-      </button>
+      <p class="help" style="margin-top:12px">
+        ክፍያው ከተፈጸመ በኋላ መለያዎ በአስተዳዳሪ ተረጋግጦ ትምህርቶቹ ይከፈታሉ። ክፍያ ከአሳሽ ላይ በቀጥታ አይመዘገብም።
+      </p>
     </form>
 
     <!-- ---------------- FAQ ---------------- -->
@@ -235,15 +226,13 @@
 </footer>
 
 <script type="module">
-import { Store, requireAuth, STRIPE_PAYMENT_LINK, markPaidDemo } from './assets/js/store.js?v=3';
-import { LESSONS } from './assets/js/lessons.js?v=3';
+import { Store, requireAuth, STRIPE_PAYMENT_LINK } from './assets/js/store.js?v=4';
+import { LESSONS } from './assets/js/lessons.js?v=4';
 
 const $ = id => document.getElementById(id);
-const u = requireAuth();
+const u = await requireAuth();
 
-if (!u) {
-  $('authGate').style.display = 'block';
-} else {
+if (u) {
   $('authedContent').style.display = 'block';
   Store.touch();
   $('studentName').textContent = u.fullName;
@@ -254,7 +243,7 @@ if (!u) {
 
   if (!STRIPE_PAYMENT_LINK) {
     $('cfg').style.display = 'block';
-    $('cfg').textContent = 'ማስታወሻ ለአስተዳዳሪ፡ የStripe Payment Link ገና በassets/js/store.js ውስጥ አልተቀመጠም። እስከዚያ ድረስ ከታች ያለውን የማሳያ ክፍያ ይጠቀሙ።';
+    $('cfg').textContent = 'ማስታወሻ ለአስተዳዳሪ፡ የStripe Payment Link ገና በassets/js/config.js አጠገብ ባለው store.js ውስጥ አልተቀመጠም።';
   }
 
   /* ---------------- live card preview — display only, nothing persisted ---------------- */
@@ -369,7 +358,7 @@ if (!u) {
       return;
     }
     if (!STRIPE_PAYMENT_LINK) {
-      $('err').textContent = 'የክፍያ ግንኙነት ገና አልተዘጋጀም። ከታች ያለውን የማሳያ ክፍያ ይጠቀሙ ወይም README ውስጥ ያለውን የStripe ደረጃ ይመልከቱ።';
+      $('err').textContent = 'የክፍያ ግንኙነት ገና አልተዘጋጀም። እባክዎ ትምህርት ቤቱን ያግኙ ወይም README ውስጥ ያለውን የStripe ደረጃ ይመልከቱ።';
       $('err').style.display = 'block';
       return;
     }
@@ -377,11 +366,6 @@ if (!u) {
     if (u.email) url.searchParams.set('prefilled_email', u.email);
     url.searchParams.set('client_reference_id', u.uid);
     location.href = url.toString();
-  });
-
-  $('demoPay').addEventListener('click', () => {
-    markPaidDemo();
-    location.href = 'dashboard.html';
   });
 }
 </script>
