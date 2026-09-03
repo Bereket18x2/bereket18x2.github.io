@@ -5,7 +5,7 @@ Video lessons → quizzes → attendance and study-hour tracking for the hosts.
 
 **Phase 1 (this repo):** static site, deployable to GitHub Pages today. Data lives in
 `localStorage` so every screen is real and clickable without a backend.
-**Phase 2:** swap `assets/js/store.js` for Firebase. Nothing else changes.
+**Phase 2 (done):** `assets/js/store.js` now runs on Firebase Auth + Firestore.
 
 © TewahedoDevs. All rights reserved — see [LICENSE](LICENSE). Visible on GitHub for
 transparency and GitHub Pages hosting; that is not a license to copy or redeploy it.
@@ -66,18 +66,42 @@ it playing in a corner — if that matters, add a "still watching?" prompt every
 
 ---
 
-## Phase 2 — Firebase
+## Phase 2 — Firebase ✅ done
 
-Only `store.js` changes. Same function names, same return shapes.
+Live on Firebase Auth + Firestore (project `finote-yared`). The SDK loads from the
+gstatic CDN as ES modules — still no npm, no bundler, no build step, still deployable
+to GitHub Pages as plain files. `store.js` is still the only file that touches storage.
 
-| Now | Then |
+Every `Store` method is now **async**, and `ready()` is new and important: Firebase
+restores a session asynchronously, so without awaiting it every refresh would bounce a
+signed-in parent back to sign-in.
+
+| Method | Backed by |
 |---|---|
-| `Store.createUser()` | `createUserWithEmailAndPassword()` + `sendEmailVerification()` |
+| `Store.createUser()` | `createUserWithEmailAndPassword()` + doc write + `sendEmailVerification()` |
 | `Store.signIn()` | `signInWithEmailAndPassword()` |
-| `Store.current()` | `onAuthStateChanged()` |
-| `Store.addStudySeconds(5)` | `updateDoc(ref, { studySeconds: increment(5) })` |
+| `Store.current()` | `getDoc(users/{uid})` + progress + `emailVerified` off the token |
+| `Store.addStudySeconds(n)` | `updateDoc(ref, { studySeconds: increment(n) })` |
 | `Store.saveQuiz()` | `setDoc(doc(db,'users',uid,'progress',lessonId), …)` |
 | `Store.allUsers()` | `getDocs(query(collection(db,'users'), where('role','==','student')))` |
+| `ready()` | resolves on the first `onAuthStateChanged`, then cached |
+
+### Deploy the rules
+
+`firestore.rules` is in the repo root. It is the actual security boundary:
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+### Making yourself an admin
+
+`admin.html` requires `role == 'admin'`, and the rules forbid the client from writing
+`role` — deliberately, so nobody promotes themselves. Set it by hand once, in the
+Firebase console: Firestore → `users` → your uid → change `role` to `admin`.
+
+The same applies to `paid`: it is confirmed by an admin (later a server-side Stripe
+webhook), never from the browser.
 
 Firestore shape:
 
@@ -90,18 +114,13 @@ users/{uid}/progress/{lessonId}
 lessons/{lessonId}          ← move out of lessons.js once hosts can edit
 ```
 
-Rules sketch — students read only themselves, admins read everyone, nobody writes `paid`:
+See `firestore.rules` for the real thing — students read only their own row, admins read
+everyone, and no client can write `paid`, `role`, `email`, `uid`, or `createdAt`.
+`studySeconds` may only increase, by at most 120s per write.
 
-```
-match /users/{uid} {
-  allow read: if request.auth.uid == uid || isAdmin();
-  allow update: if request.auth.uid == uid
-    && !request.resource.data.diff(resource.data).affectedKeys()
-         .hasAny(['paid','role','verified']);
-}
-```
-
-Firebase API keys in client code are public by design. Security is the rules, not the key.
+Firebase API keys in client code are public by design — every Firebase web app ships
+them. Security is the rules, not the key. `assets/js/config.js` says so at length so
+nobody "fixes" it later by hiding it.
 
 ## Phase 3 — Payments
 
@@ -131,8 +150,12 @@ dashboard.html    student: lesson list, hours, average score
 billing.html      $25/mo plan, accepted cards, Stripe hand-off, demo pay
 lesson.html       video + watch-time heartbeat + quiz
 admin.html        host: roster, hours, last online, scores
-assets/js/store.js    ← the only file that touches storage
+assets/js/store.js    ← the only file that touches storage (Firebase lives here)
+assets/js/config.js   ← Firebase project config (public by design — read the comment)
 assets/js/lessons.js  ← curriculum: titles, teachers, videos, questions
+assets/js/sky.js      ← starfield backdrop
+assets/js/i18n.js     ← Amharic/English toggle (homepage + register)
+firestore.rules       ← the real security boundary; deploy it after editing
 assets/css/style.css
 ```
 

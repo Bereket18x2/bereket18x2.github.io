@@ -1,0 +1,131 @@
+rules_version = '2';
+
+// ===========================================================
+// Firestore rules for finote-yared.
+//
+// The client config in assets/js/config.js is public by design.
+// THIS FILE is the security boundary — not the API key. Assume an
+// attacker has the config, is signed in with a real account, and is
+// calling Firestore directly from a console. Everything below is
+// written against that assumption.
+//
+// Deploy:  firebase deploy --only firestore:rules
+// ===========================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // Read off the token, not off the user doc: the doc's `verified`
+    // field is a cached copy the client can be behind on, while the
+    // token is issued by Firebase itself and cannot be forged.
+    function verified() {
+      return signedIn() && request.auth.token.email_verified == true;
+    }
+
+    // Costs one extra read per evaluation, which is why it is only
+    // called on the admin paths rather than on every student write.
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function changed() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    match /users/{uid} {
+
+      // Without the isAdmin branch this collection is a public roster of
+      // minors' names, ages, cities, and parents' email addresses. A
+      // student may read only their own row.
+      allow read: if isOwner(uid) || isAdmin();
+
+      // Registration writes the first doc, so it cannot require an
+      // existing one — instead it pins the fields that decide privilege
+      // and money. Nobody signs themselves up as an admin, arrives
+      // already paid, or starts with hours of study time banked.
+      allow create: if isOwner(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.role == 'student'
+        && request.resource.data.paid == false
+        && request.resource.data.studySeconds == 0;
+
+      // An admin may correct anything (they confirm payment by hand).
+      // An owner may maintain their own profile, minus the fields that
+      // would let them promote themselves, grant themselves a free
+      // subscription, take over another identity, or fake their signup date.
+      //
+      // `verified` is writable only to the value the token already says,
+      // so the client can sync the cached copy but never claim a
+      // verification it does not have.
+      //
+      // studySeconds may only ever go up, and only by one batch at a
+      // time. lesson.html flushes every 30s; the +120 ceiling leaves
+      // slack for a delayed flush while making it useless for minting
+      // fake attendance — an hour of fake study would take 30 writes.
+      allow update: if isAdmin() || (
+        isOwner(uid)
+        && !changed().hasAny(['paid', 'role', 'email', 'uid', 'createdAt'])
+        && (
+          !changed().hasAny(['verified'])
+          || request.resource.data.verified == request.auth.token.email_verified
+        )
+        && (
+          !changed().hasAny(['studySeconds'])
+          || (
+            request.resource.data.studySeconds >= resource.data.studySeconds
+            && request.resource.data.studySeconds <= resource.data.studySeconds + 120
+          )
+        )
+      );
+
+      // These are records of children. A misfired script in a browser
+      // must not be able to erase a student's history; removal is a
+      // deliberate act performed from the console.
+      allow delete: if false;
+
+      match /progress/{lessonId} {
+
+        // Same reasoning as the parent doc: a child's marks are visible
+        // to that child's account and to the teachers, nobody else.
+        allow read: if isOwner(uid) || isAdmin();
+
+        // Requiring verified() means a quiz result cannot be written by
+        // an account that never proved it owns its email address, which
+        // is what keeps throwaway signups out of the teachers' roster.
+        // The score bounds stop a client from posting 99/3 and inventing
+        // a perfect record.
+        allow write: if isOwner(uid)
+          && verified()
+          && request.resource.data.score is int
+          && request.resource.data.of is int
+          && request.resource.data.score >= 0
+          && request.resource.data.score <= request.resource.data.of;
+      }
+    }
+
+    // Curriculum is readable by any signed-in student but authored only
+    // by teachers — otherwise a student could rewrite the quiz answers
+    // they are about to be marked against.
+    match /lessons/{lessonId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // Anything not named above does not exist as far as clients are
+    // concerned. New collections must be granted access deliberately,
+    // rather than inheriting it by accident.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

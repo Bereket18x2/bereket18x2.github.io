@@ -42,15 +42,6 @@
 
 <main class="shell section">
 
-  <div id="authGate" class="panel" style="display:none">
-    <p class="eyebrow">መግቢያ ያስፈልጋል</p>
-    <h1 style="font-size:1.6rem;margin:0 0 8px">ትምህርቶችዎን ለማየት ይግቡ</h1>
-    <p class="muted small">የተማሪ ትምህርቶች፣ የጥናት ሰዓትና ውጤት የሚታዩት ከገቡ በኋላ ብቻ ነው።</p>
-    <div class="row" style="margin-top:16px">
-      <a class="btn btn--gold" href="index.html#signin">ግባ</a>
-      <a class="btn btn--ghost" href="register.html">አዲስ መለያ ክፈት</a>
-    </div>
-  </div>
 
   <div id="authedContent" style="display:none">
     <p class="eyebrow">የተማሪ ገጽ</p>
@@ -95,13 +86,13 @@
 </main>
 
 <script type="module">
-import { Store, fmtHours, fmtAgo, requireAuth } from './assets/js/store.js?v=3';
-import { LESSONS } from './assets/js/lessons.js?v=3';
+import { Store, fmtHours, fmtAgo, requireAuth } from './assets/js/store.js?v=4';
+import { LESSONS } from './assets/js/lessons.js?v=4';
 
-const u = requireAuth();
-if (!u) {
-  document.getElementById('authGate').style.display = 'block';
-} else {
+// requireAuth handles both failure paths itself: signed out redirects to
+// the sign-in form, unverified paints the verification gate over the page.
+const u = await requireAuth();
+if (u) {
   document.getElementById('authedContent').style.display = 'block';
   Store.touch();
 
@@ -137,8 +128,10 @@ if (!u) {
     </a>`;
   }).join('');
 
-  document.getElementById('out').addEventListener('click', e => {
-    e.preventDefault(); Store.signOut(); location.href = 'index.html';
+  document.getElementById('out').addEventListener('click', async (e) => {
+    e.preventDefault();
+    await Store.signOut();
+    location.href = 'index.html';
   });
 
   document.getElementById('payLink').setAttribute('href', 'billing.html');

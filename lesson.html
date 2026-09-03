@@ -41,15 +41,6 @@
 
 <main class="shell section">
 
-  <div id="authGate" class="panel" style="display:none">
-    <p class="eyebrow">መግቢያ ያስፈልጋል</p>
-    <h1 style="font-size:1.6rem;margin:0 0 8px">ይህን ትምህርት ለማየት ይግቡ</h1>
-    <p class="muted small">ቪዲዮውና ጥያቄዎቹ የሚታዩት ከገቡ በኋላ ብቻ ነው።</p>
-    <div class="row" style="margin-top:16px">
-      <a class="btn btn--gold" href="index.html#signin">ግባ</a>
-      <a class="btn btn--ghost" href="register.html">አዲስ መለያ ክፈት</a>
-    </div>
-  </div>
 
   <div id="authedContent" style="display:none">
     <div class="row" style="align-items:baseline;gap:14px">
@@ -94,18 +85,16 @@
 </main>
 
 <script type="module">
-import { Store, requireAuth } from './assets/js/store.js?v=3';
-import { findLesson } from './assets/js/lessons.js?v=3';
+import { Store, requireAuth } from './assets/js/store.js?v=4';
+import { findLesson } from './assets/js/lessons.js?v=4';
 
-const u = requireAuth();
+const u = await requireAuth();
 const id = new URLSearchParams(location.search).get('id') || 'l1';
 const L = u ? findLesson(id) : null;
 
-if (!u) {
-  document.getElementById('authGate').style.display = 'block';
-} else if (!L) {
+if (u && !L) {
   location.href = 'dashboard.html';
-} else {
+} else if (u && L) {
   document.getElementById('authedContent').style.display = 'block';
   document.getElementById('num').textContent = L.num;
   document.getElementById('title').textContent = L.title;
@@ -115,8 +104,20 @@ if (!u) {
 
   /* ---------- watch-time heartbeat ----------
      Seconds are only banked while the video reports PLAYING.
-     A stopwatch the student can leave running is not attendance. */
-  let watched = 0, beat = null;
+     A stopwatch the student can leave running is not attendance.
+
+     The on-screen clock ticks every 5s, but Firestore is written only
+     every 30s. Firestore bills per write: a 5s write is 720 writes per
+     hour per student, and fifty students watching an hour a week would
+     be paying for ~144,000 writes a month to record the same number.
+     Batching to 30s is the same data for a sixth of the writes.
+
+     A failed flush puts its seconds back into `pending` rather than
+     dropping them, so a dead connection costs a delay, not attendance. */
+  let watched = 0;        // shown on screen
+  let pending = 0;        // earned but not yet written
+  let beat = null, flushTimer = null;
+
   const timerEl = document.getElementById('timer');
   const paint = () => {
     const m = String(Math.floor(watched / 60)).padStart(2, '0');
@@ -125,16 +126,29 @@ if (!u) {
   };
   paint();
 
+  async function flush() {
+    if (!pending) return;
+    const owed = pending;
+    pending = 0;
+    try {
+      await Store.addStudySeconds(owed);
+    } catch (e) {
+      pending += owed;   // hand them back; the next flush retries
+    }
+  }
+
   const start = () => {
     if (beat) return;
-    beat = setInterval(() => {
-      watched += 5;
-      Store.addStudySeconds(5);   // phase 2: Firestore increment(5)
-      paint();
-    }, 5000);
+    beat = setInterval(() => { watched += 5; pending += 5; paint(); }, 5000);
+    flushTimer = setInterval(flush, 30000);
   };
-  const stop = () => { clearInterval(beat); beat = null; };
+  const stop = () => {
+    clearInterval(beat); beat = null;
+    clearInterval(flushTimer); flushTimer = null;
+    flush();
+  };
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+  window.addEventListener('pagehide', stop);
   window.addEventListener('beforeunload', stop);
 
   /* ---------- video ---------- */
@@ -192,11 +206,11 @@ if (!u) {
     if (answers.every(a => a !== null)) finish();
   });
 
-  function finish() {
+  async function finish() {
     stop();
     const score = answers.filter((a, i) => a === L.questions[i].answer).length;
     const of = L.questions.length;
-    Store.saveQuiz(L.id, score, of);
+    try { await Store.saveQuiz(L.id, score, of); } catch (e) { /* mark still shown below */ }
     document.getElementById('score').innerHTML = `${score}<small> / ${of}</small>`;
     document.getElementById('verdict').textContent =
       score === of ? 'እግዚአብሔር ይስጥልኝ — ሁሉንም በትክክል መልሰዋል።'

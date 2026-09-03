@@ -69,19 +69,44 @@
 </main>
 
 <script type="module">
-import { Store, fmtHours, fmtAgo } from './assets/js/store.js?v=3';
-import { LESSONS } from './assets/js/lessons.js?v=3';
+import { Store, fmtHours, fmtAgo, toMillis, requireAuth } from './assets/js/store.js?v=4';
+import { LESSONS } from './assets/js/lessons.js?v=4';
 
-const users = Store.allUsers();
+const me = await requireAuth();
+
+// The rules reject allUsers() for a student anyway; this just turns a
+// permission error into an explanation instead of an empty table.
+if (me && me.role !== 'admin') {
+  document.querySelector('main').innerHTML = `
+    <div class="panel">
+      <p class="eyebrow">ለመምህራን ብቻ</p>
+      <h1 style="font-size:1.6rem;margin:0 0 8px">ይህ ገጽ የመምህራን ነው</h1>
+      <p class="muted small">የተማሪዎችን ዝርዝር ማየት የሚችሉት መምህራን ብቻ ናቸው።
+        የእርስዎን ትምህርቶች ለማየት ወደ ትምህርቶች ገጽ ይሂዱ።</p>
+      <div class="row" style="margin-top:16px">
+        <a class="btn btn--gold" href="dashboard.html">ወደ ትምህርቶች</a>
+      </div>
+    </div>`;
+}
+
+if (me && me.role === 'admin') {
+let users = [];
+try {
+  users = await Store.allUsers();
+} catch (e) {
+  document.getElementById('rows').innerHTML =
+    `<tr><td colspan="8" class="muted">${e.message}</td></tr>`;
+}
+
 const week = Date.now() - 86400000 * 7;
 
 document.getElementById('kTotal').textContent = users.length;
-document.getElementById('kActive').textContent = users.filter(u => u.lastSeen > week).length;
+document.getElementById('kActive').textContent = users.filter(u => toMillis(u.lastSeen) > week).length;
 document.getElementById('kHours').textContent =
-  Math.round(users.reduce((a, u) => a + u.studySeconds, 0) / 3600) + ' ሰዓት';
+  Math.round(users.reduce((a, u) => a + (u.studySeconds || 0), 0) / 3600) + ' ሰዓት';
 
-document.getElementById('rows').innerHTML = users
-  .sort((a, b) => b.lastSeen - a.lastSeen)
+if (users.length) document.getElementById('rows').innerHTML = users
+  .sort((a, b) => toMillis(b.lastSeen) - toMillis(a.lastSeen))
   .map(u => {
     const done = LESSONS.filter(l => u.progress[l.id]?.done);
     const scored = done.map(l => u.progress[l.id]);
@@ -101,6 +126,7 @@ document.getElementById('rows').innerHTML = users
       <td>${status}</td>
     </tr>`;
   }).join('');
+}
 </script>
 <script src="assets/js/sky.js" defer></script>
 </body>
