@@ -54,7 +54,7 @@
       <table>
         <thead>
           <tr>
-            <th>ተማሪ</th><th>ዕድሜ</th><th>ሀገር</th><th>የጥናት ሰዓት</th>
+            <th>ተማሪ</th><th>ዕድሜ</th><th>ክፍል</th><th>የጥናት ሰዓት</th>
             <th>ትምህርት</th><th>አማካይ</th><th>መጨረሻ የታየበት</th><th>ሁኔታ</th>
           </tr>
         </thead>
@@ -69,8 +69,9 @@
 </main>
 
 <script type="module">
-import { Store, fmtHours, fmtAgo, toMillis, requireAuth } from './assets/js/store.js?v=4';
-import { LESSONS } from './assets/js/lessons.js?v=4';
+import { Store, fmtHours, fmtAgo, toMillis, requireAuth } from './assets/js/store.js?v=5';
+import { LESSONS } from './assets/js/lessons.js?v=5';
+import { TRACKS } from './assets/js/validators.js?v=5';
 
 const me = await requireAuth();
 
@@ -116,9 +117,9 @@ if (users.length) document.getElementById('rows').innerHTML = users
       : !u.paid ? '<span class="pill" style="color:#B22F30;border-color:#B22F30">ክፍያ የለም</span>'
       : '<span class="pill pill--done">ንቁ</span>';
     return `<tr>
-      <td><b>${u.fullName}</b><br><span class="muted small">${u.guardian ?? ''} · ${u.email}</span></td>
+      <td><b>${u.studentName ?? '—'}</b><br><span class="muted small">${u.guardianName ?? ''} · ${u.email}</span></td>
       <td class="num">${u.age ?? '—'}</td>
-      <td>${u.country ?? '—'}</td>
+      <td>${TRACKS[u.track]?.am ?? '—'}</td>
       <td class="num">${fmtHours(u.studySeconds)}</td>
       <td class="num">${done.length}/${LESSONS.length}</td>
       <td class="num">${avg}%</td>

@@ -26,6 +26,8 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 import { firebaseConfig } from './config.js';
+import { validateName, validateAge, validateTrack, validatePassword, validateEmail }
+  from './validators.js';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -86,10 +88,31 @@ const fail = (e) => { throw new Error(amharicError(e)); };
 export const Store = {
 
   /* Creates the auth account first, then the profile doc, then sends
-     the verification mail. paid/role are written here as false/'student'
-     because the rules refuse a create that says otherwise — nobody
-     registers themselves an admin or arrives pre-paid. */
-  async createUser({ fullName, email, password, age, guardian, location, country }) {
+     the verification mail.
+
+     The account belongs to the PARENT; the student is a profile under
+     it. That is a COPPA requirement, not a UI preference, which is why
+     only guardianName/email identify a person who can consent.
+
+     Everything is re-validated here even though register.html already
+     checked: a form is a courtesy, this is the boundary. The same
+     functions run in both places so the two can never disagree.
+
+     paid/role are written as false/'student' because the rules refuse a
+     create that says otherwise — nobody registers themselves an admin
+     or arrives pre-paid. */
+  async createUser({ guardianName, email, password, studentName, age, track }) {
+    for (const check of [
+      validateName(guardianName),
+      validateEmail(email),
+      validatePassword(password),
+      validateName(studentName),
+      validateTrack(track),
+      validateAge(age, track)
+    ]) {
+      if (!check.ok) throw new Error(check.message);
+    }
+
     let cred;
     try {
       cred = await createUserWithEmailAndPassword(auth, email, password);
@@ -99,12 +122,11 @@ export const Store = {
     try {
       await setDoc(doc(db, 'users', uid), {
         uid,
-        fullName,
-        email,
-        guardian: guardian || '',
-        location: location || '',
-        country: country || '',
+        guardianName: guardianName.trim().replace(/\s+/g, ' '),
+        email: email.trim(),
+        studentName: studentName.trim().replace(/\s+/g, ' '),
         age: Number(age),
+        track,
         role: 'student',
         paid: false,
         verified: false,
