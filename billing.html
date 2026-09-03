@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ክፍያ — የቅዱሳት መጻሕፍት ትምህርት ቤት</title>
+<script>
+  try {
+    var t = localStorage.getItem('eotc.theme');
+    if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'day' : 'night';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'night'); }
+</script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
@@ -19,6 +26,18 @@
 <meta name="twitter:title" content="ክፍያ — የቅዱሳት መጻሕፍት ትምህርት ቤት">
 <meta name="twitter:description" content="ወርኃዊ ክፍያ በVisa፣ Mastercard እና American Express — ደህንነቱ በተጠበቀ በStripe አማካኝነት።">
 <meta name="twitter:image" content="https://bereket18x2.github.io/assets/og.png">
+<script type="importmap">
+{
+  "imports": {
+    "@store":      "./assets/js/store.js?v=6",
+    "@lessons":    "./assets/js/lessons.js?v=6",
+    "@validators": "./assets/js/validators.js?v=6",
+    "@coverage":   "./assets/js/coverage.js?v=6",
+    "@stats":      "./assets/js/stats.js?v=6",
+    "@config":     "./assets/js/config.js?v=6"
+  }
+}
+</script>
 </head>
 <body class="sky">
 <canvas id="sky"></canvas>
@@ -27,7 +46,7 @@
 <div class="shell">
   <nav class="nav">
     <a class="brand" href="index.html">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
         <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
       </svg>
       የቅዱሳት መጻሕፍት ትምህርት ቤት
@@ -48,7 +67,7 @@
     <span class="spark" style="width:4px;height:4px;left:80%;top:58%;animation-delay:2.1s"></span>
     <span class="spark" style="width:5px;height:5px;left:50%;top:20%;animation-delay:3s"></span>
     <span class="halo-ring">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
         <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
       </svg>
     </span>
@@ -84,6 +103,11 @@
         <li>የጥናት ሰዓትና የመሻሻል ክትትል ለወላጆች</li>
         <li>በማንኛውም ጊዜ ያለ ቅጣት ማቋረጥ ይችላሉ</li>
       </ul>
+    </div>
+
+    <div class="note" id="paidNote" style="display:none;margin-top:16px">
+      ✓ ክፍያዎ ተረጋግጧል። ሁሉም ትምህርቶች ተከፍተዋል።
+      <a href="dashboard.html" style="display:inline-block;margin-top:8px">ወደ ትምህርቶች →</a>
     </div>
 
     <!-- ---------------- live card preview + form ---------------- -->
@@ -149,15 +173,15 @@
 
       <div class="trust-row">
         <span class="trust-chip">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="2" stroke-linecap="round"><path d="M12 15v2M7 10V7a5 5 0 0 1 10 0v3"/><rect x="5" y="10" width="14" height="10" rx="2"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 15v2M7 10V7a5 5 0 0 1 10 0v3"/><rect x="5" y="10" width="14" height="10" rx="2"/></svg>
           256-bit SSL
         </span>
         <span class="trust-chip">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="2" stroke-linecap="round"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6z"/></svg>
           PCI-DSS via Stripe
         </span>
         <span class="trust-chip">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
           በማንኛውም ጊዜ ማቋረጥ ይቻላል
         </span>
       </div>
@@ -175,6 +199,19 @@
         ክፍያው ከተፈጸመ በኋላ መለያዎ በአስተዳዳሪ ተረጋግጦ ትምህርቶቹ ይከፈታሉ። ክፍያ ከአሳሽ ላይ በቀጥታ አይመዘገብም።
       </p>
     </form>
+
+    <!-- shown when the pay button is pressed while card payment is off -->
+    <div class="panel" id="contactPanel" style="display:none;margin-top:16px;border-inline-start:3px solid var(--accent)">
+      <p class="eyebrow">የክፍያ መንገድ</p>
+      <h3 style="margin:0 0 8px;font-size:1.05rem">የካርድ ክፍያ ገና አልተጀመረም</h3>
+      <p class="muted small" style="margin:0 0 12px">
+        በካርድ የመክፈል አገልግሎት ገና አልተያያዘም። እስከዚያ ድረስ ክፍያውን በቀጥታ ከትምህርት ቤቱ ጋር ማመቻቸት ይችላሉ።
+        ክፍያው ከተፈጸመ በኋላ መምህራኑ መለያዎን ያረጋግጡና ትምህርቶቹ ወዲያውኑ ይከፈታሉ።
+      </p>
+      <p class="small" style="margin:0 0 4px"><b id="contactName"></b></p>
+      <p class="small" style="margin:0 0 4px">📧 <a id="contactEmail" href="#"></a></p>
+      <p class="small" style="margin:0">📞 <span id="contactPhone"></span></p>
+    </div>
 
     <!-- ---------------- FAQ ---------------- -->
     <div style="margin-top:16px">
@@ -195,7 +232,7 @@
     <!-- ---------------- what this funds / EOTC purpose note ---------------- -->
     <div class="purpose" style="margin-top:16px">
       <span class="halo-ring" style="width:44px;height:44px;margin-bottom:0">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
           <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
         </svg>
       </span>
@@ -222,8 +259,9 @@
 </footer>
 
 <script type="module">
-import { Store, requireAuth, STRIPE_PAYMENT_LINK } from './assets/js/store.js?v=4';
-import { LESSONS } from './assets/js/lessons.js?v=4';
+import { Store, requireAuth, STRIPE_PAYMENT_LINK } from '@store';
+import { lessonsFor } from '@lessons';
+import { CHURCH_CONTACT, PRICE_USD } from '@config';
 
 const $ = id => document.getElementById(id);
 const u = await requireAuth();
@@ -232,8 +270,20 @@ if (u) {
   $('authedContent').style.display = 'block';
   Store.touch();
   $('studentName').textContent = u.studentName;
-  $('lessonCount').textContent = LESSONS.length;
+  $('lessonCount').textContent = lessonsFor(u.track).length;
   $('email').value = u.email || '';
+
+  // one constant in config.js drives every mention of how to reach us
+  $('contactName').textContent = CHURCH_CONTACT.name;
+  $('contactEmail').textContent = CHURCH_CONTACT.email;
+  $('contactEmail').href = 'mailto:' + CHURCH_CONTACT.email;
+  $('contactPhone').textContent = CHURCH_CONTACT.phone;
+
+  // an already-paid parent does not need to be sold to again
+  if (u.paid) {
+    $('form').style.display = 'none';
+    $('paidNote').style.display = 'block';
+  }
   if (u.guardianName) $('ccName').value = u.guardianName;
 
   if (!STRIPE_PAYMENT_LINK) {
@@ -352,18 +402,24 @@ if (u) {
       (!valid.name ? $('ccName') : !valid.number ? $('ccNumber') : !valid.exp ? $('ccExp') : $('ccCvv')).focus();
       return;
     }
-    if (!STRIPE_PAYMENT_LINK) {
-      $('err').textContent = 'የክፍያ ግንኙነት ገና አልተዘጋጀም። እባክዎ ትምህርት ቤቱን ያግኙ ወይም README ውስጥ ያለውን የStripe ደረጃ ይመልከቱ።';
-      $('err').style.display = 'block';
-      return;
-    }
+    if (!STRIPE_PAYMENT_LINK) { openContactPanel(); return; }
+
     const url = new URL(STRIPE_PAYMENT_LINK);
     if (u.email) url.searchParams.set('prefilled_email', u.email);
     url.searchParams.set('client_reference_id', u.uid);
     location.href = url.toString();
   });
+
+  /* Card payment is not live yet — see docs/PAYMENTS.md. Rather than a
+     dead button or a fake success, say plainly that it is not connected
+     and give the parent a way to actually pay. */
+  function openContactPanel() {
+    $('contactPanel').style.display = 'block';
+    $('contactPanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 </script>
 <script src="assets/js/sky.js" defer></script>
+<script src="assets/js/theme.js" defer></script>
 </body>
 </html>

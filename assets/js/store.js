@@ -25,9 +25,13 @@ import {
   collection, getDocs, query, where, increment, serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-import { firebaseConfig } from './config.js';
+/* Bare specifiers, resolved by the import map in each page's <head>.
+   This is the reason for the map: versioning these relatively would let
+   a freshly-fetched store.js pull a stale config.js, which is exactly
+   the staleness the cache-bust exists to prevent. */
+import { firebaseConfig } from '@config';
 import { validateName, validateAge, validateTrack, validatePassword, validateEmail }
-  from './validators.js';
+  from '@validators';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -235,6 +239,25 @@ export const Store = {
     catch (e) { /* ignore */ }
   },
 
+  /* A lesson writes its progress doc twice and the two writes carry
+     different shapes — the video half here, the quiz half below. Both
+     merge, so neither erases the other. */
+  async saveVideoCompletion(lessonId, coverage) {
+    await ready();
+    const u = auth.currentUser;
+    if (!u) return null;
+
+    const record = {
+      videoCompleted: true,
+      coverage: Math.min(1, Math.max(0, Number(coverage) || 0)),
+      completedAt: serverTimestamp()
+    };
+    try {
+      await setDoc(doc(db, 'users', u.uid, 'progress', lessonId), record, { merge: true });
+    } catch (e) { fail(e); }
+    return record;
+  },
+
   /* Best score wins — a retake can raise a mark but never lower it. */
   async saveQuiz(lessonId, score, of) {
     await ready();
@@ -254,8 +277,25 @@ export const Store = {
       of: Number(of),
       at: serverTimestamp()
     };
-    try { await setDoc(ref, record); } catch (e) { fail(e); }
+    // merge, or this would wipe the videoCompleted/coverage half
+    try { await setDoc(ref, record, { merge: true }); } catch (e) { fail(e); }
     return record;
+  },
+
+  /* Teachers confirm payment by hand. The rules allow this only when the
+     caller's own doc says role == 'admin', so a student calling it gets
+     a permission error rather than a free subscription — the check below
+     is a courtesy message, not the security boundary. */
+  async setPaid(uid, paid = true) {
+    await ready();
+    const me = await this.current();
+    if (!me || me.role !== 'admin') {
+      throw new Error('ክፍያ ማረጋገጥ የሚችሉት መምህራን ብቻ ናቸው።');
+    }
+    try {
+      await updateDoc(doc(db, 'users', uid), { paid: !!paid });
+    } catch (e) { fail(e); }
+    return !!paid;
   },
 
   async resendVerification() {
@@ -400,9 +440,17 @@ function paintVerificationGate(email) {
    people straight to the real form avoids a double redirect. */
 const SIGN_IN_URL = 'index.html#signin';
 
-/* Returns the signed-in, verified user, or null having already handled
-   the failure (redirect, or the gate above). Callers guard on truthiness. */
-export const requireAuth = async () => {
+/* The enrollment gate, in order: signed in -> verified -> paid.
+
+   Returns the user, or null having already handled the failure itself
+   (redirect, or the verification gate above). Callers guard on
+   truthiness and render nothing when it is null.
+
+   Pass { requirePaid: true } on anything behind the paywall. The free
+   preview lesson passes false, so a parent can watch one whole lesson
+   before deciding — see docs/PAYMENTS.md for why the lock is UX rather
+   than enforcement. */
+export const requireAuth = async ({ requirePaid = false } = {}) => {
   await ready();
   if (!auth.currentUser) { location.href = SIGN_IN_URL; return null; }
 
@@ -415,5 +463,11 @@ export const requireAuth = async () => {
     paintVerificationGate(user.email);
     return null;
   }
+
+  if (requirePaid && !user.paid) {
+    location.href = 'billing.html';
+    return null;
+  }
+
   return user;
 };

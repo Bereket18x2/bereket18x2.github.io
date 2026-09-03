@@ -8,7 +8,7 @@
 
 export const LESSONS = [
   {
-    id: 'l1', num: '፩',
+    id: 'l1', num: '፩', track: 'bible',
     title: 'ሃይማኖተ አበው፡ መግቢያ',
     teacher: 'መምህር ዳንኤል',
     minutes: 16,
@@ -36,7 +36,7 @@ export const LESSONS = [
     ]
   },
   {
-    id: 'l2', num: '፪',
+    id: 'l2', num: '፪', track: 'bible',
     title: 'ጸሎት እና ክርስቲያናዊ አኗኗር',
     teacher: 'መምህር ሰላም',
     minutes: 14,
@@ -64,7 +64,7 @@ export const LESSONS = [
     ]
   },
   {
-    id: 'l3', num: '፫',
+    id: 'l3', num: '፫', track: 'bible',
     title: 'ጾም እና ምጽዋት',
     teacher: 'መምህር ተስፋዬ',
     minutes: 18,
@@ -92,7 +92,7 @@ export const LESSONS = [
     ]
   },
   {
-    id: 'l4', num: '፬',
+    id: 'l4', num: '፬', track: 'bible',
     title: 'ሥርዓተ ቅዳሴ',
     teacher: 'መምህር ዳንኤል',
     minutes: 20,
@@ -120,7 +120,7 @@ export const LESSONS = [
     ]
   },
   {
-    id: 'l5', num: '፭',
+    id: 'l5', num: '፭', track: 'bible',
     title: 'ንስሐ',
     teacher: 'መምህር ሰላም',
     minutes: 15,
@@ -148,7 +148,7 @@ export const LESSONS = [
     ]
   },
   {
-    id: 'l6', num: '፮',
+    id: 'l6', num: '፮', track: 'bible',
     title: 'ቅዱሳን መላእክት',
     teacher: 'መምህር ተስፋዬ',
     minutes: 13,
@@ -174,7 +174,222 @@ export const LESSONS = [
         why: 'መላእክት መንፈሳውያን ፍጥረታት ናቸው።'
       }
     ]
+  },
+
+  /* ===========================================================
+     ዜማ — PLACEHOLDER COURSE.
+
+     A teacher must replace every title, summary and question below
+     before this goes in front of students. The structure follows the
+     traditional order — ወንጌለ ዮሐንስ first, then ድጓ and the rest — and
+     the questions are about mode and season, which is what a chant
+     student is actually assessed on. They are NOT comprehension
+     questions about a video, because chant is not learned that way.
+
+     Numbering restarts at ፩ because this is a separate course.
+     =========================================================== */
+
+  {
+    id: 'z1', num: '፩', track: 'zema',
+    title: 'ወንጌለ ዮሐንስ — መግቢያ',
+    teacher: 'መምህር (ይተካ)',
+    minutes: 18,
+    youtube: '',
+    summary: 'የዜማ ትምህርት መነሻ፣ ቅዱስ ያሬድና ሦስቱ ዜማዎች።',
+    questions: [
+      {
+        q: 'በኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ ክርስቲያን ሥርዓት የዜማ ትምህርት የሚጀመረው በምንድን ነው?',
+        options: ['በድጓ', 'በወንጌለ ዮሐንስ', 'በቅዳሴ', 'በአቋቋም'],
+        answer: 1,
+        why: 'ወንጌለ ዮሐንስ የዜማ ተማሪ የመጀመሪያ ደረጃ ነው።'
+      },
+      {
+        q: 'ቅዱስ ያሬድ ያስተማራቸው የዜማ ክፍሎች ስንት ናቸው?',
+        options: ['ሁለት', 'ሦስት', 'አምስት', 'ሰባት'],
+        answer: 1,
+        why: 'ግዕዝ፣ ዕዝልና አራራይ — ሦስቱ ዜማዎች።'
+      },
+      {
+        q: 'ቅዱስ ያሬድ ያገለገለበት ከተማ የትኛው ነው?',
+        options: ['ላሊበላ', 'አክሱም', 'ጎንደር', 'ደብረ ዳሞ'],
+        answer: 1,
+        why: 'ቅዱስ ያሬድ በ፮ኛው መቶ ክፍለ ዘመን በአክሱም አገልግሏል።'
+      }
+    ]
+  },
+  {
+    id: 'z2', num: '፪', track: 'zema',
+    title: 'ድጓ',
+    teacher: 'መምህር (ይተካ)',
+    minutes: 20,
+    youtube: '',
+    summary: 'የዓመቱን በዓላት የሚሸፍነው የቅዱስ ያሬድ ዋና የዜማ መጽሐፍ።',
+    questions: [
+      {
+        q: 'ድጓ ምንድን ነው?',
+        options: [
+          'የጸሎት መጽሐፍ',
+          'የዓመቱን በዓላት የሚሸፍን የዜማ መጽሐፍ',
+          'የቅዳሴ ሥርዓት',
+          'የታሪክ መጽሐፍ'
+        ],
+        answer: 1,
+        why: 'ድጓ ከመስከረም እስከ ጳጉሜን ያሉትን በዓላት ይዞ የሚዘመር ነው።'
+      },
+      {
+        q: 'የግዕዝ ዜማ ባሕርይ የሚገለጸው እንዴት ነው?',
+        options: ['ቀጥተኛና መሠረታዊ', 'አዝናኝና ፈጣን', 'የሐዘን', 'ያለ ቅኝት'],
+        answer: 0,
+        why: 'ግዕዝ የመጀመሪያውና መሠረታዊው ዜማ ነው፤ ሌሎቹ ከእሱ ይመዘዛሉ።'
+      },
+      {
+        q: 'በደስታ በዓላት ጊዜ የሚያገለግለው ዜማ የትኛው ነው?',
+        options: ['ዕዝል', 'አራራይ', 'ግዕዝ', 'ምንም'],
+        answer: 1,
+        why: 'አራራይ ቀለል ያለና ደስታን የሚገልጽ ዜማ ነው።'
+      }
+    ]
+  },
+  {
+    id: 'z3', num: '፫', track: 'zema',
+    title: 'ጾመ ድጓ',
+    teacher: 'መምህር (ይተካ)',
+    minutes: 19,
+    youtube: '',
+    summary: 'የዐቢይ ጾም ዜማ፣ እና ዕዝል ለምን እንደሚያገለግል።',
+    questions: [
+      {
+        q: 'ጾመ ድጓ የሚዘመረው በየትኛው ወቅት ነው?',
+        options: ['በዐቢይ ጾም', 'በጾመ ነቢያት', 'በበዓለ ትንሣኤ', 'በመስቀል በዓል'],
+        answer: 0,
+        why: 'ጾመ ድጓ ለዐቢይ ጾም ተብሎ የተዘጋጀ የቅዱስ ያሬድ ክፍል ነው።'
+      },
+      {
+        q: 'ዐቢይ ጾም ስንት ቀናት ነው?',
+        options: ['፵ ቀን', '፶፭ ቀን', '፵፫ ቀን', '፲፬ ቀን'],
+        answer: 1,
+        why: 'ዐቢይ ጾም ፶፭ ቀናት ነው።'
+      },
+      {
+        q: 'በሐዘንና በጾም ወቅት የሚያገለግለው ዜማ የትኛው ነው?',
+        options: ['አራራይ', 'ግዕዝ', 'ዕዝል', 'ሦስቱም'],
+        answer: 2,
+        why: 'ዕዝል ጥልቅና የሐዘን ስሜት የሚገልጽ ዜማ ነው።'
+      }
+    ]
+  },
+  {
+    id: 'z4', num: '፬', track: 'zema',
+    title: 'ምዕራፍ',
+    teacher: 'መምህር (ይተካ)',
+    minutes: 16,
+    youtube: '',
+    summary: 'የምዕራፍ አከፋፈልና በዜማ ውስጥ ያለው ቦታ።',
+    questions: [
+      {
+        q: 'ምዕራፍ በዜማ ትምህርት ውስጥ የሚመጣው መቼ ነው?',
+        options: [
+          'ከወንጌለ ዮሐንስ በፊት',
+          'ከድጓ በኋላ ባለው ደረጃ',
+          'ከቅዳሴ በኋላ',
+          'ከትምህርቱ ውጪ ነው'
+        ],
+        answer: 1,
+        why: 'ተማሪው ድጓን ከያዘ በኋላ ወደ ምዕራፍ ይሸጋገራል።'
+      },
+      {
+        q: 'ሦስቱ ዜማዎች የሚለያዩት በምንድን ነው?',
+        options: ['በቋንቋ', 'በቅኝትና በስሜት', 'በጸሐፊው', 'በርዝመት ብቻ'],
+        answer: 1,
+        why: 'እያንዳንዱ ዜማ የራሱ ቅኝትና የሚገልጸው ስሜት አለው።'
+      },
+      {
+        q: 'የዜማ ምልክቶች (ምልክተ ዜማ) ጥቅማቸው ምንድን ነው?',
+        options: [
+          'ጌጥ ናቸው',
+          'ዜማው እንዴት እንደሚዜም ያመለክታሉ',
+          'የገጽ ቁጥር ናቸው',
+          'ለንባብ ብቻ ናቸው'
+        ],
+        answer: 1,
+        why: 'ምልክተ ዜማ የድምፅን ከፍታ፣ ዝቅታና ቆይታ ያመለክታል።'
+      }
+    ]
+  },
+  {
+    id: 'z5', num: '፭', track: 'zema',
+    title: 'ዝማሬ ወመዋሥዕት',
+    teacher: 'መምህር (ይተካ)',
+    minutes: 17,
+    youtube: '',
+    summary: 'ዝማሬ ከቁርባን በኋላ፣ መዋሥዕት በምላሽ ሥርዓት።',
+    questions: [
+      {
+        q: 'ዝማሬ የሚዘመረው መቼ ነው?',
+        options: ['ከቅዳሴ በፊት', 'ከቅዱስ ቁርባን በኋላ', 'በጠዋት ጸሎት', 'በዓል ዋዜማ'],
+        answer: 1,
+        why: 'ዝማሬ ከቅዱስ ቁርባን በኋላ የሚቀርብ ነው።'
+      },
+      {
+        q: 'መዋሥዕት ማለት ምን ማለት ነው?',
+        options: ['መልስ መስጠት', 'መጀመር', 'መዝጋት', 'ማንበብ'],
+        answer: 0,
+        why: 'መዋሥዕት በምላሽ መልክ የሚዜም ሥርዓት ነው።'
+      },
+      {
+        q: 'በአቋቋም ጊዜ የሚያገለግሉት ንዋያት የትኞቹ ናቸው?',
+        options: [
+          'መቋሚያ፣ ጸናጽልና ከበሮ',
+          'መስቀልና ጃንጥላ',
+          'ማዕጠንትና ጧፍ',
+          'ከበሮ ብቻ'
+        ],
+        answer: 0,
+        why: 'አቋቋም በመቋሚያ፣ በጸናጽልና በከበሮ ታጅቦ ይፈጸማል።'
+      }
+    ]
+  },
+  {
+    id: 'z6', num: '፮', track: 'zema',
+    title: 'ቅዳሴ በዜማ',
+    teacher: 'መምህር (ይተካ)',
+    minutes: 20,
+    youtube: '',
+    summary: 'የቅዳሴ ዜማና ተማሪው የሚደርስበት የመጨረሻ ደረጃ።',
+    questions: [
+      {
+        q: 'በኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ ክርስቲያን ያሉት ቅዳሴያት ስንት ናቸው?',
+        options: ['፯', '፲', '፲፬', '፳'],
+        answer: 2,
+        why: 'ዐሥራ አራቱ ቅዳሴያት ይባላሉ።'
+      },
+      {
+        q: 'የዜማ ተማሪ ወደ ቅዳሴ ዜማ የሚደርሰው መቼ ነው?',
+        options: [
+          'በመጀመሪያው ዓመት',
+          'ቀደምት ደረጃዎቹን ከጨረሰ በኋላ',
+          'ከአቋቋም በፊት',
+          'ያለ ቅደም ተከተል'
+        ],
+        answer: 1,
+        why: 'ሥርዓቱ ከወንጌለ ዮሐንስ ተነስቶ በደረጃ ወደ ቅዳሴ ይደርሳል።'
+      },
+      {
+        q: 'ቅዳሴ የሚፈጸመው የት ነው?',
+        options: ['በቅኔ ማኅሌት', 'በመቅደስ', 'በደጀ ሰላም', 'በቅጽረ ቤተ ክርስቲያን'],
+        answer: 1,
+        why: 'ቅዱስ ቁርባን የሚፈጸመው በመቅደስ ነው።'
+      }
+    ]
   }
 ];
 
+/* Lesson l1 is the free preview: a parent can watch one whole lesson
+   before being asked to pay. Everything else needs a paid account. */
+export const FREE_PREVIEW_ID = 'l1';
+
 export const findLesson = (id) => LESSONS.find(l => l.id === id);
+
+export const lessonsFor = (track) => LESSONS.filter(l => l.track === track);
+
+export const isFree = (id) => id === FREE_PREVIEW_ID;

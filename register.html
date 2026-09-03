@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ምዝገባ — የቅዱሳት መጻሕፍት ትምህርት ቤት</title>
+<script>
+  try {
+    var t = localStorage.getItem('eotc.theme');
+    if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'day' : 'night';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'night'); }
+</script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
@@ -19,6 +26,18 @@
 <meta name="twitter:title" content="ምዝገባ — የቅዱሳት መጻሕፍት ትምህርት ቤት">
 <meta name="twitter:description" content="ወላጅ መለያ ይክፈታሉ፤ የተማሪው መረጃ በዚሁ መለያ ሥር ይመዘገባል።">
 <meta name="twitter:image" content="https://bereket18x2.github.io/assets/og.png">
+<script type="importmap">
+{
+  "imports": {
+    "@store":      "./assets/js/store.js?v=6",
+    "@lessons":    "./assets/js/lessons.js?v=6",
+    "@validators": "./assets/js/validators.js?v=6",
+    "@coverage":   "./assets/js/coverage.js?v=6",
+    "@stats":      "./assets/js/stats.js?v=6",
+    "@config":     "./assets/js/config.js?v=6"
+  }
+}
+</script>
 </head>
 <body class="sky">
 <canvas id="sky"></canvas>
@@ -27,7 +46,7 @@
 <div class="shell">
   <nav class="nav">
     <a class="brand" href="index.html">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
         <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
       </svg>
       የቅዱሳት መጻሕፍት ትምህርት ቤት
@@ -35,6 +54,7 @@
     <div class="nav-links">
       <a href="index.html#signin" data-am="አስቀድመው ተመዝግበዋል? ግባ" data-en="Already registered? Sign in">አስቀድመው ተመዝግበዋል? ግባ</a>
       <button class="lang-toggle" type="button">EN</button>
+      <button class="theme-toggle" type="button" aria-label="ገጽታ ቀይር"></button>
     </div>
   </nav>
 </div>
@@ -108,9 +128,9 @@
 </main>
 
 <script type="module">
-import { Store, ready } from './assets/js/store.js?v=5';
+import { Store, ready } from '@store';
 import { validateName, validateAge, validateTrack, validatePassword, validateEmail, TRACKS }
-  from './assets/js/validators.js?v=5';
+  from '@validators';
 
 const $ = id => document.getElementById(id);
 const err = $('err');
@@ -208,6 +228,7 @@ $('form').addEventListener('submit', async (e) => {
 });
 </script>
 <script src="assets/js/sky.js" defer></script>
+<script src="assets/js/theme.js" defer></script>
 <script src="assets/js/i18n.js" defer></script>
 </body>
 </html>

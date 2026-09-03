@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ትምህርት — የቅዱሳት መጻሕፍት ትምህርት ቤት</title>
+<script>
+  // before the stylesheet, so the page never paints the wrong theme first
+  try {
+    var t = localStorage.getItem('eotc.theme');
+    if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'day' : 'night';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'night'); }
+</script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
@@ -19,6 +27,17 @@
 <meta name="twitter:title" content="ትምህርት — የቅዱሳት መጻሕፍት ትምህርት ቤት">
 <meta name="twitter:description" content="ቪዲዮ ትምህርትና ጥያቄዎች ለልጆች በአማርኛ።">
 <meta name="twitter:image" content="https://bereket18x2.github.io/assets/og.png">
+<script type="importmap">
+{
+  "imports": {
+    "@store":      "./assets/js/store.js?v=6",
+    "@lessons":    "./assets/js/lessons.js?v=6",
+    "@validators": "./assets/js/validators.js?v=6",
+    "@coverage":   "./assets/js/coverage.js?v=6",
+    "@config":     "./assets/js/config.js?v=6"
+  }
+}
+</script>
 </head>
 <body class="sky">
 <canvas id="sky"></canvas>
@@ -27,7 +46,7 @@
 <div class="shell">
   <nav class="nav">
     <a class="brand" href="index.html">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8A73C" stroke-width="1.6" stroke-linecap="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
         <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
       </svg>
       የቅዱሳት መጻሕፍት ትምህርት ቤት
@@ -35,13 +54,12 @@
     <div class="nav-links">
       <a href="dashboard.html">← ወደ ትምህርቶች</a>
       <span class="pill pill--live" id="timer">፡ ፡</span>
+      <button class="theme-toggle" type="button" id="themeToggle" aria-label="ገጽታ ቀይር"></button>
     </div>
   </nav>
 </div>
 
 <main class="shell section">
-
-
   <div id="authedContent" style="display:none">
     <div class="row" style="align-items:baseline;gap:14px">
       <span class="geez" id="num" style="font-size:2rem"></span>
@@ -49,13 +67,26 @@
         <h1 id="title" style="font-size:1.8rem;margin:0">…</h1>
         <p class="muted small" id="meta" style="margin:4px 0 0"></p>
       </div>
+      <span class="pill" id="freeBadge" style="display:none">ነጻ ቅምሻ</span>
     </div>
 
     <div class="frame" id="frame" style="margin:22px 0">
       <div class="frame-empty" id="empty">
-        ቪዲዮው ገና አልተጫነም።<br><span class="small">በ <code>assets/js/lessons.js</code> ውስጥ የYouTube መለያ ያስገቡ።</span>
-        <br><button class="btn btn--ghost" id="sim" style="margin-top:14px">ለሙከራ ጥናት ጀምር</button>
+        ቪዲዮው ገና አልተጫነም።
+        <br><span class="small">ቪዲዮው ከተጫነ በኋላ ጥያቄዎቹ ይከፈታሉ።</span>
       </div>
+    </div>
+
+    <!-- watch progress -->
+    <div class="panel" id="watchPanel" style="margin-bottom:22px">
+      <div class="between" style="margin-bottom:10px">
+        <p class="eyebrow" style="margin:0">የመመልከቻ ሂደት</p>
+        <span class="pill" id="coveragePill">0%</span>
+      </div>
+      <div class="meter"><i id="coverageBar" style="width:0%"></i></div>
+      <p class="muted small" style="margin:10px 0 0" id="watchNote">
+        ጥያቄዎቹ የሚከፈቱት ትምህርቱን ቢያንስ ፺% ካዩ በኋላ ነው።
+      </p>
     </div>
 
     <div class="grid-2">
@@ -64,7 +95,13 @@
           <h2 style="margin:0;font-size:1.25rem">ጥያቄዎች</h2>
           <span class="pill" id="qcount"></span>
         </div>
+
+        <div class="note" id="quizLock" style="margin-bottom:14px">
+          🔒 ጥያቄዎቹ የተቆለፉ ናቸው። ትምህርቱን በሙሉ ከተመለከቱ በኋላ ይከፈታሉ።
+        </div>
+
         <div id="quiz" class="stack"></div>
+
         <div id="result" style="display:none;margin-top:20px" class="panel">
           <p class="eyebrow">ውጤት</p>
           <div class="stat" id="score"></div>
@@ -78,51 +115,51 @@
         <p class="small muted" id="summary"></p>
         <div class="harag harag--thin" style="margin:16px 0"></div>
         <p class="eyebrow">የተመዘገበ ጊዜ</p>
-        <p class="small muted" style="margin:0">ቪዲዮው በሚጫወትበት ጊዜ ብቻ ነው ሰዓት የሚቆጠረው። ማቆም ወይም ገጹን መዝጋት ቆጠራውን ያቆማል።</p>
+        <p class="small muted" style="margin:0">
+          ሰዓት የሚቆጠረው ቪዲዮው በሚጫወትበት ጊዜ ብቻ ነው። ወደ መጨረሻው መዝለል ትምህርቱን አያጠናቅቅም —
+          የታዩት ክፍሎች ተለይተው ይመዘገባሉ።
+        </p>
       </aside>
     </div>
   </div>
 </main>
 
 <script type="module">
-import { Store, requireAuth } from './assets/js/store.js?v=4';
-import { findLesson } from './assets/js/lessons.js?v=4';
+import { Store, requireAuth } from '@store';
+import { findLesson, isFree } from '@lessons';
+import { markBucket, coverageOf, isComplete, shortfallMessage } from '@coverage';
 
-const u = await requireAuth();
+const $ = id => document.getElementById(id);
 const id = new URLSearchParams(location.search).get('id') || 'l1';
+
+/* The free preview is playable without paying so a parent can see what
+   they are buying; everything else sends an unpaid account to billing. */
+const u = await requireAuth({ requirePaid: !isFree(id) });
 const L = u ? findLesson(id) : null;
 
 if (u && !L) {
   location.href = 'dashboard.html';
 } else if (u && L) {
-  document.getElementById('authedContent').style.display = 'block';
-  document.getElementById('num').textContent = L.num;
-  document.getElementById('title').textContent = L.title;
-  document.getElementById('meta').textContent = `${L.teacher} · ${L.minutes} ደቂቃ`;
-  document.getElementById('summary').textContent = L.summary;
-  document.getElementById('qcount').textContent = `${L.questions.length} ጥያቄ`;
+  $('authedContent').style.display = 'block';
+  $('num').textContent = L.num;
+  $('title').textContent = L.title;
+  $('meta').textContent = `${L.teacher} · ${L.minutes} ደቂቃ`;
+  $('summary').textContent = L.summary;
+  $('qcount').textContent = `${L.questions.length} ጥያቄ`;
+  if (isFree(L.id)) $('freeBadge').style.display = 'inline-block';
 
-  /* ---------- watch-time heartbeat ----------
-     Seconds are only banked while the video reports PLAYING.
-     A stopwatch the student can leave running is not attendance.
+  /* ---------- watch time ----------
+     The on-screen clock ticks every 5s; Firestore is written every 30s.
+     Firestore bills per write and a 5s write is 720 writes an hour per
+     student. A failed flush returns its seconds to `pending` so a dead
+     connection costs a delay, not attendance. */
+  let watched = 0, pending = 0;
+  let beat = null, flushTimer = null, poll = null;
 
-     The on-screen clock ticks every 5s, but Firestore is written only
-     every 30s. Firestore bills per write: a 5s write is 720 writes per
-     hour per student, and fifty students watching an hour a week would
-     be paying for ~144,000 writes a month to record the same number.
-     Batching to 30s is the same data for a sixth of the writes.
-
-     A failed flush puts its seconds back into `pending` rather than
-     dropping them, so a dead connection costs a delay, not attendance. */
-  let watched = 0;        // shown on screen
-  let pending = 0;        // earned but not yet written
-  let beat = null, flushTimer = null;
-
-  const timerEl = document.getElementById('timer');
   const paint = () => {
     const m = String(Math.floor(watched / 60)).padStart(2, '0');
     const s = String(watched % 60).padStart(2, '0');
-    timerEl.textContent = `${m}፡${s}`;
+    $('timer').textContent = `${m}፡${s}`;
   };
   paint();
 
@@ -130,66 +167,112 @@ if (u && !L) {
     if (!pending) return;
     const owed = pending;
     pending = 0;
-    try {
-      await Store.addStudySeconds(owed);
-    } catch (e) {
-      pending += owed;   // hand them back; the next flush retries
-    }
+    try { await Store.addStudySeconds(owed); }
+    catch (e) { pending += owed; }
   }
 
-  const start = () => {
+  /* ---------- coverage ----------
+     Buckets, not elapsed time: skipping ahead leaves holes that can only
+     be filled by going back and watching. See assets/js/coverage.js. */
+  const seen = new Set();
+  let duration = 0;
+  let completed = false;
+
+  const paintCoverage = () => {
+    const pct = Math.round(coverageOf(seen, duration) * 100);
+    $('coveragePill').textContent = pct + '%';
+    $('coverageBar').style.width = pct + '%';
+  };
+
+  function unlockQuiz() {
+    $('quizLock').style.display = 'none';
+    document.querySelectorAll('#quiz .choice').forEach(b => { b.disabled = false; });
+  }
+
+  async function onVideoEnded() {
+    if (completed) return;
+    stop();
+    const cov = coverageOf(seen, duration);
+    if (!isComplete(seen, duration)) {
+      $('watchNote').textContent = shortfallMessage(seen, duration);
+      $('watchNote').className = 'note note--red small';
+      return;                       // quiz stays locked
+    }
+    completed = true;
+    $('watchNote').textContent = 'ትምህርቱን በሙሉ ተመልክተዋል። ጥያቄዎቹ ተከፍተዋል።';
+    $('watchNote').className = 'muted small';
+    unlockQuiz();
+    try { await Store.saveVideoCompletion(L.id, cov); } catch (e) { /* mark still unlocked locally */ }
+  }
+
+  const start = (player) => {
     if (beat) return;
     beat = setInterval(() => { watched += 5; pending += 5; paint(); }, 5000);
     flushTimer = setInterval(flush, 30000);
+    // one observation per second, so a bucket is only marked when
+    // playback is genuinely inside it
+    poll = setInterval(() => {
+      if (!player) return;
+      const t = player.getCurrentTime ? player.getCurrentTime() : 0;
+      if (!duration && player.getDuration) duration = player.getDuration() || 0;
+      markBucket(seen, t, duration);
+      paintCoverage();
+    }, 1000);
   };
+
   const stop = () => {
     clearInterval(beat); beat = null;
     clearInterval(flushTimer); flushTimer = null;
+    clearInterval(poll); poll = null;
     flush();
   };
+
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
   window.addEventListener('pagehide', stop);
   window.addEventListener('beforeunload', stop);
 
   /* ---------- video ---------- */
   if (L.youtube) {
-    document.getElementById('empty').remove();
+    $('empty').remove();
     const tag = document.createElement('script');
     tag.src = 'https://www.youtube.com/iframe_api';
     document.head.appendChild(tag);
     const host = document.createElement('div');
     host.id = 'player';
-    document.getElementById('frame').appendChild(host);
+    $('frame').appendChild(host);
     window.onYouTubeIframeAPIReady = () => {
-      new YT.Player('player', {
+      const player = new YT.Player('player', {
         videoId: L.youtube,
         playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
         events: {
-          onStateChange: (e) => (e.data === YT.PlayerState.PLAYING) ? start() : stop()
+          onReady: () => { duration = player.getDuration() || 0; paintCoverage(); },
+          onStateChange: (e) => {
+            if (e.data === YT.PlayerState.PLAYING) start(player);
+            else stop();
+            if (e.data === YT.PlayerState.ENDED) onVideoEnded();
+          }
         }
       });
     };
   } else {
-    document.getElementById('sim').addEventListener('click', (e) => {
-      const on = beat;
-      on ? stop() : start();
-      e.target.textContent = on ? 'ለሙከራ ጥናት ጀምር' : 'ጥናት አቁም';
-    });
+    // No video uploaded yet: the quiz stays locked, because there is
+    // nothing to have watched. Nothing is written either way.
+    $('watchNote').textContent = 'ቪዲዮው ገና አልተጫነም። ከተጫነ በኋላ ጥያቄዎቹ ይከፈታሉ።';
   }
 
   /* ---------- quiz ---------- */
   const answers = new Array(L.questions.length).fill(null);
-  document.getElementById('quiz').innerHTML = L.questions.map((q, i) => `
+  $('quiz').innerHTML = L.questions.map((q, i) => `
     <div class="panel" data-q="${i}">
       <p style="margin:0 0 14px"><b>${i + 1}.</b> ${q.q}</p>
       ${q.options.map((o, j) =>
-        `<button class="choice" data-i="${i}" data-j="${j}">${o}</button>`).join('')}
+        `<button class="choice" data-i="${i}" data-j="${j}" disabled>${o}</button>`).join('')}
       <p class="note small" data-why="${i}" style="display:none;margin-top:10px">${q.why}</p>
     </div>`).join('');
 
-  document.getElementById('quiz').addEventListener('click', (e) => {
+  $('quiz').addEventListener('click', (e) => {
     const b = e.target.closest('.choice');
-    if (!b) return;
+    if (!b || b.disabled) return;
     const i = +b.dataset.i, j = +b.dataset.j;
     if (answers[i] !== null) return;           // one attempt per question
     answers[i] = j;
@@ -210,17 +293,18 @@ if (u && !L) {
     stop();
     const score = answers.filter((a, i) => a === L.questions[i].answer).length;
     const of = L.questions.length;
-    try { await Store.saveQuiz(L.id, score, of); } catch (e) { /* mark still shown below */ }
-    document.getElementById('score').innerHTML = `${score}<small> / ${of}</small>`;
-    document.getElementById('verdict').textContent =
+    try { await Store.saveQuiz(L.id, score, of); } catch (e) { /* mark still shown */ }
+    $('score').innerHTML = `${score}<small> / ${of}</small>`;
+    $('verdict').textContent =
       score === of ? 'እግዚአብሔር ይስጥልኝ — ሁሉንም በትክክል መልሰዋል።'
       : score >= of - 1 ? 'በጣም ጥሩ። ትምህርቱን በድጋሚ ቢመለከቱት ይረዳል።'
       : 'ትምህርቱን በድጋሚ ተመልክተው እንደገና ይሞክሩ።';
-    document.getElementById('result').style.display = 'block';
-    document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    $('result').style.display = 'block';
+    $('result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 }
 </script>
 <script src="assets/js/sky.js" defer></script>
+<script src="assets/js/theme.js" defer></script>
 </body>
 </html>
