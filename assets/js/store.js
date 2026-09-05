@@ -87,6 +87,10 @@ const amharicError = (e) => {
 
 const fail = (e) => { throw new Error(amharicError(e)); };
 
+/* Set when the verification mail could not be sent during registration,
+   so the gate can say so instead of implying a message is on its way. */
+let lastVerificationError = null;
+
 /* ---------------- accounts + data ---------------- */
 
 export const Store = {
@@ -140,7 +144,18 @@ export const Store = {
       });
     } catch (e) { fail(e); }
 
-    try { await sendEmailVerification(cred.user); } catch (e) { /* account exists; they can resend */ }
+    /* The account exists whether or not the mail goes out, so a send
+       failure must not fail registration — but it must not vanish
+       either. Swallowing it silently leaves a parent staring at an
+       empty inbox with nothing to act on. Record it, log the real code
+       for diagnosis, and show it on the verification gate. */
+    lastVerificationError = null;
+    try {
+      await sendEmailVerification(cred.user);
+    } catch (e) {
+      lastVerificationError = amharicError(e);
+      console.error('sendEmailVerification failed:', e && e.code, e && e.message);
+    }
 
     return this.current();
   },
@@ -401,6 +416,14 @@ function paintVerificationGate(email) {
 </main>`;
 
   document.getElementById('gateEmail').textContent = email || '';
+
+  // if the mail never went out, say so rather than telling them to wait
+  if (lastVerificationError) {
+    const m = document.getElementById('gateMsg');
+    m.textContent = 'የማረጋገጫ መልእክቱ አልተላከም፦ ' + lastVerificationError + ' — «በድጋሚ ላክ» ይሞክሩ።';
+    m.className = 'note note--red small';
+    m.style.display = 'block';
+  }
 
   const msg = document.getElementById('gateMsg');
   const say = (text, ok) => {
