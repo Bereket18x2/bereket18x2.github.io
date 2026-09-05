@@ -112,6 +112,17 @@
     </div>
     <div id="list"></div>
 
+    <!-- ---------------- data controls ---------------- -->
+    <div class="panel" style="margin-top:26px">
+      <p class="eyebrow">የመረጃ መብትዎ</p>
+      <p class="muted small" style="margin:0 0 14px">
+        ስለ ልጅዎ የያዝነው መረጃ በ<a href="privacy.html">የግላዊነት መመሪያ</a> ላይ ተዘርዝሯል።
+        መረጃው እንዲሰረዝ መጠየቅ ይችላሉ — ጥያቄው ለመምህራን ደርሶ በሰው እጅ ይፈጸማል።
+      </p>
+      <p id="delMsg" class="note small" style="display:none;margin-bottom:12px"></p>
+      <button class="btn btn--ghost btn--sm" type="button" id="requestDeletion">የመረጃ ስረዛ ጠይቅ</button>
+    </div>
+
   </div>
 </main>
 
@@ -186,6 +197,32 @@ if (u) {
       ${badge}
     </a>`;
   }).join('') || '<p class="muted">በዚህ ክፍል ገና ትምህርት አልተጨመረም።</p>';
+
+  /* Deletion is requested, never performed here — see Store.requestDeletion. */
+  const delBtn = $('requestDeletion'), delMsg = $('delMsg');
+  const showDel = (text, bad) => {
+    delMsg.textContent = text;
+    delMsg.className = bad ? 'note note--red small' : 'note small';
+    delMsg.style.display = 'block';
+  };
+
+  const existing = await Store.deletionRequestStatus();
+  if (existing) {
+    delBtn.disabled = true;
+    showDel('የስረዛ ጥያቄዎ ደርሶናል። መምህራን እስኪያዩት ድረስ ይጠብቁ።', false);
+  }
+
+  delBtn.addEventListener('click', async () => {
+    if (!confirm('የልጅዎ መረጃ እንዲሰረዝ መጠየቅ ይፈልጋሉ? ጥያቄው ለመምህራን ይላካል።')) return;
+    delBtn.disabled = true;
+    try {
+      await Store.requestDeletion();
+      showDel('ጥያቄዎ ተልኳል። መምህራን ካዩት በኋላ መረጃው ይሰረዛል።', false);
+    } catch (ex) {
+      delBtn.disabled = false;
+      showDel(ex.message, true);
+    }
+  });
 
   $('out').addEventListener('click', async (e) => {
     e.preventDefault();

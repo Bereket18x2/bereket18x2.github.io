@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>የግላዊነት መመሪያ — ፍኖተ ያሬድ</title>
+<script>
+  try {
+    var t = localStorage.getItem('eotc.theme');
+    if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'day' : 'night';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'night'); }
+</script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="shortcut icon" href="assets/favicon.svg">
+<meta property="og:title" content="የግላዊነት መመሪያ — ፍኖተ ያሬድ">
+<meta property="og:description" content="ስለ ልጅዎ ምን እንደምንሰበስብ፣ ማን እንደሚያየው፣ እና እንዴት እንደሚሰረዝ።">
+<meta property="og:image" content="https://bereket18x2.github.io/assets/og.png">
+<meta property="og:url" content="https://bereket18x2.github.io/privacy.html">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="am_ET">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="የግላዊነት መመሪያ — ፍኖተ ያሬድ">
+<meta name="twitter:description" content="ስለ ልጅዎ ምን እንደምንሰበስብ፣ ማን እንደሚያየው፣ እና እንዴት እንደሚሰረዝ።">
+<meta name="twitter:image" content="https://bereket18x2.github.io/assets/og.png">
+</head>
+<body class="sky">
+<canvas id="sky"></canvas>
+
+<div class="harag"></div>
+<div class="shell">
+  <nav class="nav">
+    <a class="brand" href="index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
+      </svg>
+      ፍኖተ ያሬድ
+    </a>
+    <div class="nav-links">
+      <a href="terms.html" data-am="የአገልግሎት ሁኔታዎች" data-en="Terms">የአገልግሎት ሁኔታዎች</a>
+      <button class="lang-toggle" type="button">EN</button>
+      <button class="theme-toggle" type="button" aria-label="ገጽታ ቀይር"></button>
+    </div>
+  </nav>
+</div>
+
+<main class="shell section" style="max-width:720px">
+
+<!-- ==================== AMHARIC ==================== -->
+<div data-lang-block="am">
+  <p class="eyebrow">የግላዊነት መመሪያ</p>
+  <h1 style="font-size:2rem">ስለ ልጅዎ መረጃ</h1>
+  <p class="muted small">የመጨረሻ ማሻሻያ፦ ፳፻፲፰ ዓ.ም (2026-09-05) · እትም <span class="consent-version"></span></p>
+
+  <div class="note" style="margin:20px 0">
+    ይህ ገጽ የተጻፈው ለወላጆች ነው። በሕግ ቋንቋ ሳይሆን በግልጽ አማርኛ ልንነግርዎ ፈልገናል፦
+    ምን እንደምንሰበስብ፣ ማን እንደሚያየው፣ ለምን ያህል ጊዜ እንደምናስቀምጠው፣ እና እንዴት
+    ማስሰረዝ እንደሚችሉ።
+  </div>
+
+  <h2>የምንሰበስበው</h2>
+  <p>መለያ ሲከፍቱ የሚከተሉትን ብቻ እንሰበስባለን፦</p>
+  <ul class="muted">
+    <li><b>የወላጅ ወይም የአሳዳጊ ሙሉ ስም</b> — መለያው የማን እንደሆነ ለማወቅ።</li>
+    <li><b>የወላጅ ኢሜይል</b> — መግቢያዎ ነው፤ ማረጋገጫና አስፈላጊ መልእክቶች የሚደርሱበት።</li>
+    <li><b>የተማሪው ስም</b> — በትምህርቱ ገጽና በመምህራን ዝርዝር ውስጥ ለመለየት።</li>
+    <li><b>የተማሪው ዕድሜ</b> — ለትምህርት ክፍሉ ተስማሚ መሆኑን ለማረጋገጥ።</li>
+    <li><b>የትምህርት ክፍል</b> — የቅዱሳት መጻሕፍት ትምህርት ወይም ዜማ።</li>
+  </ul>
+
+  <p>ልጅዎ ትምህርት ሲከታተል ደግሞ የሚከተሉት ይመዘገባሉ፦</p>
+  <ul class="muted">
+    <li>ምን ያህል ጊዜ ቪዲዮ እንደተመለከተ።</li>
+    <li>የትኛውን ትምህርት እንደጨረሰና ምን ያህሉን እንዳየ።</li>
+    <li>የጥያቄዎች ውጤት።</li>
+    <li>መጨረሻ መቼ እንደገባ።</li>
+  </ul>
+
+  <h2>የማንሰበስበው</h2>
+  <p>ስለ ልጅዎ የሚከተሉትን <b>አንጠይቅም፤ አናስቀምጥም</b>፦</p>
+  <ul class="muted">
+    <li>የቤት አድራሻ ወይም የሚኖሩበት ከተማ።</li>
+    <li>የልጅ ኢሜይል ወይም ስልክ ቁጥር።</li>
+    <li>ፎቶ ወይም ድምፅ።</li>
+    <li>የትውልድ ቀን (ዕድሜ ብቻ ነው የምንይዘው)።</li>
+    <li>የክፍያ ካርድ ቁጥር — በዚህ ድረ-ገጽ ላይ በጭራሽ አይቀመጥም።</li>
+  </ul>
+
+  <h2>ማን ያየዋል</h2>
+  <ul class="muted">
+    <li><b>እርስዎ</b> — በመለያዎ ገብተው የልጅዎን ሙሉ መረጃ ያያሉ።</li>
+    <li><b>የትምህርት ቤቱ መምህራን</b> — የተማሪዎችን ስም፣ ዕድሜ፣ የትምህርት ክፍል፣ የጥናት
+        ሰዓትና ውጤት ያያሉ። ይህ ልጅዎ እየተማረ መሆኑን ለመከታተል ነው።</li>
+    <li><b>ሌላ ማንም አይደለም።</b> መረጃውን አንሸጥም፤ ለማስታወቂያ አንጠቀምም፤ ለሌላ ወገን
+        አናጋራም።</li>
+  </ul>
+  <p class="muted small">
+    ሌላ ወላጅ የልጅዎን መረጃ ማየት አይችልም። ይህ በአገልጋዩ ደንብ (Firestore rules) ላይ
+    የተቀመጠ ነው፤ በገጽ ንድፍ ላይ ብቻ የተመሠረተ አይደለም።
+  </p>
+
+  <h2>የት ይቀመጣል</h2>
+  <p class="muted">
+    መረጃው የሚቀመጠው በGoogle Firebase ላይ ነው (በአሜሪካ ባሉ አገልጋዮች)። ገጹ ራሱ
+    በGitHub Pages ይስተናገዳል። እነዚህ አገልግሎቶች ስራቸውን ለመስራት እንደ IP አድራሻ
+    ያሉ ቴክኒካዊ መረጃዎችን ያዩታል — ይህ ማንኛውም ድረ-ገጽ የሚሠራበት መንገድ ነው።
+  </p>
+  <p class="muted">
+    የይለፍ ቃልዎን እኛ አናየውም። Firebase Authentication ተመስጥሮ ይይዘዋል።
+  </p>
+  <p class="muted">
+    ትምህርቶቹ ከYouTube ይመጣሉ። ክትትልን ለመቀነስ የYouTube «privacy-enhanced»
+    ሁነታ እንጠቀማለን፤ ሆኖም ቪዲዮ ሲጫወት YouTube የራሱን ቴክኒካዊ መረጃ ያያል።
+  </p>
+
+  <h2>ለምን ያህል ጊዜ</h2>
+  <p class="muted">
+    መለያው እስካለ ድረስ መረጃው ይቀመጣል። <b>ራሱን በራሱ የሚሰርዝ ጊዜ የለም</b> — ይህን
+    በግልጽ እንነግርዎታለን ምክንያቱም አሁን ያለው ሁኔታ ይህ ነው። መረጃው የሚሰረዘው እርስዎ
+    ሲጠይቁ ነው።
+  </p>
+
+  <h2>እንዴት ማስሰረዝ ይችላሉ</h2>
+  <p class="muted">
+    በትምህርቶች ገጽዎ ላይ «የመረጃ ስረዛ ጠይቅ» የሚል አዝራር አለ። ሲጫኑት ጥያቄው ለመምህራን
+    ይደርሳል። መረጃው ከአገልጋዩ የሚሰረዘው በሰው እጅ ነው — ከአሳሽ ላይ በቀጥታ መሰረዝ
+    ሆን ተብሎ ተከልክሏል፤ አለበለዚያ የሌላ ሰው መዝገብ ሊጠፋ ይችላል።
+  </p>
+  <p class="muted">
+    በኢሜይልም መጠየቅ ይችላሉ፦ <a href="mailto:info@example.org" class="contact-email">info@example.org</a>
+  </p>
+
+  <h2>የወላጅ ፈቃድ</h2>
+  <p class="muted">
+    መለያ የሚከፍተው ወላጅ ወይም አሳዳጊ ነው፤ ልጁ አይደለም። ሲመዘገቡ ወላጅ ወይም አሳዳጊ
+    መሆንዎንና ልጅዎ እንዲመዘገብ መፍቀድዎን ያረጋግጣሉ። ያንን የፈቀዱበት ቀንና የመመሪያው
+    እትም በመለያዎ ላይ ይመዘገባል።
+  </p>
+
+  <h2>ለውጥ ሲኖር</h2>
+  <p class="muted">
+    ይህ መመሪያ ከተቀየረ የእትሙ ቁጥር ይለወጣል፤ ጉልህ ለውጥ ከሆነ በኢሜይል እናሳውቅዎታለን።
+  </p>
+</div>
+
+<!-- ==================== ENGLISH ==================== -->
+<div data-lang-block="en" hidden>
+  <p class="eyebrow">Privacy</p>
+  <h1 style="font-size:2rem">About your child's information</h1>
+  <p class="muted small">Last updated: 5 September 2026 · version <span class="consent-version"></span></p>
+
+  <div class="note" style="margin:20px 0">
+    This page is written for parents, not lawyers. It says plainly what we
+    collect, who can see it, how long we keep it, and how you get it deleted.
+  </div>
+
+  <h2>What we collect</h2>
+  <p>When you open an account, only these:</p>
+  <ul class="muted">
+    <li><b>Parent or guardian's full name</b> — so we know whose account it is.</li>
+    <li><b>Parent's email</b> — your login, and where verification and necessary messages go.</li>
+    <li><b>Student's name</b> — to identify them on their lessons page and the teachers' roster.</li>
+    <li><b>Student's age</b> — to check the course is right for them.</li>
+    <li><b>Course</b> — Bible study or Zema.</li>
+  </ul>
+
+  <p>While your child studies, we also record:</p>
+  <ul class="muted">
+    <li>How long they have watched video.</li>
+    <li>Which lesson they finished and how much of it they actually watched.</li>
+    <li>Quiz results.</li>
+    <li>When they last signed in.</li>
+  </ul>
+
+  <h2>What we do not collect</h2>
+  <p>About your child, we <b>do not ask for and do not store</b>:</p>
+  <ul class="muted">
+    <li>Home address or city.</li>
+    <li>A child's email address or phone number.</li>
+    <li>Photographs or audio.</li>
+    <li>Date of birth — we hold age only.</li>
+    <li>Card numbers — these are never stored on this site.</li>
+  </ul>
+
+  <h2>Who can see it</h2>
+  <ul class="muted">
+    <li><b>You</b> — signed in, you see everything held about your child.</li>
+    <li><b>The school's teachers</b> — student names, ages, course, study time and
+        scores, so they can tell whether your child is actually learning.</li>
+    <li><b>Nobody else.</b> We do not sell it, advertise against it, or share it.</li>
+  </ul>
+  <p class="muted small">
+    Another parent cannot read your child's record. That is enforced by server
+    rules, not merely by how the pages are built.
+  </p>
+
+  <h2>Where it is kept</h2>
+  <p class="muted">
+    On Google Firebase, on servers in the United States. The site itself is
+    hosted on GitHub Pages. Those services necessarily see technical data such
+    as IP addresses in order to work at all — that is true of any website.
+  </p>
+  <p class="muted">
+    We never see your password. Firebase Authentication holds it encrypted.
+  </p>
+  <p class="muted">
+    Lessons play from YouTube. We use YouTube's privacy-enhanced mode to reduce
+    tracking, but YouTube still sees its own technical data when a video plays.
+  </p>
+
+  <h2>How long we keep it</h2>
+  <p class="muted">
+    For as long as the account exists. <b>There is no automatic expiry</b> — we
+    say so plainly because that is the current state of things. It is deleted
+    when you ask for it to be.
+  </p>
+
+  <h2>How to have it deleted</h2>
+  <p class="muted">
+    There is a "request data deletion" button on your lessons page. Pressing it
+    raises the request with the teachers. The actual removal is done by hand:
+    deleting directly from the browser is deliberately forbidden, or one
+    mis-fired script could erase someone else's record.
+  </p>
+  <p class="muted">
+    You can also just ask: <a href="mailto:info@example.org" class="contact-email">info@example.org</a>
+  </p>
+
+  <h2>Parental consent</h2>
+  <p class="muted">
+    The account is opened by a parent or guardian, not by the child. At
+    registration you confirm that you are the parent or guardian and that you
+    consent to your child enrolling. The date you gave that consent and the
+    version of this policy are recorded on your account.
+  </p>
+
+  <h2>If this changes</h2>
+  <p class="muted">
+    The version number changes with the text, and we will email you about
+    anything significant.
+  </p>
+</div>
+
+</main>
+
+<div class="harag harag--thin"></div>
+<footer class="footer">
+  <div class="shell between">
+    <span>ፍኖተ ያሬድ · TewahedoDevs</span>
+    <span class="small">
+      <a href="privacy.html" data-am="የግላዊነት መመሪያ" data-en="Privacy">የግላዊነት መመሪያ</a> ·
+      <a href="terms.html" data-am="የአገልግሎት ሁኔታዎች" data-en="Terms">የአገልግሎት ሁኔታዎች</a>
+    </span>
+  </div>
+</footer>
+
+<script type="importmap">
+{
+  "imports": {
+    "@config": "./assets/js/config.js?v=7"
+  }
+}
+</script>
+<script type="module">
+import { CONSENT_VERSION, CHURCH_CONTACT } from '@config';
+// one constant drives the version shown in both languages
+document.querySelectorAll('.consent-version').forEach(el => { el.textContent = CONSENT_VERSION; });
+document.querySelectorAll('.contact-email').forEach(el => {
+  el.textContent = CHURCH_CONTACT.email;
+  el.href = 'mailto:' + CHURCH_CONTACT.email;
+});
+</script>
+<script src="assets/js/sky.js" defer></script>
+<script src="assets/js/theme.js" defer></script>
+<script src="assets/js/i18n.js" defer></script>
+</body>
+</html>

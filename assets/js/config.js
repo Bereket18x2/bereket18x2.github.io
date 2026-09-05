@@ -27,6 +27,13 @@ export const firebaseConfig = {
 // the eventual Stripe hand-off can never drift apart.
 export const PRICE_USD = 25;
 
+/* The version of privacy.html + terms.html a parent agreed to, recorded on
+   their account at registration. Date-stamped rather than numbered so it is
+   obvious which text was in force. Change it when the substance of either
+   document changes — not for a typo — and existing parents can then be asked
+   to agree again, because the record will no longer match. */
+export const CONSENT_VERSION = '2026-09-05';
+
 /* Card payment is not live yet (see docs/PAYMENTS.md). Until it is, the
    billing page tells parents how to arrange payment with the church
    directly. One constant, so changing the number or the address is one

@@ -29,7 +29,7 @@ import {
    This is the reason for the map: versioning these relatively would let
    a freshly-fetched store.js pull a stale config.js, which is exactly
    the staleness the cache-bust exists to prevent. */
-import { firebaseConfig } from '@config';
+import { firebaseConfig, CONSENT_VERSION } from '@config';
 import { validateName, validateAge, validateTrack, validatePassword, validateEmail }
   from '@validators';
 
@@ -109,7 +109,14 @@ export const Store = {
      paid/role are written as false/'student' because the rules refuse a
      create that says otherwise — nobody registers themselves an admin
      or arrives pre-paid. */
-  async createUser({ guardianName, email, password, studentName, age, track }) {
+  async createUser({ guardianName, email, password, studentName, age, track, consentGiven }) {
+    /* Consent is checked here as well as in the form, and required again by
+       the rules on create, so an account cannot exist without a consent
+       record attached to it. */
+    if (!consentGiven) {
+      throw new Error('ለመቀጠል የወላጅ/አሳዳጊ ማረጋገጫውን ምልክት ማድረግ ያስፈልጋል።');
+    }
+
     for (const check of [
       validateName(guardianName),
       validateEmail(email),
@@ -140,7 +147,13 @@ export const Store = {
         verified: false,
         studySeconds: 0,
         createdAt: serverTimestamp(),
-        lastSeen: serverTimestamp()
+        lastSeen: serverTimestamp(),
+        /* serverTimestamp() rather than a client clock: the rules check
+           consentGivenAt == request.time, so a browser cannot backdate
+           when consent was given. consentVersion records WHICH text was
+           agreed to, so a later policy change is detectable. */
+        consentGivenAt: serverTimestamp(),
+        consentVersion: CONSENT_VERSION
       });
     } catch (e) { fail(e); }
 
@@ -311,6 +324,39 @@ export const Store = {
       await updateDoc(doc(db, 'users', uid), { paid: !!paid });
     } catch (e) { fail(e); }
     return !!paid;
+  },
+
+  /* Raises a deletion request for a teacher to action. It does NOT delete
+     anything, and must not: the rules refuse client deletes on purpose,
+     because a mis-fired script in a browser must not be able to erase a
+     child's record — or, worse, someone else's.
+
+     The document id is the uid, so a parent cannot flood the collection
+     and a teacher can find the account directly. */
+  async requestDeletion(reason = '') {
+    await ready();
+    const u = auth.currentUser;
+    if (!u) throw new Error('መጀመሪያ ይግቡ።');
+    try {
+      await setDoc(doc(db, 'deletionRequests', u.uid), {
+        uid: u.uid,
+        email: u.email || '',
+        reason: String(reason).slice(0, 500),
+        status: 'pending',
+        requestedAt: serverTimestamp()
+      });
+    } catch (e) { fail(e); }
+    return true;
+  },
+
+  async deletionRequestStatus() {
+    await ready();
+    const u = auth.currentUser;
+    if (!u) return null;
+    try {
+      const snap = await getDoc(doc(db, 'deletionRequests', u.uid));
+      return snap.exists() ? snap.data() : null;
+    } catch (e) { return null; }
   },
 
   async resendVerification() {

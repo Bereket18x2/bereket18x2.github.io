@@ -244,6 +244,19 @@ a  { color: var(--accent-text); }
 /* a lesson the subscription has not opened yet */
 .btn--sm { padding: 6px 12px; font-size: .82rem; }
 
+/* parental consent — the checkbox must be comfortably tappable on a phone,
+   and the label text must stay clickable alongside it */
+.consent-row {
+  display: grid; grid-template-columns: auto 1fr; gap: 10px;
+  align-items: start; cursor: pointer;
+  font-size: .92rem; color: var(--text);
+}
+.consent-row input[type="checkbox"] {
+  width: 20px; height: 20px; margin: 2px 0 0;
+  accent-color: var(--accent); cursor: pointer;
+}
+.consent .help { margin-top: 8px; }
+
 .pill--locked { color: var(--text-dim); border-color: var(--line); }
 .folio[data-locked="1"] { opacity: .72; }
 .folio[data-locked="1"]:hover { opacity: 1; border-inline-start-color: var(--accent); }
