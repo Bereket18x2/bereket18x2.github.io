@@ -30,7 +30,7 @@ import {
    a freshly-fetched store.js pull a stale config.js, which is exactly
    the staleness the cache-bust exists to prevent. */
 import { firebaseConfig, CONSENT_VERSION } from '@config';
-import { validateName, validateAge, validateTrack, validatePassword, validateEmail }
+import { validateName, validateAge, validateEnrollableTrack, validatePassword, validateEmail }
   from '@validators';
 
 const app = initializeApp(firebaseConfig);
@@ -122,7 +122,7 @@ export const Store = {
       validateEmail(email),
       validatePassword(password),
       validateName(studentName),
-      validateTrack(track),
+      validateEnrollableTrack(track),
       validateAge(age, track)
     ]) {
       if (!check.ok) throw new Error(check.message);
