@@ -32,7 +32,7 @@ export const PRICE_USD = 25;
    directly. One constant, so changing the number or the address is one
    edit rather than a search across every page. */
 export const CHURCH_CONTACT = {
-  name: 'የቅዱሳት መጻሕፍት ትምህርት ቤት · TewahedoDevs',
+  name: 'ፍኖተ ያሬድ · TewahedoDevs',
   email: 'info@example.org',
   phone: '+1 (000) 000-0000'
 };

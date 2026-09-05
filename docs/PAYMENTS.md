@@ -124,7 +124,7 @@ exports.createCheckoutSession = onCall(
           currency: 'usd',
           unit_amount: PRICE_CENTS,
           recurring: { interval: 'month' },
-          product_data: { name: 'የቅዱሳት መጻሕፍት ትምህርት ቤት — ወርኃዊ ደንበኝነት' }
+          product_data: { name: 'ፍኖተ ያሬድ — ወርኃዊ ደንበኝነት' }
         }
       }],
       success_url: `${SITE}/dashboard.html`,
