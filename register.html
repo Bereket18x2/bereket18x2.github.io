@@ -17,7 +17,7 @@
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="shortcut icon" href="assets/favicon.svg">
 <meta property="og:title" content="ምዝገባ — ፍኖተ ያሬድ">
-<meta property="og:description" content="ወላጅ መለያ ይክፈታሉ፤ የተማሪው መረጃ በዚሁ መለያ ሥር ይመዘገባል። የቅዱሳት መጻሕፍት ትምህርት ወይም የዜማ ትምህርት ቤት።">
+<meta property="og:description" content="ወላጅ መለያ ይክፈታሉ፤ የተማሪው መረጃ በዚሁ መለያ ሥር ይመዘገባል። የቅዱሳት መጻሕፍት ትምህርት።">
 <meta property="og:image" content="https://bereket18x2.github.io/assets/og.png">
 <meta property="og:url" content="https://bereket18x2.github.io/register.html">
 <meta property="og:type" content="website">
@@ -102,12 +102,12 @@
 
     <div class="field">
       <label for="track" data-am="የትምህርት ክፍል" data-en="Course">የትምህርት ክፍል</label>
+      <!-- options are built from TRACKS so the form can never offer a course
+           that is not open for enrolment — see enrollableTracks() -->
       <select class="input" id="track" required>
         <option value="" data-am="ይምረጡ" data-en="Choose one">ይምረጡ</option>
-        <option value="bible" data-am="የቅዱሳት መጻሕፍት ትምህርት" data-en="Bible study">የቅዱሳት መጻሕፍት ትምህርት</option>
-        <option value="zema" data-am="የዜማ ትምህርት ቤት" data-en="Zema school">የዜማ ትምህርት ቤት</option>
       </select>
-      <p class="help" id="trackHelp" data-am="የቅዱሳት መጻሕፍት ትምህርት ለ፯–፲፫ ዓመት ልጆች ነው። የዜማ ትምህርት ቤት ከ፯ ዓመት ጀምሮ ለሁሉም ክፍት ነው።" data-en="Bible study is for ages 7–13. Zema school is open from age 7 upward.">የቅዱሳት መጻሕፍት ትምህርት ለ፯–፲፫ ዓመት ልጆች ነው። የዜማ ትምህርት ቤት ከ፯ ዓመት ጀምሮ ለሁሉም ክፍት ነው።</p>
+      <p class="help" id="trackHelp" data-am="የቅዱሳት መጻሕፍት ትምህርት ለ፯–፲፫ ዓመት ልጆች ነው። የዜማ ትምህርት ቤት ትምህርቶቹ ሲዘጋጁ ይከፈታል።" data-en="Bible study is for ages 7–13. Zema school opens once its lessons are recorded.">የቅዱሳት መጻሕፍት ትምህርት ለ፯–፲፫ ዓመት ልጆች ነው። የዜማ ትምህርት ቤት ትምህርቶቹ ሲዘጋጁ ይከፈታል።</p>
     </div>
 
     <div class="field">
@@ -152,8 +152,8 @@
 
 <script type="module">
 import { Store, ready } from '@store';
-import { validateName, validateAge, validateTrack, validatePassword, validateEmail, TRACKS }
-  from '@validators';
+import { validateName, validateAge, validateEnrollableTrack, validatePassword, validateEmail,
+         enrollableTracks, TRACKS } from '@validators';
 
 const $ = id => document.getElementById(id);
 const err = $('err');
@@ -188,6 +188,17 @@ $('password').addEventListener('blur', () =>
 
 /* The age rule depends on the course, so say which range applies as soon
    as a course is chosen rather than waiting for a refusal at submit. */
+/* One source of truth: a course absent from enrollableTracks() cannot be
+   chosen here, because the option is never rendered. */
+for (const track of enrollableTracks()) {
+  const opt = document.createElement('option');
+  opt.value = track.id;
+  opt.textContent = track.am;
+  opt.dataset.am = track.am;
+  opt.dataset.en = track.en;
+  $('track').appendChild(opt);
+}
+
 const describeTrack = () => {
   const track = TRACKS[$('track').value];
   const help = $('trackHelp');
@@ -195,8 +206,8 @@ const describeTrack = () => {
     help.dataset.am = track.eligibilityAm;
     help.dataset.en = track.eligibilityEn;
   } else {
-    help.dataset.am = 'የቅዱሳት መጻሕፍት ትምህርት ለ፯–፲፫ ዓመት ልጆች ነው። የዜማ ትምህርት ቤት ከ፯ ዓመት ጀምሮ ለሁሉም ክፍት ነው።';
-    help.dataset.en = 'Bible study is for ages 7–13. Zema school is open from age 7 upward.';
+    help.dataset.am = 'የቅዱሳት መጻሕፍት ትምህርት ለ፯–፲፫ ዓመት ልጆች ነው። የዜማ ትምህርት ቤት ትምህርቶቹ ሲዘጋጁ ይከፈታል።';
+    help.dataset.en = 'Bible study is for ages 7–13. Zema school opens once its lessons are recorded.';
   }
   help.textContent = document.documentElement.lang === 'en' ? help.dataset.en : help.dataset.am;
 };
@@ -224,7 +235,7 @@ $('form').addEventListener('submit', async (e) => {
     validateEmail(v('email')),
     validatePassword($('password').value),
     validateName(v('studentName')),
-    validateTrack(v('track')),
+    validateEnrollableTrack(v('track')),
     validateAge(v('age'), v('track'))
   ];
   const firstProblem = checks.find(r => !r.ok);

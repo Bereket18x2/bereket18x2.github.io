@@ -6,14 +6,17 @@
    are worth being able to prove rather than eyeball. */
 
 import {
-  validateName, validateAge, validateTrack, validatePassword, validateEmail, TRACKS
+  validateName, validateAge, validateTrack, validatePassword, validateEmail,
+  validateEnrollableTrack, enrollableTracks, TRACKS
 } from '../assets/js/validators.js';
 
 let pass = 0, fail = 0;
 
+// structural comparison, so an array assertion does not silently fail on
+// reference inequality the way === would
 const check = (label, actual, expected) => {
-  if (actual === expected) { pass++; console.log(`  ok    ${label}`); }
-  else { fail++; console.log(`  FAIL  ${label} — expected ${expected}, got ${actual}`); }
+  if (JSON.stringify(actual) === JSON.stringify(expected)) { pass++; console.log(`  ok    ${label}`); }
+  else { fail++; console.log(`  FAIL  ${label} — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`); }
 };
 
 const accepts = (label, fn) => check(label, fn().ok, true);
@@ -77,6 +80,20 @@ refuses('7-char password', () => validatePassword('1234567'));
 accepts('normal email', () => validateEmail('parent@example.org'));
 refuses('no domain', () => validateEmail('parent@'));
 refuses('no @', () => validateEmail('parent.example.org'));
+
+console.log('\nenrolment is gated separately from validity');
+// zema is a real track — an existing student is valid — but it is not on
+// offer until its placeholder lessons are replaced
+accepts('zema is still a VALID track', () => validateTrack('zema'));
+refuses('zema is NOT enrollable', () => validateEnrollableTrack('zema'));
+accepts('bible is enrollable', () => validateEnrollableTrack('bible'));
+refuses('unknown track is not enrollable', () => validateEnrollableTrack('history'));
+check('refusal explains it opens later',
+  validateEnrollableTrack('zema').message.includes('ገና አልተከፈተም'), true);
+check('only bible is offered', enrollableTracks().map(t => t.id), ['bible']);
+check('but both tracks still exist', Object.keys(TRACKS), ['bible', 'zema']);
+check('an existing zema student still passes the age gate',
+  validateAge(30, 'zema').ok, true);
 
 console.log('\ntrack config sanity');
 check('bible max is 13', TRACKS.bible.max, 13);

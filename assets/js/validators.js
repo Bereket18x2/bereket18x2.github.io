@@ -16,11 +16,19 @@
 /* The two courses, and who each one is for.
    bible: 7–13 inclusive — the material is written for children.
    zema:  7 and up, no ceiling — adults learn chant too. */
+/* `enrollable` gates whether a course is OFFERED, not whether it exists.
+   The Zema lessons are placeholders a teacher has not yet replaced, and
+   enrolling a child into an empty course would be selling something that
+   isn't there. The track stays in the data model — existing zema accounts
+   keep working, the homepage keeps describing the course — it simply is
+   not on the registration form until it has real content. Flip it back to
+   true once the lessons are recorded. */
 export const TRACKS = {
   bible: {
     id: 'bible',
     am: 'የቅዱሳት መጻሕፍት ትምህርት',
     en: 'Bible study',
+    enrollable: true,
     min: 7,
     max: 13,
     eligibilityAm: 'የቅዱሳት መጻሕፍት ትምህርት ዕድሜያቸው ከ፯ እስከ ፲፫ ዓመት ለሆኑ ልጆች ነው።',
@@ -30,6 +38,7 @@ export const TRACKS = {
     id: 'zema',
     am: 'የዜማ ትምህርት ቤት',
     en: 'Zema school',
+    enrollable: false,   // placeholder lessons — see the note above
     min: 7,
     max: null,
     eligibilityAm: 'የዜማ ትምህርት ቤት ከ፯ ዓመት ጀምሮ ለሁሉም ክፍት ነው።',
@@ -104,6 +113,20 @@ export function validateTrack(trackId) {
   return TRACKS[trackId]
     ? { ok: true }
     : { ok: false, message: 'እባክዎ የትምህርት ክፍሉን ይምረጡ።' };
+}
+
+export const enrollableTracks = () => Object.values(TRACKS).filter(t => t.enrollable);
+
+/* Registration uses this rather than validateTrack: an existing zema
+   student is perfectly valid, but a NEW enrolment into a course with no
+   recorded lessons is not. */
+export function validateEnrollableTrack(trackId) {
+  const track = TRACKS[trackId];
+  if (!track) return { ok: false, message: 'እባክዎ የትምህርት ክፍሉን ይምረጡ።' };
+  if (!track.enrollable) {
+    return { ok: false, message: `${track.am} ገና አልተከፈተም። ትምህርቶቹ ሲዘጋጁ ምዝገባ ይጀምራል።` };
+  }
+  return { ok: true };
 }
 
 export function validatePassword(pw) {
