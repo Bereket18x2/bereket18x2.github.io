@@ -118,6 +118,29 @@
 
     <p class="help" data-am="ስለ ልጅዎ የምንሰበስበው መረጃ ይህ ብቻ ነው — ስም፣ ዕድሜና የትምህርት ክፍል። አድራሻ ወይም የልጅ ኢሜይል አንጠይቅም።" data-en="This is all we collect about your child — name, age, and course. We do not ask for an address or a child's email.">ስለ ልጅዎ የምንሰበስበው መረጃ ይህ ብቻ ነው — ስም፣ ዕድሜና የትምህርት ክፍል። አድራሻ ወይም የልጅ ኢሜይል አንጠይቅም።</p>
 
+    <div class="harag harag--thin" style="margin:22px 0"></div>
+
+    <!-- ---------------- parental consent ----------------
+         The account is the parent's and the child is enrolled under it, so
+         this affirmation is the record that a parent — not the child —
+         opened it. consentGivenAt/consentVersion are written to the user
+         doc, and the rules require them on create. -->
+    <div class="field consent">
+      <label class="consent-row" for="consent">
+        <input type="checkbox" id="consent" required>
+        <span data-am="እኔ የተማሪው ወላጅ ወይም አሳዳጊ መሆኔን፣ እንዲሁም ልጄ በዚህ ትምህርት ቤት እንዲመዘገብ መፍቀዴን አረጋግጣለሁ።" data-en="I confirm that I am the student's parent or guardian, and that I consent to my child enrolling in this school.">እኔ የተማሪው ወላጅ ወይም አሳዳጊ መሆኔን፣ እንዲሁም ልጄ በዚህ ትምህርት ቤት እንዲመዘገብ መፍቀዴን አረጋግጣለሁ።</span>
+      </label>
+      <p class="help">
+        <span data-am="የሚከተሉትን አንብቤያለሁ፦" data-en="I have read:">የሚከተሉትን አንብቤያለሁ፦</span>
+        <a href="privacy.html" target="_blank" rel="noopener" data-am="የግላዊነት መመሪያ" data-en="Privacy policy">የግላዊነት መመሪያ</a>
+        ·
+        <a href="terms.html" target="_blank" rel="noopener" data-am="የአገልግሎት ሁኔታዎች" data-en="Terms of service">የአገልግሎት ሁኔታዎች</a>
+      </p>
+      <p class="field-msg" id="consentMsg"></p>
+    </div>
+
+    <p class="note small" style="margin-top:4px" data-am="ማስታወሻ፦ የማረጋገጫ መልእክቱ አንዳንድ ጊዜ ወደ Spam ወይም Junk አቃፊ ይገባል። በመልእክት ሳጥንዎ ካላገኙት እባክዎ እዚያ ይፈትሹ።" data-en="Note: the verification message sometimes lands in Spam or Junk. If it is not in your inbox, please look there.">ማስታወሻ፦ የማረጋገጫ መልእክቱ አንዳንድ ጊዜ ወደ Spam ወይም Junk አቃፊ ይገባል። በመልእክት ሳጥንዎ ካላገኙት እባክዎ እዚያ ይፈትሹ።</p>
+
     <p id="err" class="note note--red" style="display:none"></p>
 
     <button class="btn btn--gold btn--block" type="submit" style="margin-top:8px" data-am="መለያ ክፈት" data-en="Create account">መለያ ክፈት</button>
@@ -207,6 +230,13 @@ $('form').addEventListener('submit', async (e) => {
   const firstProblem = checks.find(r => !r.ok);
   if (firstProblem) { showErr(firstProblem.message); return; }
 
+  // consent is not a validator: it is a record, and it blocks submission
+  if (!$('consent').checked) {
+    showErr('ለመቀጠል የወላጅ/አሳዳጊ ማረጋገጫውን ምልክት ማድረግ ያስፈልጋል።');
+    $('consent').focus();
+    return;
+  }
+
   submitBtn.disabled = true;
   submitBtn.textContent = 'በመመዝገብ ላይ…';
   try {
@@ -216,7 +246,8 @@ $('form').addEventListener('submit', async (e) => {
       password: $('password').value,
       studentName: v('studentName'),
       age: Number(v('age')),
-      track: v('track')
+      track: v('track'),
+      consentGiven: $('consent').checked
     });
     // Firebase has sent the verification mail; requireAuth paints the gate.
     location.href = 'dashboard.html';

@@ -56,11 +56,17 @@ service cloud.firestore {
       // existing one — instead it pins the fields that decide privilege
       // and money. Nobody signs themselves up as an admin, arrives
       // already paid, or starts with hours of study time banked.
+      // A consent record is required for the account to exist at all, and
+      // consentGivenAt must equal request.time — that is what serverTimestamp()
+      // resolves to, so a client cannot backdate when consent was given.
       allow create: if isOwner(uid)
         && request.resource.data.uid == uid
         && request.resource.data.role == 'student'
         && request.resource.data.paid == false
-        && request.resource.data.studySeconds == 0;
+        && request.resource.data.studySeconds == 0
+        && request.resource.data.consentVersion is string
+        && request.resource.data.consentVersion.size() > 0
+        && request.resource.data.consentGivenAt == request.time;
 
       // Owner branch first — it is the hot path and costs no reads.
       // An owner may maintain their own profile, minus the fields that
@@ -81,7 +87,13 @@ service cloud.firestore {
       // cheap owner branch has already failed.
       allow update: if (
         isOwner(uid)
-        && !changed().hasAny(['paid', 'role', 'email', 'uid', 'createdAt'])
+        // consentGivenAt/consentVersion join this list because they are a
+        // compliance record: written once at registration, never editable
+        // afterwards. A consent record a parent can rewrite is not a record.
+        && !changed().hasAny([
+             'paid', 'role', 'email', 'uid', 'createdAt',
+             'consentGivenAt', 'consentVersion'
+           ])
         && (
           !changed().hasAny(['verified'])
           || request.resource.data.verified == request.auth.token.email_verified
@@ -143,6 +155,32 @@ service cloud.firestore {
 
         allow delete: if false;
       }
+    }
+
+    // A parent asking for their child's record to be erased. This raises a
+    // flag for a teacher; it deletes nothing. Deletion stays a deliberate
+    // human act, because /users/{uid} refuses client deletes outright.
+    //
+    // The document id is the uid, which means a parent can raise exactly one
+    // request and cannot flood the collection, and a teacher can look up the
+    // account directly rather than searching.
+    match /deletionRequests/{uid} {
+
+      // A parent may see their own request's status; teachers see all of
+      // them, since actioning the queue is the whole point.
+      allow read: if isOwner(uid) || isAdmin();
+
+      // status is pinned to 'pending' on create so nobody files a request
+      // that already claims to have been handled.
+      allow create: if isOwner(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.requestedAt == request.time;
+
+      // Only a teacher marks one done. If the owner could update it they
+      // could also mark their own request handled, which would quietly
+      // remove it from the queue it was meant to enter.
+      allow update, delete: if isAdmin();
     }
 
     // Curriculum is readable by any signed-in student but authored only

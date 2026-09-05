@@ -25,6 +25,14 @@
       if (text != null) el.textContent = text;
     });
 
+    /* Whole-block switching, for long prose. Swapping textContent would
+       flatten any markup inside a paragraph — links, emphasis, lists — so
+       documents like privacy.html carry two complete versions and we show
+       one. Attribute-level swapping stays for short UI strings. */
+    document.querySelectorAll('[data-lang-block]').forEach((el) => {
+      el.hidden = el.getAttribute('data-lang-block') !== lang;
+    });
+
     document.querySelectorAll('[data-ph-am]').forEach((el) => {
       const ph = lang === 'en' ? el.getAttribute('data-ph-en') : el.getAttribute('data-ph-am');
       if (ph != null) el.setAttribute('placeholder', ph);

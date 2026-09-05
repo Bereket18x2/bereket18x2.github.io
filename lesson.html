@@ -243,6 +243,12 @@ if (u && !L) {
     window.onYouTubeIframeAPIReady = () => {
       const player = new YT.Player('player', {
         videoId: L.youtube,
+        /* youtube-nocookie.com is YouTube's privacy-enhanced mode: it does
+           not set tracking cookies until playback begins. This audience is
+           children aged 7 and up, so it is the correct default, and
+           privacy.html states that we use it — which it must therefore
+           actually do. */
+        host: 'https://www.youtube-nocookie.com',
         playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
         events: {
           onReady: () => { duration = player.getDuration() || 0; paintCoverage(); },
