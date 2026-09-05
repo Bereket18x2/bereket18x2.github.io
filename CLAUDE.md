@@ -104,6 +104,14 @@ prevent it from the browser. This is not a bug.
 Collect the minimum. Every extra field about a minor is a field you must protect. Before
 adding one, say what it is for.
 
+**Where the privacy policy and the code disagree, the code changes.** Any edit that
+would make a statement in `privacy.html` false is not permitted without also updating
+the policy — and the policy may only describe what the code actually does. This runs
+in one direction on purpose: it is always legitimate to make the code match a promise
+already made to parents, and never legitimate to weaken the promise to suit the code.
+See `docs/RETENTION.md` for the open questions the policy currently answers honestly
+but incompletely.
+
 **The consent mechanism has NOT been legally reviewed, and must be before launch.**
 Registration takes a parent's affirmation by checkbox plus a verified parent email.
 The Bible track admits children aged 7–13, which is squarely inside COPPA. A
