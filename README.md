@@ -1,6 +1,6 @@
-# የቅዱሳት መጻሕፍት ትምህርት ቤት — EOTC Online Bible School
+# ፍኖተ ያሬድ · Finote Yared
 
-Amharic-language Orthodox Tewahedo Bible school for children in the diaspora.
+Amharic-language Ethiopian Orthodox Tewahedo school for children in the diaspora.
 Video lessons → quizzes → attendance and study-hour tracking for the hosts.
 
 **Phase 1 (this repo):** static site, deployable to GitHub Pages today. Data lives in

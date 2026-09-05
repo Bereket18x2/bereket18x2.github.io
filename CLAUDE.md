@@ -13,14 +13,33 @@ children in the US diaspora. Two tracks:
    ድጓ / ጾመ ድጓ / ምዕራፍ / ዝማሬ / መዋሥዕት / ቅዳሴ, with St. Yared's three modes
    (ግዕዝ, ዕዝል, አራራይ) and አቋቋም.
 
-Live: `https://bereket18x2.github.io/finote-yared/`
-Repo: `Bereket18x2/finote-yared`
+Live: `https://bereket18x2.github.io/`
+Repo: `Bereket18x2/bereket18x2.github.io` (named for the root URL — see Naming)
 Firebase project: `finote-yared` (Spark plan, Firestore in nam5)
+
+## Naming
+
+The school is ፍኖተ ያሬድ — "the path of Yared." Note ፍ, not ፊ.
+English: Finote Yared. Repo, domain, and Firebase project use
+finote-yared / finoteyared. Never write ፊኖተ.
+
+የቅዱሳት መጻሕፍት ትምህርት ቤት names the Bible TRACK only, not the school.
+The school also runs the Zema track. Do not use it as the school name.
+
+One exception to the repo half of that rule: the GitHub repo is
+`bereket18x2.github.io`, because a user-page repo must carry that exact name
+to serve from the root URL. The local directory and the Firebase project are
+both `finote-yared`.
 
 ## Stack — do not change without asking
 
 - Plain HTML + CSS + vanilla JS, native ES modules. **No framework, no bundler,
   no npm, no build step.** It must stay directly deployable to GitHub Pages.
+- **One deliberate exception:** `tools/` may use npm. That rule exists so the
+  SITE stays buildless; a local operator script that never reaches a browser is
+  not the same thing. `tools/export.mjs` uses `firebase-admin`, and
+  `tools/node_modules` is gitignored. Nothing under `tools/` may ever be
+  imported by a page.
 - Firebase SDK from `https://www.gstatic.com/firebasejs/10.12.2/` — pinned version.
 - `.nojekyll` at root. Never delete it.
 - All paths relative (`./assets/...`). The site is served from a subpath, so
@@ -84,6 +103,15 @@ prevent it from the browser. This is not a bug.
 
 Collect the minimum. Every extra field about a minor is a field you must protect. Before
 adding one, say what it is for.
+
+**The consent mechanism has NOT been legally reviewed, and must be before launch.**
+Registration takes a parent's affirmation by checkbox plus a verified parent email.
+The Bible track admits children aged 7–13, which is squarely inside COPPA. A
+self-attested checkbox is generally held insufficient as "verifiable parental
+consent" on its own; the verified email resembles the FTC's "email plus" method but
+was not built to satisfy it. `privacy.html` therefore describes exactly what the code
+does and claims nothing further. Do not add compliance language to it without a
+lawyer. This is the one open item that should gate real families enrolling.
 
 The Firebase API key is public by design and ships in every web app. Security is the
 rules, not the key. Do not "fix" it by hiding it.

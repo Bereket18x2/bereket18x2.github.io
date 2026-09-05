@@ -67,3 +67,13 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# Local operator tooling — see CLAUDE.md "Stack". tools/ is the one place
+# npm is allowed, because nothing under it ever reaches a browser.
+tools/node_modules/
+tools/package-lock.json
+
+# Service account key for tools/export.mjs. NEVER commit this — it grants
+# full read/write to the whole Firestore database, bypassing the rules.
+tools/serviceAccountKey.json
+*serviceAccount*.json
