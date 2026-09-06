@@ -124,10 +124,27 @@
   </div>
 </main>
 
+<!-- "still watching?" — shown after 5 minutes of continuous playback.
+     Ignoring it for 30 seconds pauses the video and stops the clock, so a
+     lesson left playing to an empty room banks nothing. -->
+<div class="modal" id="stillWatching" hidden>
+  <div class="modal__box panel">
+    <p class="eyebrow">አሁንም እየተመለከቱ ነው?</p>
+    <h2 style="font-size:1.3rem;margin:0 0 8px">አሁንም እዚህ ነዎት?</h2>
+    <p class="muted small" style="margin:0 0 6px">
+      ትምህርቱ እየተጫወተ ነው። መልስ ካልሰጡ በ<span id="stillCount">30</span> ሰከንድ ውስጥ
+      ቪዲዮው ይቆማል፤ የጥናት ሰዓቱም መቆጠር ያቆማል።
+    </p>
+    <div class="row" style="margin-top:16px">
+      <button class="btn btn--gold" type="button" id="stillYes">አዎ፣ እየተመለከትኩ ነው</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { Store, requireAuth } from '@store';
 import { findLesson, isFree } from '@lessons';
-import { markBucket, coverageOf, isComplete, shortfallMessage } from '@coverage';
+import { markBucket, coverageOf, isComplete, shortfallMessage, isSuspicious } from '@coverage';
 
 const $ = id => document.getElementById(id);
 const id = new URLSearchParams(location.search).get('id') || 'l1';
@@ -149,26 +166,48 @@ if (u && !L) {
   if (isFree(L.id)) $('freeBadge').style.display = 'inline-block';
 
   /* ---------- watch time ----------
-     The on-screen clock ticks every 5s; Firestore is written every 30s.
-     Firestore bills per write and a 5s write is 720 writes an hour per
-     student. A failed flush returns its seconds to `pending` so a dead
-     connection costs a delay, not attendance. */
-  let watched = 0, pending = 0;
-  let beat = null, flushTimer = null, poll = null;
+     One 1s tick drives everything: the on-screen clock, the coverage
+     buckets, and the still-watching timer. Firestore is still written
+     only every 30s, because it bills per write and a 5s write would be
+     720 writes an hour per student. A failed flush returns its seconds
+     to `pending`, so a dead connection costs a delay, not attendance.
+
+     Time is measured from Date.now() deltas rather than by counting
+     intervals. A background tab throttles timers, so counting ticks
+     would under-record; and a laptop waking from sleep fires a single
+     enormous gap, which is why each tick is capped. Either way what is
+     banked is WALL CLOCK, never video time: at 2x a student covers ten
+     minutes of video in five, and five is what they spent. */
+  const TICK_MS = 1000;
+  const MAX_TICK_SECONDS = 2;      // longer than this means the tab was frozen
+  const FLUSH_MS = 30000;
+  const STILL_WATCHING_AFTER = 5 * 60;   // seconds of continuous playback
+  const STILL_WATCHING_GRACE = 30;       // seconds to answer before pausing
+
+  let watched = 0;            // shown on screen
+  let pending = 0;            // earned, not yet written
+  let sessionSeconds = 0;     // wall clock in this lesson, for the sanity check
+  let sincePrompt = 0;        // continuous playback since the last confirmation
+  let lastTickAt = 0;
+  let tick = null, flushTimer = null;
 
   const paint = () => {
-    const m = String(Math.floor(watched / 60)).padStart(2, '0');
-    const s = String(watched % 60).padStart(2, '0');
+    const whole = Math.floor(watched);
+    const m = String(Math.floor(whole / 60)).padStart(2, '0');
+    const s = String(whole % 60).padStart(2, '0');
     $('timer').textContent = `${m}፡${s}`;
   };
   paint();
 
+  /* Only whole seconds are written; the fraction stays in `pending` for
+     the next flush rather than being rounded away every 30 seconds.
+     Capped at 120 because the rules refuse a larger single increment. */
   async function flush() {
-    if (!pending) return;
-    const owed = pending;
-    pending = 0;
+    const owed = Math.min(Math.floor(pending), 120);
+    if (owed < 1) return;
+    pending -= owed;
     try { await Store.addStudySeconds(owed); }
-    catch (e) { pending += owed; }
+    catch (e) { pending += owed; }   // hand them back; the next flush retries
   }
 
   /* ---------- coverage ----------
@@ -177,6 +216,7 @@ if (u && !L) {
   const seen = new Set();
   let duration = 0;
   let completed = false;
+  let ytPlayer = null;        // set once the iframe API is ready
 
   const paintCoverage = () => {
     const pct = Math.round(coverageOf(seen, duration) * 100);
@@ -202,32 +242,91 @@ if (u && !L) {
     $('watchNote').textContent = 'ትምህርቱን በሙሉ ተመልክተዋል። ጥያቄዎቹ ተከፍተዋል።';
     $('watchNote').className = 'muted small';
     unlockQuiz();
-    try { await Store.saveVideoCompletion(L.id, cov); } catch (e) { /* mark still unlocked locally */ }
+
+    /* Flagged, never blocked. A student who covered the whole video in far
+       less wall-clock time than it runs has almost certainly scrubbed —
+       but a false positive costs a child an unfair suspicion, so this only
+       raises it for a teacher to look at. See coverage.js. */
+    const suspicious = isSuspicious(cov, sessionSeconds, duration);
+    try {
+      await Store.saveVideoCompletion(L.id, cov, sessionSeconds, suspicious);
+    } catch (e) { /* the unlock above still stands locally */ }
   }
 
-  const start = (player) => {
-    if (beat) return;
-    beat = setInterval(() => { watched += 5; pending += 5; paint(); }, 5000);
-    flushTimer = setInterval(flush, 30000);
-    // one observation per second, so a bucket is only marked when
-    // playback is genuinely inside it
-    poll = setInterval(() => {
-      if (!player) return;
-      const t = player.getCurrentTime ? player.getCurrentTime() : 0;
-      if (!duration && player.getDuration) duration = player.getDuration() || 0;
-      markBucket(seen, t, duration);
-      paintCoverage();
+  /* ---------- still watching? ---------- */
+  let stillTimer = null, stillLeft = 0;
+
+  function closeStillWatching() {
+    clearInterval(stillTimer); stillTimer = null;
+    $('stillWatching').hidden = true;
+  }
+
+  function askStillWatching() {
+    if (!$('stillWatching').hidden) return;
+    stillLeft = STILL_WATCHING_GRACE;
+    $('stillCount').textContent = stillLeft;
+    $('stillWatching').hidden = false;
+    $('stillYes').focus();
+    stillTimer = setInterval(() => {
+      stillLeft -= 1;
+      $('stillCount').textContent = Math.max(0, stillLeft);
+      if (stillLeft <= 0) {
+        closeStillWatching();
+        // no answer: stop the video and the clock together
+        if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
+        stop();
+        $('watchNote').textContent = 'መልስ ስላልተሰጠ ቪዲዮው ቆሟል። ለመቀጠል እንደገና ያጫውቱት።';
+        $('watchNote').className = 'note small';
+      }
     }, 1000);
+  }
+
+  $('stillYes').addEventListener('click', () => {
+    sincePrompt = 0;
+    closeStillWatching();
+    if (ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
+  });
+
+  const start = () => {
+    if (tick) return;
+    lastTickAt = Date.now();
+    tick = setInterval(() => {
+      const now = Date.now();
+      // wall clock, capped so a frozen tab cannot bank a huge jump
+      const elapsed = Math.min((now - lastTickAt) / 1000, MAX_TICK_SECONDS);
+      lastTickAt = now;
+
+      watched += elapsed;
+      pending += elapsed;
+      sessionSeconds += elapsed;
+      sincePrompt += elapsed;
+      paint();
+
+      // one observation per second, so a bucket is only marked when
+      // playback is genuinely inside it
+      if (ytPlayer) {
+        const t = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
+        if (!duration && ytPlayer.getDuration) duration = ytPlayer.getDuration() || 0;
+        markBucket(seen, t, duration);
+        paintCoverage();
+      }
+
+      if (sincePrompt >= STILL_WATCHING_AFTER) askStillWatching();
+    }, TICK_MS);
+    flushTimer = setInterval(flush, FLUSH_MS);
   };
 
   const stop = () => {
-    clearInterval(beat); beat = null;
+    clearInterval(tick); tick = null;
     clearInterval(flushTimer); flushTimer = null;
-    clearInterval(poll); poll = null;
     flush();
   };
 
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+  /* Blur as well as visibilitychange: a tab can stay "visible" while the
+     window sits behind another one, or on a second monitor nobody is
+     looking at. Neither event alone covers the other's case. */
+  window.addEventListener('blur', stop);
   window.addEventListener('pagehide', stop);
   window.addEventListener('beforeunload', stop);
 
@@ -241,7 +340,7 @@ if (u && !L) {
     host.id = 'player';
     $('frame').appendChild(host);
     window.onYouTubeIframeAPIReady = () => {
-      const player = new YT.Player('player', {
+      ytPlayer = new YT.Player('player', {
         videoId: L.youtube,
         /* youtube-nocookie.com is YouTube's privacy-enhanced mode: it does
            not set tracking cookies until playback begins. This audience is
@@ -251,10 +350,10 @@ if (u && !L) {
         host: 'https://www.youtube-nocookie.com',
         playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
         events: {
-          onReady: () => { duration = player.getDuration() || 0; paintCoverage(); },
+          onReady: () => { duration = ytPlayer.getDuration() || 0; paintCoverage(); },
           onStateChange: (e) => {
-            if (e.data === YT.PlayerState.PLAYING) start(player);
-            else stop();
+            if (e.data === YT.PlayerState.PLAYING) start();
+            else { stop(); closeStillWatching(); }
             if (e.data === YT.PlayerState.ENDED) onVideoEnded();
           }
         }

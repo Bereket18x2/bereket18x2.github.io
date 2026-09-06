@@ -244,6 +244,18 @@ a  { color: var(--accent-text); }
 /* a lesson the subscription has not opened yet */
 .btn--sm { padding: 6px 12px; font-size: .82rem; }
 
+/* ---------- modal ----------
+   Used by the "still watching?" prompt. Deliberately has no dismiss
+   control other than the confirm button: ignoring it is the case it
+   exists to detect, so ignoring it must be possible. */
+.modal {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  background: rgb(var(--shadow-rgb) / .62);
+}
+.modal__box { max-width: 420px; width: 100%; }
+
 /* parental consent — the checkbox must be comfortably tappable on a phone,
    and the label text must stay clickable alongside it */
 .consent-row {

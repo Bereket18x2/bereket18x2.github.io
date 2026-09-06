@@ -270,7 +270,7 @@ export const Store = {
   /* A lesson writes its progress doc twice and the two writes carry
      different shapes — the video half here, the quiz half below. Both
      merge, so neither erases the other. */
-  async saveVideoCompletion(lessonId, coverage) {
+  async saveVideoCompletion(lessonId, coverage, sessionSeconds = 0, suspicious = false) {
     await ready();
     const u = auth.currentUser;
     if (!u) return null;
@@ -278,6 +278,13 @@ export const Store = {
     const record = {
       videoCompleted: true,
       coverage: Math.min(1, Math.max(0, Number(coverage) || 0)),
+      /* Wall clock actually spent on this lesson, stored next to coverage
+         so a teacher can see the two side by side. `suspicious` is the
+         comparison already made — high coverage in implausibly little
+         time. It flags; it never blocks, and a determined client can
+         simply omit it. See docs/PAYMENTS.md. */
+      sessionSeconds: Math.max(0, Math.round(Number(sessionSeconds) || 0)),
+      suspicious: !!suspicious,
       completedAt: serverTimestamp()
     };
     try {
