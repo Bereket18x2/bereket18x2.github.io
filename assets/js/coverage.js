@@ -54,6 +54,33 @@ export function isComplete(seen, duration, required = REQUIRED_COVERAGE) {
   return coverageOf(seen, duration) >= required;
 }
 
+/* ---------------- session sanity ----------------
+
+   Coverage says which parts of the video were observed. It cannot say how
+   long the student was actually there. Someone who drags the scrubber
+   bucket by bucket marks every bucket in under a minute — the known limit
+   of this technique, documented in docs/PAYMENTS.md.
+
+   Comparing wall-clock time against video length catches that case: high
+   coverage earned in far less time than the video runs is not viewing.
+
+   This FLAGS, it never blocks. The flag is written by the client, so a
+   determined student simply omits it; it exists to catch carelessness and
+   to give a teacher something to look at, not to enforce anything. A false
+   positive costs a child an unfair suspicion, so the threshold is
+   deliberately generous — half the video's length. */
+export const SESSION_RATIO_FLOOR = 0.5;
+
+export function isSuspicious(coverage, sessionSeconds, duration) {
+  const d = Number(duration);
+  const s = Number(sessionSeconds);
+  if (!isFinite(d) || d <= 0) return false;
+  if (!isFinite(s) || s < 0) return false;
+  // only meaningful once they claim to have watched enough to complete
+  if (Number(coverage) < REQUIRED_COVERAGE) return false;
+  return s < d * SESSION_RATIO_FLOOR;
+}
+
 /* Amharic explanation of a shortfall, naming how much was actually
    watched — a bare refusal invites the student to just try again. */
 export function shortfallMessage(seen, duration) {

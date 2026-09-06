@@ -151,6 +151,21 @@ service cloud.firestore {
               && request.resource.data.coverage >= 0
               && request.resource.data.coverage <= 1
             )
+          )
+          // sessionSeconds and suspicious are written by the client and a
+          // determined client can lie about both — these bounds only keep
+          // the field types sane so the admin roster cannot be broken by
+          // junk. The flag is a smoke detector, not a lock.
+          && (
+            !('sessionSeconds' in request.resource.data)
+            || (
+              request.resource.data.sessionSeconds is int
+              && request.resource.data.sessionSeconds >= 0
+            )
+          )
+          && (
+            !('suspicious' in request.resource.data)
+            || request.resource.data.suspicious is bool
           );
 
         allow delete: if false;

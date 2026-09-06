@@ -6,7 +6,7 @@
 
 import {
   bucketCount, bucketAt, markBucket, coverageOf, isComplete,
-  shortfallMessage, BUCKET_SECONDS, REQUIRED_COVERAGE
+  shortfallMessage, isSuspicious, BUCKET_SECONDS, REQUIRED_COVERAGE, SESSION_RATIO_FLOOR
 } from '../assets/js/coverage.js';
 
 let pass = 0, fail = 0;
@@ -107,6 +107,24 @@ console.log('\nshortfall message');
   const msg = shortfallMessage(seen, d);
   check('states what was watched', msg.includes('50%'), true);
   check('states what is required', msg.includes('90%'), true);
+}
+
+console.log('\nsession sanity — high coverage earned too fast');
+{
+  const d = 600;
+  // watched properly: 10 minutes of wall clock for a 10 minute video
+  check('honest viewing is not suspicious', isSuspicious(1.0, 600, d), false);
+  check('slightly rushed is not suspicious', isSuspicious(0.95, 420, d), false);
+  // scrubbed every bucket in 40 seconds
+  check('full coverage in 40s IS suspicious', isSuspicious(1.0, 40, d), true);
+  check('exactly at the floor is not suspicious', isSuspicious(1.0, 300, d), false);
+  check('just under the floor is suspicious', isSuspicious(1.0, 299, d), true);
+  // incomplete viewing is not the flag's business — the quiz stays locked anyway
+  check('low coverage is never flagged', isSuspicious(0.3, 5, d), false);
+  check('unknown duration is never flagged', isSuspicious(1.0, 5, 0), false);
+  check('negative session is never flagged', isSuspicious(1.0, -5, d), false);
+  check('2x playback still banks wall clock, so not flagged',
+    isSuspicious(1.0, 300, d), false);
 }
 
 console.log('\nconstants');
