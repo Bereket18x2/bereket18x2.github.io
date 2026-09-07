@@ -87,12 +87,18 @@ service cloud.firestore {
       // cheap owner branch has already failed.
       allow update: if (
         isOwner(uid)
-        // consentGivenAt/consentVersion join this list because they are a
-        // compliance record: written once at registration, never editable
-        // afterwards. A consent record a parent can rewrite is not a record.
+        // consentGivenAt/consentVersion are a compliance record: written
+        // once at registration, never editable afterwards. A consent record
+        // a parent can rewrite is not a record.
+        //
+        // tier and track decide WHAT THE STUDENT PAID FOR. A student who
+        // could write either would hand themselves the $40 curriculum for
+        // $20 — or for nothing. They are changed by a teacher, from admin,
+        // the same way `paid` is, and for the same reason.
         && !changed().hasAny([
              'paid', 'role', 'email', 'uid', 'createdAt',
-             'consentGivenAt', 'consentVersion'
+             'consentGivenAt', 'consentVersion',
+             'tier', 'track'
            ])
         && (
           !changed().hasAny(['verified'])

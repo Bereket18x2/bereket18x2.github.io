@@ -244,6 +244,25 @@ a  { color: var(--accent-text); }
 /* a lesson the subscription has not opened yet */
 .btn--sm { padding: 6px 12px; font-size: .82rem; }
 
+/* ---------- enrollment tiers ---------- */
+.tiers { display: grid; gap: 10px; }
+.tier {
+  display: grid; grid-template-columns: auto 1fr; gap: 12px;
+  align-items: start; cursor: pointer;
+  border: 1px solid var(--line); border-radius: var(--r);
+  padding: 14px 16px; background: var(--surface);
+}
+.tier:hover { border-color: var(--accent); }
+.tier input[type="radio"] { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--accent); }
+.tier__body { display: grid; gap: 4px; }
+.tier__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.tier__price { font-family: var(--f-util); font-size: 1.15rem; color: var(--accent-text); white-space: nowrap; }
+.tier__subjects { opacity: .8; }
+/* a course that is not open yet: visible, so a parent knows it exists,
+   but not selectable, because enrolling into it would sell nothing */
+.tier--closed { opacity: .6; cursor: not-allowed; }
+.tier--closed:hover { border-color: var(--line); }
+
 /* ---------- modal ----------
    Used by the "still watching?" prompt. Deliberately has no dismiss
    control other than the confirm button: ignoring it is the case it

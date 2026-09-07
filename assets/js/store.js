@@ -29,7 +29,7 @@ import {
    This is the reason for the map: versioning these relatively would let
    a freshly-fetched store.js pull a stale config.js, which is exactly
    the staleness the cache-bust exists to prevent. */
-import { firebaseConfig, CONSENT_VERSION } from '@config';
+import { firebaseConfig, CONSENT_VERSION, tierById } from '@config';
 import { validateName, validateAge, validateEnrollableTrack, validatePassword, validateEmail }
   from '@validators';
 
@@ -109,7 +109,15 @@ export const Store = {
      paid/role are written as false/'student' because the rules refuse a
      create that says otherwise — nobody registers themselves an admin
      or arrives pre-paid. */
-  async createUser({ guardianName, email, password, studentName, age, track, consentGiven }) {
+  async createUser({ guardianName, email, password, studentName, age, tier, consentGiven }) {
+    /* The parent chooses a TIER; the track is derived from it here so the
+       two can never disagree on the document. Both are then locked by the
+       rules — a student who could write either could hand themselves the
+       $40 curriculum for $20. */
+    const tierDef = tierById(tier);
+    if (!tierDef) throw new Error('እባክዎ የምዝገባ ዓይነት ይምረጡ።');
+    const track = tierDef.track;
+
     /* Consent is checked here as well as in the form, and required again by
        the rules on create, so an account cannot exist without a consent
        record attached to it. */
@@ -141,6 +149,7 @@ export const Store = {
         email: email.trim(),
         studentName: studentName.trim().replace(/\s+/g, ' '),
         age: Number(age),
+        tier,
         track,
         role: 'student',
         paid: false,

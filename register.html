@@ -101,13 +101,13 @@
     </div>
 
     <div class="field">
-      <label for="track" data-am="የትምህርት ክፍል" data-en="Course">የትምህርት ክፍል</label>
-      <!-- options are built from TRACKS so the form can never offer a course
-           that is not open for enrolment — see enrollableTracks() -->
-      <select class="input" id="track" required>
-        <option value="" data-am="ይምረጡ" data-en="Choose one">ይምረጡ</option>
-      </select>
-      <p class="help" id="trackHelp" data-am="የቅዱሳት መጻሕፍት ትምህርት ለ፯–፲፫ ዓመት ልጆች ነው። የዜማ ትምህርት ቤት ትምህርቶቹ ሲዘጋጁ ይከፈታል።" data-en="Bible study is for ages 7–13. Zema school opens once its lessons are recorded.">የቅዱሳት መጻሕፍት ትምህርት ለ፯–፲፫ ዓመት ልጆች ነው። የዜማ ትምህርት ቤት ትምህርቶቹ ሲዘጋጁ ይከፈታል።</p>
+      <label data-am="የምዝገባ ዓይነት" data-en="Enrollment">የምዝገባ ዓይነት</label>
+      <!-- Built from TIERS. Every tier is listed so a parent can see the
+           whole offering, but one whose course is not yet open cannot be
+           selected — see the note in validators.js on `enrollable`. -->
+      <div id="tierList" class="tiers"></div>
+      <p class="help" data-am="ወርኃዊ ክፍያ ነው። ተጨማሪ ድጋፍ የሚያስፈልገው ተማሪ ያለ ተጨማሪ ክፍያ ይታገዛል።" data-en="Prices are monthly. A student who needs extra help receives it at no additional cost.">ወርኃዊ ክፍያ ነው። ተጨማሪ ድጋፍ የሚያስፈልገው ተማሪ ያለ ተጨማሪ ክፍያ ይታገዛል።</p>
+      <p class="field-msg" id="tierMsg"></p>
     </div>
 
     <div class="field">
@@ -153,7 +153,9 @@
 <script type="module">
 import { Store, ready } from '@store';
 import { validateName, validateAge, validateEnrollableTrack, validatePassword, validateEmail,
-         enrollableTracks, TRACKS } from '@validators';
+         TRACKS } from '@validators';
+import { tiersByPrice, tierById } from '@config';
+import { subjectById } from '@lessons';
 
 const $ = id => document.getElementById(id);
 const err = $('err');
@@ -186,43 +188,54 @@ $('email').addEventListener('blur', () =>
 $('password').addEventListener('blur', () =>
   mark($('password'), $('passwordMsg'), validatePassword($('password').value)));
 
-/* The age rule depends on the course, so say which range applies as soon
-   as a course is chosen rather than waiting for a refusal at submit. */
-/* One source of truth: a course absent from enrollableTracks() cannot be
-   chosen here, because the option is never rendered. */
-for (const track of enrollableTracks()) {
-  const opt = document.createElement('option');
-  opt.value = track.id;
-  opt.textContent = track.am;
-  opt.dataset.am = track.am;
-  opt.dataset.en = track.en;
-  $('track').appendChild(opt);
-}
+/* Every tier is shown so a parent sees the whole offering and what each
+   price includes. A tier whose course is not yet open is rendered but not
+   selectable: offering an empty course would be selling something that is
+   not there, and hiding it entirely would leave a parent wondering whether
+   Zema exists at all. */
+let chosenTier = '';
 
-const describeTrack = () => {
-  const track = TRACKS[$('track').value];
-  const help = $('trackHelp');
-  if (track) {
-    help.dataset.am = track.eligibilityAm;
-    help.dataset.en = track.eligibilityEn;
-  } else {
-    help.dataset.am = 'የቅዱሳት መጻሕፍት ትምህርት ለ፯–፲፫ ዓመት ልጆች ነው። የዜማ ትምህርት ቤት ትምህርቶቹ ሲዘጋጁ ይከፈታል።';
-    help.dataset.en = 'Bible study is for ages 7–13. Zema school opens once its lessons are recorded.';
-  }
-  help.textContent = document.documentElement.lang === 'en' ? help.dataset.en : help.dataset.am;
+const tierCard = (t) => {
+  const open = TRACKS[t.track]?.enrollable === true;
+  const subjects = t.subjects.map(id => subjectById(id)?.am).filter(Boolean);
+  return `
+    <label class="tier${open ? '' : ' tier--closed'}">
+      <input type="radio" name="tier" value="${t.id}" ${open ? '' : 'disabled'}>
+      <span class="tier__body">
+        <span class="tier__head">
+          <b>${t.am}</b>
+          <span class="tier__price">$${t.priceUSD}<span class="muted small"> / ወር</span></span>
+        </span>
+        <span class="muted small">${t.blurbAm}</span>
+        <span class="muted small tier__subjects">${subjects.join(' · ')}</span>
+        ${open ? '' : '<span class="pill pill--locked">ትምህርቶቹ ሲዘጋጁ ይከፈታል</span>'}
+      </span>
+    </label>`;
 };
 
+$('tierList').innerHTML = tiersByPrice().map(tierCard).join('');
+
+/* The track, and therefore the age rule, is derived from the tier — the
+   parent never picks a track directly. */
+const chosenTrack = () => tierById(chosenTier)?.track || '';
+
 const checkAge = () => {
-  if (!$('age').value.trim() || !$('track').value) {
-    mark($('age'), $('ageMsg'), { ok: true });
+  if (!$('age').value.trim() || !chosenTier) {
     $('age').classList.remove('is-valid', 'is-invalid');
     $('ageMsg').textContent = '';
     return;
   }
-  mark($('age'), $('ageMsg'), validateAge($('age').value, $('track').value));
+  mark($('age'), $('ageMsg'), validateAge($('age').value, chosenTrack()));
 };
 
-$('track').addEventListener('change', () => { describeTrack(); checkAge(); });
+$('tierList').addEventListener('change', (e) => {
+  if (e.target.name !== 'tier') return;
+  chosenTier = e.target.value;
+  $('tierMsg').textContent = '';
+  $('tierMsg').className = 'field-msg';
+  checkAge();
+});
+
 $('age').addEventListener('blur', checkAge);
 
 $('form').addEventListener('submit', async (e) => {
@@ -230,13 +243,21 @@ $('form').addEventListener('submit', async (e) => {
   hideErr();
 
   const v = id => $(id).value.trim();
+
+  // a tier must be picked before the age rule even has a range to apply
+  if (!chosenTier) {
+    showErr('እባክዎ የምዝገባ ዓይነት ይምረጡ።');
+    $('tierList').scrollIntoView({ block: 'nearest' });
+    return;
+  }
+
   const checks = [
     validateName(v('guardianName')),
     validateEmail(v('email')),
     validatePassword($('password').value),
     validateName(v('studentName')),
-    validateEnrollableTrack(v('track')),
-    validateAge(v('age'), v('track'))
+    validateEnrollableTrack(chosenTrack()),
+    validateAge(v('age'), chosenTrack())
   ];
   const firstProblem = checks.find(r => !r.ok);
   if (firstProblem) { showErr(firstProblem.message); return; }
@@ -257,7 +278,7 @@ $('form').addEventListener('submit', async (e) => {
       password: $('password').value,
       studentName: v('studentName'),
       age: Number(v('age')),
-      track: v('track'),
+      tier: chosenTier,
       consentGiven: $('consent').checked
     });
     // Firebase has sent the verification mail; requireAuth paints the gate.

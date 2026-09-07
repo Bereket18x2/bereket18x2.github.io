@@ -86,7 +86,8 @@
       <div class="between">
         <div>
           <p class="eyebrow">ዕቅድ</p>
-          <h2 style="margin:0">$25 <span class="muted" style="font-size:1rem;font-weight:400">/ ወር / ተማሪ</span></h2>
+          <h2 style="margin:0" id="planPrice">…</h2>
+          <p class="muted small" style="margin:4px 0 0" id="planName">…</p>
         </div>
         <p style="margin:0;text-align:end">
           <span class="muted small">ተማሪ</span><br>
@@ -261,7 +262,7 @@
 <script type="module">
 import { Store, requireAuth, STRIPE_PAYMENT_LINK } from '@store';
 import { lessonsFor } from '@lessons';
-import { CHURCH_CONTACT, PRICE_USD } from '@config';
+import { CHURCH_CONTACT, tierById } from '@config';
 
 const $ = id => document.getElementById(id);
 const u = await requireAuth();
@@ -269,6 +270,13 @@ const u = await requireAuth();
 if (u) {
   $('authedContent').style.display = 'block';
   Store.touch();
+  /* The price shown is the student's own tier, not a flat rate — quoting
+     a number they were never charged would be worse than quoting none. */
+  const tier = tierById(u.tier);
+  $('planPrice').innerHTML = tier
+    ? `$${tier.priceUSD} <span class="muted" style="font-size:1rem;font-weight:400">/ ወር / ተማሪ</span>`
+    : '<span class="muted" style="font-size:1rem">ከትምህርት ቤቱ ጋር ይነጋገሩ</span>';
+  $('planName').textContent = tier ? tier.am : '—';
   $('studentName').textContent = u.studentName;
   $('lessonCount').textContent = lessonsFor(u.track).length;
   $('email').value = u.email || '';
