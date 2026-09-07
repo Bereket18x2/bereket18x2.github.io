@@ -53,7 +53,7 @@
 <div data-lang-block="am">
   <p class="eyebrow">የአገልግሎት ሁኔታዎች</p>
   <h1 style="font-size:2rem">የአገልግሎት ሁኔታዎች</h1>
-  <p class="muted small">የመጨረሻ ማሻሻያ፦ 2026-09-05 · እትም <span class="consent-version"></span></p>
+  <p class="muted small">የመጨረሻ ማሻሻያ፦ 2026-09-07 · እትም <span class="consent-version"></span></p>
 
   <h2>፩ · መለያው የማን ነው</h2>
   <p class="muted">
@@ -63,9 +63,11 @@
   </p>
 
   <h2>፪ · ክፍያ</h2>
+  <p class="muted">ወርኃዊ ክፍያው በተመዘገቡበት ዓይነት ይለያያል፦</p>
+  <ul class="muted tier-prices" data-lang="am" data-per="ወር"></ul>
   <p class="muted">
-    ወርኃዊ ክፍያ በአንድ ተማሪ <b>$<span class="price"></span></b> ነው። የመጀመሪያው
-    ትምህርት ያለ ክፍያ ይታያል፤ ቀሪዎቹ ክፍያ ከተረጋገጠ በኋላ ይከፈታሉ።
+    የመጀመሪያው ትምህርት ያለ ክፍያ ይታያል፤ ቀሪዎቹ ክፍያ ከተረጋገጠ በኋላ ይከፈታሉ።
+    ተጨማሪ ድጋፍ የሚያስፈልገው ተማሪ በዚሁ ክፍያ ውስጥ ይታገዛል፤ ተጨማሪ ክፍያ አይጠየቅም።
   </p>
   <p class="muted">
     አሁን በካርድ የመክፈል አገልግሎት <b>ገና አልተጀመረም</b>። ክፍያው በቀጥታ ከትምህርት ቤቱ
@@ -117,7 +119,7 @@
 <div data-lang-block="en" hidden>
   <p class="eyebrow">Terms</p>
   <h1 style="font-size:2rem">Terms of service</h1>
-  <p class="muted small">Last updated: 5 September 2026 · version <span class="consent-version"></span></p>
+  <p class="muted small">Last updated: 7 September 2026 · version <span class="consent-version"></span></p>
 
   <h2>1 · Whose account this is</h2>
   <p class="muted">
@@ -128,9 +130,12 @@
   </p>
 
   <h2>2 · Payment</h2>
+  <p class="muted">Monthly, per student, depending on the enrollment chosen:</p>
+  <ul class="muted tier-prices" data-lang="en" data-per="month"></ul>
   <p class="muted">
-    <b>$<span class="price"></span></b> per month, per student. The first lesson
-    is free to watch; the rest open once payment is confirmed.
+    The first lesson is free to watch; the rest open once payment is confirmed.
+    A student who needs extra help receives it within the same price — there is
+    no additional charge for needing support.
   </p>
   <p class="muted">
     Card payment is <b>not yet active</b>. Payment is arranged directly with the
@@ -203,9 +208,15 @@
 }
 </script>
 <script type="module">
-import { CONSENT_VERSION, PRICE_USD, CHURCH_CONTACT } from '@config';
+import { CONSENT_VERSION, tiersByPrice, CHURCH_CONTACT } from '@config';
 document.querySelectorAll('.consent-version').forEach(el => { el.textContent = CONSENT_VERSION; });
-document.querySelectorAll('.price').forEach(el => { el.textContent = PRICE_USD; });
+/* The price table is generated from TIERS so the terms can never quote a
+   figure the site does not charge. */
+document.querySelectorAll('.tier-prices').forEach(el => {
+  el.innerHTML = tiersByPrice()
+    .map(t => `<li><b>${t.am}</b> — $${t.priceUSD} / ${el.dataset.per || 'month'}: ${el.dataset.lang === 'en' ? t.blurbEn : t.blurbAm}</li>`)
+    .join('');
+});
 document.querySelectorAll('.contact-email').forEach(el => {
   el.textContent = CHURCH_CONTACT.email;
   el.href = 'mailto:' + CHURCH_CONTACT.email;

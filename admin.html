@@ -73,7 +73,7 @@
       <table>
         <thead>
           <tr>
-            <th>ተማሪ</th><th>ዕድሜ</th><th>ክፍል</th><th>የጥናት ሰዓት</th>
+            <th>ተማሪ</th><th>ዕድሜ</th><th>ክፍል</th><th>ምዝገባ</th><th>የጥናት ሰዓት</th>
             <th>ትምህርት</th><th>አማካይ</th><th>መጨረሻ የታየበት</th><th>ሁኔታ</th><th>ክፍያ</th>
           </tr>
         </thead>
@@ -92,6 +92,7 @@
 import { Store, fmtHours, fmtAgo, toMillis, requireAuth } from '@store';
 import { lessonsFor } from '@lessons';
 import { TRACKS, hasScores } from '@validators';
+import { tierById } from '@config';
 import { completedCount, averageScore } from '@stats';
 
 const me = await requireAuth();
@@ -117,7 +118,7 @@ try {
   users = await Store.allUsers();
 } catch (e) {
   document.getElementById('rows').innerHTML =
-    `<tr><td colspan="8" class="muted">${e.message}</td></tr>`;
+    `<tr><td colspan="10" class="muted">${e.message}</td></tr>`;
 }
 
 const week = Date.now() - 86400000 * 7;
@@ -148,6 +149,7 @@ function render(users) {
         <td><b>${u.studentName ?? '—'}</b><br><span class="muted small">${u.guardianName ?? ''} · ${u.email}</span></td>
         <td class="num">${u.age ?? '—'}</td>
         <td>${TRACKS[u.track]?.am ?? '—'}</td>
+        <td class="muted small">${tierById(u.tier)?.am ?? '—'}</td>
         <td class="num">${fmtHours(u.studySeconds)}</td>
         <td class="num">${done}/${lessons.length}</td>
         <td class="num">${scored ? averageScore(u.progress) + '%' : '—'}</td>

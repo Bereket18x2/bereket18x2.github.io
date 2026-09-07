@@ -132,6 +132,7 @@
 import { Store, fmtHours, fmtAgo, requireAuth } from '@store';
 import { subjectsFor, lessonsForSubject, lessonsFor, isFree } from '@lessons';
 import { TRACKS, hasScores } from '@validators';
+import { tierById, subjectIdsOfTier } from '@config';
 import { streakFrom, averageScore, completedCount, subjectProgress,
          coverageOfLesson, toDate, toGeez } from '@stats';
 
@@ -146,14 +147,24 @@ if (u) {
   Store.touch();
 
   const track = TRACKS[u.track];
-  const lessons = lessonsFor(u.track);
   const progress = u.progress || {};
+
+  /* A tier decides which subjects appear, and therefore which lessons are
+     counted. An account created before tiers existed has none, so it falls
+     back to the whole track rather than showing an empty course. */
+  const tier = tierById(u.tier);
+  const allowed = subjectIdsOfTier(u.tier);
+  const subjects = subjectsFor(u.track)
+    .filter(s => allowed.length === 0 || allowed.includes(s.id));
+
+  // counted against what the tier actually opens, not the whole catalogue
+  const lessons = subjects.flatMap(s => lessonsForSubject(s.id));
 
   $('hello').textContent = `እንኳን ደህና መጡ፣ ${u.studentName}`;
   $('whoami').textContent = `${u.age} ዓመት · ${track ? track.am : '—'}`;
   $('seen').textContent = fmtAgo(u.lastSeen);
   $('hours').textContent = fmtHours(u.studySeconds);
-  $('trackName').textContent = track ? track.am : '—';
+  $('trackName').textContent = tier ? tier.am : (track ? track.am : '—');
   $('trackNote').textContent = track ? track.eligibilityAm : '';
   if (u.role === 'admin') $('adminLink').style.display = '';
   if (!u.paid) $('payNote').style.display = 'block';
@@ -217,7 +228,6 @@ if (u) {
     </a>`;
   };
 
-  const subjects = subjectsFor(u.track);
   $('list').innerHTML = subjects.map(s => {
     const subjectLessons = lessonsForSubject(s.id);
     const sp = subjectProgress(progress, subjectLessons, opts);
