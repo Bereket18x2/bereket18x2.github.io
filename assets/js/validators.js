@@ -23,12 +23,21 @@
    keep working, the homepage keeps describing the course — it simply is
    not on the registration form until it has real content. Flip it back to
    true once the lessons are recorded. */
+/* Capabilities, not assumptions. Zema is listen-and-learn: it has no
+   quizzes, no scores, no pass mark and no exams, and a page must ask
+   the track rather than assuming every course works like the Bible one.
+   Anywhere a Zema student is shown ውጤት is a bug, so the check lives on
+   the data instead of being repeated as an `if (track === 'zema')`
+   somewhere a future page will forget. */
 export const TRACKS = {
   bible: {
     id: 'bible',
     am: 'የቅዱሳት መጻሕፍት ትምህርት',
     en: 'Bible study',
     enrollable: true,
+    hasQuizzes: true,
+    hasExams: true,
+    hasScores: true,
     min: 7,
     max: 13,
     eligibilityAm: 'የቅዱሳት መጻሕፍት ትምህርት ዕድሜያቸው ከ፯ እስከ ፲፫ ዓመት ለሆኑ ልጆች ነው።',
@@ -39,6 +48,9 @@ export const TRACKS = {
     am: 'የዜማ ትምህርት ቤት',
     en: 'Zema school',
     enrollable: false,   // placeholder lessons — see the note above
+    hasQuizzes: false,
+    hasExams: false,
+    hasScores: false,
     min: 7,
     max: null,
     eligibilityAm: 'የዜማ ትምህርት ቤት ከ፯ ዓመት ጀምሮ ለሁሉም ክፍት ነው።',
@@ -116,6 +128,13 @@ export function validateTrack(trackId) {
 }
 
 export const enrollableTracks = () => Object.values(TRACKS).filter(t => t.enrollable);
+
+/* Ask these rather than testing the track id. An unknown track is treated
+   as having nothing, which fails closed: a page that cannot identify the
+   course shows no scores rather than showing the wrong ones. */
+export const hasScores = (trackId) => TRACKS[trackId]?.hasScores === true;
+export const hasQuizzes = (trackId) => TRACKS[trackId]?.hasQuizzes === true;
+export const hasExams = (trackId) => TRACKS[trackId]?.hasExams === true;
 
 /* Registration uses this rather than validateTrack: an existing zema
    student is perfectly valid, but a NEW enrolment into a course with no

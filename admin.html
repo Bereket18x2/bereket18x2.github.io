@@ -91,7 +91,7 @@
 <script type="module">
 import { Store, fmtHours, fmtAgo, toMillis, requireAuth } from '@store';
 import { lessonsFor } from '@lessons';
-import { TRACKS } from '@validators';
+import { TRACKS, hasScores } from '@validators';
 import { completedCount, averageScore } from '@stats';
 
 const me = await requireAuth();
@@ -131,9 +131,12 @@ function render(users) {
   document.getElementById('rows').innerHTML = users
     .sort((a, b) => toMillis(b.lastSeen) - toMillis(a.lastSeen))
     .map(u => {
-      // count against the student's own course, not the whole catalogue
+      // count against the student's own course, not the whole catalogue,
+      // and use that course's notion of "complete" — a Zema lesson is
+      // finished by attendance, since it has no quiz to answer
+      const scored = hasScores(u.track);
       const lessons = lessonsFor(u.track);
-      const done = completedCount(u.progress, lessons);
+      const done = completedCount(u.progress, lessons, { scored });
       const status = !u.verified ? '<span class="pill">አልተረጋገጠም</span>'
         : !u.paid ? '<span class="pill pill--locked">ክፍያ የለም</span>'
         : '<span class="pill pill--done">ንቁ</span>';
@@ -147,7 +150,7 @@ function render(users) {
         <td>${TRACKS[u.track]?.am ?? '—'}</td>
         <td class="num">${fmtHours(u.studySeconds)}</td>
         <td class="num">${done}/${lessons.length}</td>
-        <td class="num">${averageScore(u.progress)}%</td>
+        <td class="num">${scored ? averageScore(u.progress) + '%' : '—'}</td>
         <td class="muted">${fmtAgo(u.lastSeen)}</td>
         <td>${status}</td>
         <td>${payCell}</td>
