@@ -58,9 +58,36 @@ export function averageScore(progress) {
   return Math.round((total / marked.length) * 100);
 }
 
-/* A lesson counts as complete when its quiz has been answered. */
-export function completedCount(progress, lessons) {
-  return lessons.filter(l => progress?.[l.id]?.done).length;
+/* What "complete" means depends on the course.
+
+   Bible: the quiz has been answered — `done`.
+   Zema: there is no quiz, so completion is attendance: the video was
+   genuinely watched, which is what videoCompleted records.
+
+   Passing the flag rather than the track id keeps this function ignorant
+   of which courses exist. */
+export function isLessonComplete(entry, { scored = true } = {}) {
+  if (!entry) return false;
+  return scored ? entry.done === true : entry.videoCompleted === true;
+}
+
+export function completedCount(progress, lessons, opts) {
+  return lessons.filter(l => isLessonComplete(progress?.[l.id], opts)).length;
+}
+
+/* Per-subject progress, which is the unit a certificate and an exam are
+   attached to. Returns { total, done, complete } — `complete` meaning
+   every lesson in the subject is finished, which is what a final exam
+   unlocks against. */
+export function subjectProgress(progress, lessons, opts) {
+  const total = lessons.length;
+  const done = completedCount(progress, lessons, opts);
+  return {
+    total,
+    done,
+    ratio: total ? done / total : 0,
+    complete: total > 0 && done === total
+  };
 }
 
 export function coverageOfLesson(progress, lessonId) {

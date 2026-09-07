@@ -1,14 +1,45 @@
 /* ===========================================================
-   lessons.js — the curriculum.
-   Drop a YouTube ID into `youtube` and the lesson goes live.
-   Use UNLISTED videos: playable by anyone with the link, not
-   findable on YouTube, and free to stream. See README.
-   Teacher names below are placeholders — replace with yours.
+   lessons.js — the curriculum, as track -> subject -> lessons.
+
+   A subject is what a certificate is earned for, what an exam covers,
+   and what the dashboard groups by. Lessons belong to a subject; the
+   track is read from the subject rather than stored twice.
+
+   Drop a YouTube ID into `youtube` and the lesson goes live. Use
+   UNLISTED videos: playable by anyone with the link, not findable on
+   YouTube, and free to stream. See README.
+
+   Teacher names and every Zema lesson below are placeholders — replace
+   them before students see them.
+
+   ZEMA CARRIES NO QUESTIONS. It is listen-and-learn: attendance is the
+   whole of its progress. The questions are absent from the data, not
+   merely hidden, so no page can accidentally render a score for a Zema
+   student.
    =========================================================== */
+
+/* A lesson should run 10-12 minutes. Anything outside 9-13 is either a
+   mistyped `minutes` or the wrong upload; both are worth catching before
+   a child sits through it. */
+export const LESSON_MIN_MINUTES = 9;
+export const LESSON_MAX_MINUTES = 13;
+
+export const SUBJECTS = [
+  { id: 'amestu', track: 'bible', num: '፩', am: 'አምስቱ አዕማደ ምስጢራት', en: 'The Five Pillars of Mystery', badge: 'የምስጢራት ዐዋቂ' },
+  { id: 'sirate', track: 'bible', num: '፪', am: 'ሥርዓተ ቤተ ክርስቲያን', en: 'Order of the Church', badge: 'የሥርዓት ጠባቂ' },
+  { id: 'meshaftarik', track: 'bible', num: '፫', am: 'የመጽሐፍ ቅዱስ ታሪክ', en: 'Bible History', badge: 'የታሪክ አዋቂ' },
+  { id: 'betekrtarik', track: 'bible', num: '፬', am: 'የቤተ ክርስቲያን ታሪክ', en: 'Church History', badge: 'የአበው ታሪክ ዐዋቂ' },
+  { id: 'sinemigbar', track: 'bible', num: '፭', am: 'ክርስቲያናዊ ሥነ ምግባር', en: 'Christian Conduct', badge: 'የመልካም ምግባር ባለቤት' },
+  { id: 'wengele', track: 'zema', num: '፩', am: 'ወንጌለ ዮሐንስ', en: 'Gospel of John', badge: 'የወንጌል ዜማ ተማሪ' },
+  { id: 'wudase', track: 'zema', num: '፪', am: 'ውዳሴ ማርያም', en: 'Praise of Mary', badge: 'የውዳሴ ማርያም ዘማሪ' },
+  { id: 'mezmur', track: 'zema', num: '፫', am: 'መዝሙረ ዳዊት', en: 'Psalms of David', badge: 'የመዝሙር ባለቤት' },
+  { id: 'aquaquam', track: 'zema', num: '፬', am: 'አቋቋም', en: 'Aquaquam', badge: 'የአቋቋም ሰልጣኝ' },
+  { id: 'zemaadv', track: 'zema', num: '፭', am: 'ዜማ', en: 'Zema', badge: 'የያሬድ ዜማ ወራሽ' }
+];
 
 export const LESSONS = [
   {
-    id: 'l1', num: '፩', track: 'bible',
+    id: 'l1', num: '፩', subject: 'amestu',
     title: 'ሃይማኖተ አበው፡ መግቢያ',
     teacher: 'መምህር ዳንኤል',
     minutes: 16,
@@ -36,35 +67,35 @@ export const LESSONS = [
     ]
   },
   {
-    id: 'l2', num: '፪', track: 'bible',
-    title: 'ጸሎት እና ክርስቲያናዊ አኗኗር',
-    teacher: 'መምህር ሰላም',
-    minutes: 14,
+    id: 'l6', num: '፮', subject: 'amestu',
+    title: 'ቅዱሳን መላእክት',
+    teacher: 'መምህር ተስፋዬ',
+    minutes: 13,
     youtube: '',
-    summary: 'ሰባቱ ጊዜያተ ጸሎት፣ አቡነ ዘበሰማያት እና ጸሎት በዕለት ተዕለት ሕይወት።',
+    summary: 'ዐሥሩ ነገደ መላእክት፣ ሚካኤልና ገብርኤል፣ የጠባቂ መልአክ ትምህርት።',
     questions: [
       {
-        q: 'በሥርዓተ ቤተ ክርስቲያን በቀን ስንት ጊዜ ጸሎት ይደረጋል?',
-        options: ['ሦስት ጊዜ', 'አምስት ጊዜ', 'ሰባት ጊዜ', 'ዐሥር ጊዜ'],
-        answer: 2,
-        why: 'ሰባቱ ጊዜያተ ጸሎት ይባላሉ።'
-      },
-      {
-        q: 'ጌታችን ኢየሱስ ክርስቶስ ያስተማረን ጸሎት ማን ይባላል?',
-        options: ['አቡነ ዘበሰማያት', 'መዝሙረ ዳዊት', 'ውዳሴ ማርያም', 'አንቀጸ ብርሃን'],
-        answer: 0,
-        why: 'በማቴዎስ ወንጌል ምዕራፍ ፮ ላይ ተጽፎ ይገኛል።'
-      },
-      {
-        q: 'ጸሎት ከሚያስፈልጋቸው ነገሮች አንዱ ያልሆነው የትኛው ነው?',
-        options: ['እምነት', 'ትሕትና', 'ትዕግሥት', 'ችኩልነት'],
+        q: 'ነገደ መላእክት ስንት ናቸው?',
+        options: ['ሦስት', 'ሰባት', 'ዘጠኝ', 'ዐሥር'],
         answer: 3,
-        why: 'ጸሎት በእምነት፣ በትሕትናና በትዕግሥት የሚደረግ ነው።'
+        why: 'ዐሥሩ ነገደ መላእክት ይባላሉ።'
+      },
+      {
+        q: 'ለቅድስት ድንግል ማርያም የምሥራች ያበሠረው መልአክ ማን ነው?',
+        options: ['ቅዱስ ሚካኤል', 'ቅዱስ ገብርኤል', 'ቅዱስ ሩፋኤል', 'ቅዱስ ኡራኤል'],
+        answer: 1,
+        why: 'ቅዱስ ገብርኤል በሉቃስ ወንጌል እንደተጻፈ አበሠረ።'
+      },
+      {
+        q: 'መላእክት ምን ዓይነት ፍጥረት ናቸው?',
+        options: ['ሥጋዊ', 'መንፈሳዊ', 'ምድራዊ', 'ጊዜያዊ'],
+        answer: 1,
+        why: 'መላእክት መንፈሳውያን ፍጥረታት ናቸው።'
       }
     ]
   },
   {
-    id: 'l3', num: '፫', track: 'bible',
+    id: 'l3', num: '፫', subject: 'sirate',
     title: 'ጾም እና ምጽዋት',
     teacher: 'መምህር ተስፋዬ',
     minutes: 18,
@@ -92,7 +123,7 @@ export const LESSONS = [
     ]
   },
   {
-    id: 'l4', num: '፬', track: 'bible',
+    id: 'l4', num: '፬', subject: 'sirate',
     title: 'ሥርዓተ ቅዳሴ',
     teacher: 'መምህር ዳንኤል',
     minutes: 20,
@@ -120,7 +151,7 @@ export const LESSONS = [
     ]
   },
   {
-    id: 'l5', num: '፭', track: 'bible',
+    id: 'l5', num: '፭', subject: 'sirate',
     title: 'ንስሐ',
     teacher: 'መምህር ሰላም',
     minutes: 15,
@@ -148,239 +179,80 @@ export const LESSONS = [
     ]
   },
   {
-    id: 'l6', num: '፮', track: 'bible',
-    title: 'ቅዱሳን መላእክት',
-    teacher: 'መምህር ተስፋዬ',
-    minutes: 13,
+    id: 'l2', num: '፪', subject: 'sinemigbar',
+    title: 'ጸሎት እና ክርስቲያናዊ አኗኗር',
+    teacher: 'መምህር ሰላም',
+    minutes: 14,
     youtube: '',
-    summary: 'ዐሥሩ ነገደ መላእክት፣ ሚካኤልና ገብርኤል፣ የጠባቂ መልአክ ትምህርት።',
+    summary: 'ሰባቱ ጊዜያተ ጸሎት፣ አቡነ ዘበሰማያት እና ጸሎት በዕለት ተዕለት ሕይወት።',
     questions: [
       {
-        q: 'ነገደ መላእክት ስንት ናቸው?',
-        options: ['ሦስት', 'ሰባት', 'ዘጠኝ', 'ዐሥር'],
+        q: 'በሥርዓተ ቤተ ክርስቲያን በቀን ስንት ጊዜ ጸሎት ይደረጋል?',
+        options: ['ሦስት ጊዜ', 'አምስት ጊዜ', 'ሰባት ጊዜ', 'ዐሥር ጊዜ'],
+        answer: 2,
+        why: 'ሰባቱ ጊዜያተ ጸሎት ይባላሉ።'
+      },
+      {
+        q: 'ጌታችን ኢየሱስ ክርስቶስ ያስተማረን ጸሎት ማን ይባላል?',
+        options: ['አቡነ ዘበሰማያት', 'መዝሙረ ዳዊት', 'ውዳሴ ማርያም', 'አንቀጸ ብርሃን'],
+        answer: 0,
+        why: 'በማቴዎስ ወንጌል ምዕራፍ ፮ ላይ ተጽፎ ይገኛል።'
+      },
+      {
+        q: 'ጸሎት ከሚያስፈልጋቸው ነገሮች አንዱ ያልሆነው የትኛው ነው?',
+        options: ['እምነት', 'ትሕትና', 'ትዕግሥት', 'ችኩልነት'],
         answer: 3,
-        why: 'ዐሥሩ ነገደ መላእክት ይባላሉ።'
-      },
-      {
-        q: 'ለቅድስት ድንግል ማርያም የምሥራች ያበሠረው መልአክ ማን ነው?',
-        options: ['ቅዱስ ሚካኤል', 'ቅዱስ ገብርኤል', 'ቅዱስ ሩፋኤል', 'ቅዱስ ኡራኤል'],
-        answer: 1,
-        why: 'ቅዱስ ገብርኤል በሉቃስ ወንጌል እንደተጻፈ አበሠረ።'
-      },
-      {
-        q: 'መላእክት ምን ዓይነት ፍጥረት ናቸው?',
-        options: ['ሥጋዊ', 'መንፈሳዊ', 'ምድራዊ', 'ጊዜያዊ'],
-        answer: 1,
-        why: 'መላእክት መንፈሳውያን ፍጥረታት ናቸው።'
+        why: 'ጸሎት በእምነት፣ በትሕትናና በትዕግሥት የሚደረግ ነው።'
       }
     ]
   },
-
-  /* ===========================================================
-     ዜማ — PLACEHOLDER COURSE.
-
-     A teacher must replace every title, summary and question below
-     before this goes in front of students. The structure follows the
-     traditional order — ወንጌለ ዮሐንስ first, then ድጓ and the rest — and
-     the questions are about mode and season, which is what a chant
-     student is actually assessed on. They are NOT comprehension
-     questions about a video, because chant is not learned that way.
-
-     Numbering restarts at ፩ because this is a separate course.
-     =========================================================== */
-
   {
-    id: 'z1', num: '፩', track: 'zema',
+    id: 'z1', num: '፩', subject: 'wengele',
     title: 'ወንጌለ ዮሐንስ — መግቢያ',
     teacher: 'መምህር (ይተካ)',
     minutes: 18,
     youtube: '',
-    summary: 'የዜማ ትምህርት መነሻ፣ ቅዱስ ያሬድና ሦስቱ ዜማዎች።',
-    questions: [
-      {
-        q: 'በኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ ክርስቲያን ሥርዓት የዜማ ትምህርት የሚጀመረው በምንድን ነው?',
-        options: ['በድጓ', 'በወንጌለ ዮሐንስ', 'በቅዳሴ', 'በአቋቋም'],
-        answer: 1,
-        why: 'ወንጌለ ዮሐንስ የዜማ ተማሪ የመጀመሪያ ደረጃ ነው።'
-      },
-      {
-        q: 'ቅዱስ ያሬድ ያስተማራቸው የዜማ ክፍሎች ስንት ናቸው?',
-        options: ['ሁለት', 'ሦስት', 'አምስት', 'ሰባት'],
-        answer: 1,
-        why: 'ግዕዝ፣ ዕዝልና አራራይ — ሦስቱ ዜማዎች።'
-      },
-      {
-        q: 'ቅዱስ ያሬድ ያገለገለበት ከተማ የትኛው ነው?',
-        options: ['ላሊበላ', 'አክሱም', 'ጎንደር', 'ደብረ ዳሞ'],
-        answer: 1,
-        why: 'ቅዱስ ያሬድ በ፮ኛው መቶ ክፍለ ዘመን በአክሱም አገልግሏል።'
-      }
-    ]
+    summary: 'የዜማ ትምህርት መነሻ፣ ቅዱስ ያሬድና ሦስቱ ዜማዎች።'
   },
   {
-    id: 'z2', num: '፪', track: 'zema',
+    id: 'z2', num: '፪', subject: 'zemaadv',
     title: 'ድጓ',
     teacher: 'መምህር (ይተካ)',
     minutes: 20,
     youtube: '',
-    summary: 'የዓመቱን በዓላት የሚሸፍነው የቅዱስ ያሬድ ዋና የዜማ መጽሐፍ።',
-    questions: [
-      {
-        q: 'ድጓ ምንድን ነው?',
-        options: [
-          'የጸሎት መጽሐፍ',
-          'የዓመቱን በዓላት የሚሸፍን የዜማ መጽሐፍ',
-          'የቅዳሴ ሥርዓት',
-          'የታሪክ መጽሐፍ'
-        ],
-        answer: 1,
-        why: 'ድጓ ከመስከረም እስከ ጳጉሜን ያሉትን በዓላት ይዞ የሚዘመር ነው።'
-      },
-      {
-        q: 'የግዕዝ ዜማ ባሕርይ የሚገለጸው እንዴት ነው?',
-        options: ['ቀጥተኛና መሠረታዊ', 'አዝናኝና ፈጣን', 'የሐዘን', 'ያለ ቅኝት'],
-        answer: 0,
-        why: 'ግዕዝ የመጀመሪያውና መሠረታዊው ዜማ ነው፤ ሌሎቹ ከእሱ ይመዘዛሉ።'
-      },
-      {
-        q: 'በደስታ በዓላት ጊዜ የሚያገለግለው ዜማ የትኛው ነው?',
-        options: ['ዕዝል', 'አራራይ', 'ግዕዝ', 'ምንም'],
-        answer: 1,
-        why: 'አራራይ ቀለል ያለና ደስታን የሚገልጽ ዜማ ነው።'
-      }
-    ]
+    summary: 'የዓመቱን በዓላት የሚሸፍነው የቅዱስ ያሬድ ዋና የዜማ መጽሐፍ።'
   },
   {
-    id: 'z3', num: '፫', track: 'zema',
+    id: 'z3', num: '፫', subject: 'zemaadv',
     title: 'ጾመ ድጓ',
     teacher: 'መምህር (ይተካ)',
     minutes: 19,
     youtube: '',
-    summary: 'የዐቢይ ጾም ዜማ፣ እና ዕዝል ለምን እንደሚያገለግል።',
-    questions: [
-      {
-        q: 'ጾመ ድጓ የሚዘመረው በየትኛው ወቅት ነው?',
-        options: ['በዐቢይ ጾም', 'በጾመ ነቢያት', 'በበዓለ ትንሣኤ', 'በመስቀል በዓል'],
-        answer: 0,
-        why: 'ጾመ ድጓ ለዐቢይ ጾም ተብሎ የተዘጋጀ የቅዱስ ያሬድ ክፍል ነው።'
-      },
-      {
-        q: 'ዐቢይ ጾም ስንት ቀናት ነው?',
-        options: ['፵ ቀን', '፶፭ ቀን', '፵፫ ቀን', '፲፬ ቀን'],
-        answer: 1,
-        why: 'ዐቢይ ጾም ፶፭ ቀናት ነው።'
-      },
-      {
-        q: 'በሐዘንና በጾም ወቅት የሚያገለግለው ዜማ የትኛው ነው?',
-        options: ['አራራይ', 'ግዕዝ', 'ዕዝል', 'ሦስቱም'],
-        answer: 2,
-        why: 'ዕዝል ጥልቅና የሐዘን ስሜት የሚገልጽ ዜማ ነው።'
-      }
-    ]
+    summary: 'የዐቢይ ጾም ዜማ፣ እና ዕዝል ለምን እንደሚያገለግል።'
   },
   {
-    id: 'z4', num: '፬', track: 'zema',
+    id: 'z4', num: '፬', subject: 'zemaadv',
     title: 'ምዕራፍ',
     teacher: 'መምህር (ይተካ)',
     minutes: 16,
     youtube: '',
-    summary: 'የምዕራፍ አከፋፈልና በዜማ ውስጥ ያለው ቦታ።',
-    questions: [
-      {
-        q: 'ምዕራፍ በዜማ ትምህርት ውስጥ የሚመጣው መቼ ነው?',
-        options: [
-          'ከወንጌለ ዮሐንስ በፊት',
-          'ከድጓ በኋላ ባለው ደረጃ',
-          'ከቅዳሴ በኋላ',
-          'ከትምህርቱ ውጪ ነው'
-        ],
-        answer: 1,
-        why: 'ተማሪው ድጓን ከያዘ በኋላ ወደ ምዕራፍ ይሸጋገራል።'
-      },
-      {
-        q: 'ሦስቱ ዜማዎች የሚለያዩት በምንድን ነው?',
-        options: ['በቋንቋ', 'በቅኝትና በስሜት', 'በጸሐፊው', 'በርዝመት ብቻ'],
-        answer: 1,
-        why: 'እያንዳንዱ ዜማ የራሱ ቅኝትና የሚገልጸው ስሜት አለው።'
-      },
-      {
-        q: 'የዜማ ምልክቶች (ምልክተ ዜማ) ጥቅማቸው ምንድን ነው?',
-        options: [
-          'ጌጥ ናቸው',
-          'ዜማው እንዴት እንደሚዜም ያመለክታሉ',
-          'የገጽ ቁጥር ናቸው',
-          'ለንባብ ብቻ ናቸው'
-        ],
-        answer: 1,
-        why: 'ምልክተ ዜማ የድምፅን ከፍታ፣ ዝቅታና ቆይታ ያመለክታል።'
-      }
-    ]
+    summary: 'የምዕራፍ አከፋፈልና በዜማ ውስጥ ያለው ቦታ።'
   },
   {
-    id: 'z5', num: '፭', track: 'zema',
+    id: 'z5', num: '፭', subject: 'zemaadv',
     title: 'ዝማሬ ወመዋሥዕት',
     teacher: 'መምህር (ይተካ)',
     minutes: 17,
     youtube: '',
-    summary: 'ዝማሬ ከቁርባን በኋላ፣ መዋሥዕት በምላሽ ሥርዓት።',
-    questions: [
-      {
-        q: 'ዝማሬ የሚዘመረው መቼ ነው?',
-        options: ['ከቅዳሴ በፊት', 'ከቅዱስ ቁርባን በኋላ', 'በጠዋት ጸሎት', 'በዓል ዋዜማ'],
-        answer: 1,
-        why: 'ዝማሬ ከቅዱስ ቁርባን በኋላ የሚቀርብ ነው።'
-      },
-      {
-        q: 'መዋሥዕት ማለት ምን ማለት ነው?',
-        options: ['መልስ መስጠት', 'መጀመር', 'መዝጋት', 'ማንበብ'],
-        answer: 0,
-        why: 'መዋሥዕት በምላሽ መልክ የሚዜም ሥርዓት ነው።'
-      },
-      {
-        q: 'በአቋቋም ጊዜ የሚያገለግሉት ንዋያት የትኞቹ ናቸው?',
-        options: [
-          'መቋሚያ፣ ጸናጽልና ከበሮ',
-          'መስቀልና ጃንጥላ',
-          'ማዕጠንትና ጧፍ',
-          'ከበሮ ብቻ'
-        ],
-        answer: 0,
-        why: 'አቋቋም በመቋሚያ፣ በጸናጽልና በከበሮ ታጅቦ ይፈጸማል።'
-      }
-    ]
+    summary: 'ዝማሬ ከቁርባን በኋላ፣ መዋሥዕት በምላሽ ሥርዓት።'
   },
   {
-    id: 'z6', num: '፮', track: 'zema',
+    id: 'z6', num: '፮', subject: 'zemaadv',
     title: 'ቅዳሴ በዜማ',
     teacher: 'መምህር (ይተካ)',
     minutes: 20,
     youtube: '',
-    summary: 'የቅዳሴ ዜማና ተማሪው የሚደርስበት የመጨረሻ ደረጃ።',
-    questions: [
-      {
-        q: 'በኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ ክርስቲያን ያሉት ቅዳሴያት ስንት ናቸው?',
-        options: ['፯', '፲', '፲፬', '፳'],
-        answer: 2,
-        why: 'ዐሥራ አራቱ ቅዳሴያት ይባላሉ።'
-      },
-      {
-        q: 'የዜማ ተማሪ ወደ ቅዳሴ ዜማ የሚደርሰው መቼ ነው?',
-        options: [
-          'በመጀመሪያው ዓመት',
-          'ቀደምት ደረጃዎቹን ከጨረሰ በኋላ',
-          'ከአቋቋም በፊት',
-          'ያለ ቅደም ተከተል'
-        ],
-        answer: 1,
-        why: 'ሥርዓቱ ከወንጌለ ዮሐንስ ተነስቶ በደረጃ ወደ ቅዳሴ ይደርሳል።'
-      },
-      {
-        q: 'ቅዳሴ የሚፈጸመው የት ነው?',
-        options: ['በቅኔ ማኅሌት', 'በመቅደስ', 'በደጀ ሰላም', 'በቅጽረ ቤተ ክርስቲያን'],
-        answer: 1,
-        why: 'ቅዱስ ቁርባን የሚፈጸመው በመቅደስ ነው።'
-      }
-    ]
+    summary: 'የቅዳሴ ዜማና ተማሪው የሚደርስበት የመጨረሻ ደረጃ።'
   }
 ];
 
@@ -388,8 +260,39 @@ export const LESSONS = [
    before being asked to pay. Everything else needs a paid account. */
 export const FREE_PREVIEW_ID = 'l1';
 
-export const findLesson = (id) => LESSONS.find(l => l.id === id);
+/* ---------------- lookups ---------------- */
 
-export const lessonsFor = (track) => LESSONS.filter(l => l.track === track);
+export const findLesson = (id) => LESSONS.find(l => l.id === id);
+export const subjectById = (id) => SUBJECTS.find(s => s.id === id);
+export const subjectsFor = (track) => SUBJECTS.filter(s => s.track === track);
+export const lessonsForSubject = (subjectId) => LESSONS.filter(l => l.subject === subjectId);
+
+/* The track of a lesson comes from its subject — stored once, so the two
+   can never disagree. */
+export const trackOfLesson = (lesson) => subjectById(lesson && lesson.subject)?.track ?? null;
+export const lessonsFor = (track) =>
+  LESSONS.filter(l => trackOfLesson(l) === track);
 
 export const isFree = (id) => id === FREE_PREVIEW_ID;
+
+/* ---------------- duration sanity ----------------
+   Returns the lessons whose DECLARED minutes fall outside the range.
+   This catches a typo in the metadata. It cannot catch a 22-minute video
+   labelled 11 — only the player knows that, so lesson.html compares the
+   real getDuration() against these minutes once the video is ready. */
+export function outOfRangeLessons(lessons = LESSONS) {
+  return lessons.filter(l =>
+    typeof l.minutes === 'number' &&
+    (l.minutes < LESSON_MIN_MINUTES || l.minutes > LESSON_MAX_MINUTES));
+}
+
+// One grouped warning at load rather than one per lesson, so a handful of
+// placeholders does not bury everything else in the console.
+const offenders = outOfRangeLessons();
+if (offenders.length) {
+  console.warn(
+    `[lessons] ${offenders.length} lesson(s) declare a length outside ` +
+    `${LESSON_MIN_MINUTES}-${LESSON_MAX_MINUTES} minutes:`,
+    offenders.map(l => `${l.id} (${l.minutes}m)`).join(', ')
+  );
+}

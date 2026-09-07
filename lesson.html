@@ -90,7 +90,8 @@
     </div>
 
     <div class="grid-2">
-      <div>
+      <!-- removed entirely for Zema, which has no questions at all -->
+      <div id="quizSection">
         <div class="between" style="margin-bottom:14px">
           <h2 style="margin:0;font-size:1.25rem">ጥያቄዎች</h2>
           <span class="pill" id="qcount"></span>
@@ -143,7 +144,8 @@
 
 <script type="module">
 import { Store, requireAuth } from '@store';
-import { findLesson, isFree } from '@lessons';
+import { findLesson, isFree, trackOfLesson, subjectById } from '@lessons';
+import { hasQuizzes } from '@validators';
 import { markBucket, coverageOf, isComplete, shortfallMessage, isSuspicious } from '@coverage';
 
 const $ = id => document.getElementById(id);
@@ -160,10 +162,27 @@ if (u && !L) {
   $('authedContent').style.display = 'block';
   $('num').textContent = L.num;
   $('title').textContent = L.title;
-  $('meta').textContent = `${L.teacher} · ${L.minutes} ደቂቃ`;
   $('summary').textContent = L.summary;
-  $('qcount').textContent = `${L.questions.length} ጥያቄ`;
   if (isFree(L.id)) $('freeBadge').style.display = 'inline-block';
+
+  /* Zema is listen-and-learn: its lessons carry no questions at all, so the
+     quiz column is removed rather than rendered empty, and completion is
+     attendance alone. Asking the track's capability rather than its id
+     means a future course behaves correctly by declaring itself. */
+  const subject = subjectById(L.subject);
+  const lessonTrack = trackOfLesson(L);
+  const quizzed = hasQuizzes(lessonTrack) && Array.isArray(L.questions) && L.questions.length > 0;
+
+  $('meta').textContent = subject
+    ? `${subject.am} · ${L.teacher} · ${L.minutes} ደቂቃ`
+    : `${L.teacher} · ${L.minutes} ደቂቃ`;
+
+  if (quizzed) {
+    $('qcount').textContent = `${L.questions.length} ጥያቄ`;
+  } else {
+    $('quizSection').remove();
+    $('watchNote').textContent = 'ይህ ትምህርት በማዳመጥ የሚማር ነው። ትምህርቱን ሙሉ በሙሉ ማየትዎ ይመዘገባል።';
+  }
 
   /* ---------- watch time ----------
      One 1s tick drives everything: the on-screen clock, the coverage
@@ -225,6 +244,7 @@ if (u && !L) {
   };
 
   function unlockQuiz() {
+    if (!quizzed) return;      // nothing to unlock on a Zema lesson
     $('quizLock').style.display = 'none';
     document.querySelectorAll('#quiz .choice').forEach(b => { b.disabled = false; });
   }
@@ -239,7 +259,9 @@ if (u && !L) {
       return;                       // quiz stays locked
     }
     completed = true;
-    $('watchNote').textContent = 'ትምህርቱን በሙሉ ተመልክተዋል። ጥያቄዎቹ ተከፍተዋል።';
+    $('watchNote').textContent = quizzed
+      ? 'ትምህርቱን በሙሉ ተመልክተዋል። ጥያቄዎቹ ተከፍተዋል።'
+      : 'ትምህርቱን በሙሉ ተመልክተዋል። ተመዝግቧል።';
     $('watchNote').className = 'muted small';
     unlockQuiz();
 
@@ -350,7 +372,21 @@ if (u && !L) {
         host: 'https://www.youtube-nocookie.com',
         playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
         events: {
-          onReady: () => { duration = ytPlayer.getDuration() || 0; paintCoverage(); },
+          onReady: () => {
+            duration = ytPlayer.getDuration() || 0;
+            paintCoverage();
+            /* The real check. The declared `minutes` is hand-typed, so a
+               load-time check on it only ever catches a typo — this catches
+               a 22-minute video labelled 11, which is the case that matters,
+               because a child sits through the difference. */
+            const actualMin = duration / 60;
+            if (duration > 0 && Math.abs(actualMin - L.minutes) > 1.5) {
+              console.warn(
+                `[lesson ${L.id}] declared ${L.minutes}m but the video runs ` +
+                `${actualMin.toFixed(1)}m — check the upload or the metadata.`
+              );
+            }
+          },
           onStateChange: (e) => {
             if (e.data === YT.PlayerState.PLAYING) start();
             else { stop(); closeStillWatching(); }
@@ -366,8 +402,8 @@ if (u && !L) {
   }
 
   /* ---------- quiz ---------- */
-  const answers = new Array(L.questions.length).fill(null);
-  $('quiz').innerHTML = L.questions.map((q, i) => `
+  const answers = quizzed ? new Array(L.questions.length).fill(null) : [];
+  if (quizzed) $('quiz').innerHTML = L.questions.map((q, i) => `
     <div class="panel" data-q="${i}">
       <p style="margin:0 0 14px"><b>${i + 1}.</b> ${q.q}</p>
       ${q.options.map((o, j) =>
@@ -375,7 +411,7 @@ if (u && !L) {
       <p class="note small" data-why="${i}" style="display:none;margin-top:10px">${q.why}</p>
     </div>`).join('');
 
-  $('quiz').addEventListener('click', (e) => {
+  if (quizzed) $('quiz').addEventListener('click', (e) => {
     const b = e.target.closest('.choice');
     if (!b || b.disabled) return;
     const i = +b.dataset.i, j = +b.dataset.j;

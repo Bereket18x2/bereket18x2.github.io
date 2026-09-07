@@ -79,7 +79,9 @@
         <div class="stat" id="doneStat">…</div>
         <div class="meter"><i id="bar" style="width:0%"></i></div>
       </div>
-      <div class="panel">
+      <!-- hidden entirely for Zema: a listen-and-learn course has no score,
+           and showing 0% to a child who has done nothing wrong is a bug -->
+      <div class="panel" id="avgPanel">
         <p class="eyebrow">አማካይ ውጤት</p>
         <div class="stat" id="avg">…<small>%</small></div>
       </div>
@@ -128,9 +130,10 @@
 
 <script type="module">
 import { Store, fmtHours, fmtAgo, requireAuth } from '@store';
-import { lessonsFor, isFree } from '@lessons';
-import { TRACKS } from '@validators';
-import { streakFrom, averageScore, completedCount, coverageOfLesson, toDate, toGeez } from '@stats';
+import { subjectsFor, lessonsForSubject, lessonsFor, isFree } from '@lessons';
+import { TRACKS, hasScores } from '@validators';
+import { streakFrom, averageScore, completedCount, subjectProgress,
+         coverageOfLesson, toDate, toGeez } from '@stats';
 
 const $ = id => document.getElementById(id);
 
@@ -155,11 +158,22 @@ if (u) {
   if (u.role === 'admin') $('adminLink').style.display = '';
   if (!u.paid) $('payNote').style.display = 'block';
 
-  const done = completedCount(progress, lessons);
+  /* Everything score-shaped is gated on the track's capability rather than
+     on its id, so a future course gets the right behaviour by declaring it
+     instead of by being added to an `if`. */
+  const scored = hasScores(u.track);
+  const opts = { scored };
+
+  const done = completedCount(progress, lessons, opts);
   $('doneStat').innerHTML = `${toGeez(done) === String(done) ? done : toGeez(done)}<small> / ${toGeez(lessons.length)}</small>`;
   $('doneCount').textContent = `${done} / ${lessons.length} ተጠናቋል`;
   $('bar').style.width = (lessons.length ? (done / lessons.length) * 100 : 0) + '%';
-  $('avg').innerHTML = `${averageScore(progress)}<small>%</small>`;
+
+  if (scored) {
+    $('avg').innerHTML = `${averageScore(progress)}<small>%</small>`;
+  } else {
+    $('avgPanel').remove();
+  }
 
   const streak = streakFrom(progress);
   $('streak').textContent = streak;
@@ -167,19 +181,24 @@ if (u) {
     ? 'በተከታታይ ቀናት ተምረዋል — እንዲሁ ይቀጥሉ።'
     : 'ዛሬ አንድ ትምህርት ቢጀምሩ ቆጠራው ይጀምራል።';
 
-  /* Locked lessons are shown, not hidden: a parent should see what the
-     subscription opens. The lock is a UI gate — see docs/PAYMENTS.md. */
-  $('list').innerHTML = lessons.map(l => {
+  /* Grouped by subject, because a subject is what a certificate is earned
+     for and what an exam covers — the grouping a student is actually
+     working through, not a flat list.
+
+     Locked lessons are shown rather than hidden: a parent should see what
+     the subscription opens. The lock is a UI gate — see docs/PAYMENTS.md. */
+  const renderLesson = (l) => {
     const p = progress[l.id];
     const locked = !u.paid && !isFree(l.id);
     const cov = coverageOfLesson(progress, l.id);
     const when = toDate(p?.at) || toDate(p?.completedAt);
+    const complete = scored ? p?.done === true : p?.videoCompleted === true;
 
-    const badge = locked
-      ? '<span class="pill pill--locked">🔒 ተቆልፏል</span>'
-      : p?.done
-        ? `<span class="pill pill--done">${p.score}/${p.of}</span>`
-        : `<span class="pill">${l.minutes} ደቂቃ</span>`;
+    let badge;
+    if (locked) badge = '<span class="pill pill--locked">🔒 ተቆልፏል</span>';
+    else if (complete && scored) badge = `<span class="pill pill--done">${p.score}/${p.of}</span>`;
+    else if (complete) badge = '<span class="pill pill--done">ተጠናቋል</span>';
+    else badge = `<span class="pill">${l.minutes} ደቂቃ</span>`;
 
     const bits = [];
     if (isFree(l.id)) bits.push('ነጻ ቅምሻ');
@@ -188,7 +207,7 @@ if (u) {
     const detail = bits.length ? ` · ${bits.join(' · ')}` : '';
 
     const href = locked ? 'billing.html' : `lesson.html?id=${l.id}`;
-    return `<a class="folio" href="${href}" data-done="${p?.done ? 1 : 0}" data-locked="${locked ? 1 : 0}">
+    return `<a class="folio" href="${href}" data-done="${complete ? 1 : 0}" data-locked="${locked ? 1 : 0}">
       <span class="geez">${l.num}</span>
       <span>
         <h3>${l.title}</h3>
@@ -196,6 +215,28 @@ if (u) {
       </span>
       ${badge}
     </a>`;
+  };
+
+  const subjects = subjectsFor(u.track);
+  $('list').innerHTML = subjects.map(s => {
+    const subjectLessons = lessonsForSubject(s.id);
+    const sp = subjectProgress(progress, subjectLessons, opts);
+
+    // A subject with no lessons yet says so, rather than rendering an
+    // empty box that looks like a fault.
+    const body = subjectLessons.length
+      ? subjectLessons.map(renderLesson).join('')
+      : '<p class="muted small" style="margin:0">በዚህ ትምህርት ገና ትምህርቶች አልተጨመሩም።</p>';
+
+    return `<section style="margin-bottom:26px">
+      <div class="between" style="margin-bottom:10px">
+        <h3 style="margin:0;display:flex;align-items:center;gap:10px">
+          <span class="geez">${s.num}</span> ${s.am}
+        </h3>
+        <span class="pill${sp.complete ? ' pill--done' : ''}">${sp.done} / ${sp.total}</span>
+      </div>
+      ${body}
+    </section>`;
   }).join('') || '<p class="muted">በዚህ ክፍል ገና ትምህርት አልተጨመረም።</p>';
 
   /* Deletion is requested, never performed here — see Store.requestDeletion. */
