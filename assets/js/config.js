@@ -23,65 +23,52 @@ export const firebaseConfig = {
   appId: "1:828888713418:web:0db10658af6e83ae220c33"
 };
 
-/* ---------------- enrollment tiers ----------------
+/* ---------------- pricing ----------------
 
-   Every price the site quotes comes from here, so a parish changes what
-   it charges by editing this block and nothing else.
+   Every figure the site quotes lives here, so a parish changes what it
+   charges by editing this block and nothing else. The terms page renders
+   its price table from these values, which means the terms can never
+   quote a number the site does not charge.
 
-   `subjects` lists the subject ids from lessons.js that the tier opens.
-   zema_full NESTS zema_basic: ወንጌለ ዮሐንስ comes before አቋቋም in the
-   traditional order and a student cannot sensibly skip it, so the $30
-   tier contains the $20 one rather than sitting beside it.
+   BIBLE is a three-month course. A parent either pays monthly or prepays
+   the term at a discount. There is NO auto-renewal: the term ends and the
+   parent chooses again, deliberately.
 
-   Remedial support is included in every tier. A student who needs more
-   help is not charged more for needing it.
+   ZEMA is a flat price whatever subjects are chosen — which is exactly
+   why registration ticks all five by default. A parent who unticks gains
+   nothing today and pays to undo it later, so unticking has to be a
+   deliberate act rather than an oversight.
 
-   Payment is still arranged by hand — see docs/PAYMENTS.md. Nothing here
-   talks to Stripe, and `paid` remains un-writable by any client. */
-export const TIERS = {
+   Payment is arranged by hand (docs/PAYMENTS.md). Nothing here talks to
+   Stripe, and `paid`, `amountPaid` and `paidUntil` are written by a
+   teacher or admin, never by a student. */
+export const PRICING = {
   bible: {
-    id: 'bible',
     track: 'bible',
-    priceUSD: 40,
-    am: 'የቅዱሳት መጻሕፍት ትምህርት',
-    en: 'Bible study',
-    blurbAm: 'አምስቱም የመጽሐፍ ቅዱስ ትምህርት ክፍሎች፤ ጥያቄዎች፣ ፈተናዎችና የምስክር ወረቀት።',
-    blurbEn: 'All five Bible subjects, with quizzes, exams and certificates.',
-    subjects: ['amestu', 'sirate', 'meshaftarik', 'betekrtarik', 'sinemigbar']
+    monthlyUSD: 40,
+    termMonths: 3,
+    termPrepaidUSD: 105,
+    get termFullUSD() { return this.monthlyUSD * this.termMonths; },   // 120
+    get termSavingUSD() { return this.termFullUSD - this.termPrepaidUSD; } // 15
   },
-  zema_full: {
-    id: 'zema_full',
+  zema: {
     track: 'zema',
-    priceUSD: 30,
-    am: 'ሙሉ ዜማ',
-    en: 'Full Zema',
-    blurbAm: 'የመሠረታዊ ዜማውን ሁሉ ጨምሮ አቋቋምና ዜማ።',
-    blurbEn: 'Everything in Basic Zema, plus Aquaquam and Zema.',
-    subjects: ['wengele', 'wudase', 'mezmur', 'aquaquam', 'zemaadv']
-  },
-  zema_basic: {
-    id: 'zema_basic',
-    track: 'zema',
-    priceUSD: 20,
-    am: 'መሠረታዊ ዜማ',
-    en: 'Basic Zema',
-    blurbAm: 'ወንጌለ ዮሐንስ፣ ውዳሴ ማርያምና መዝሙረ ዳዊት።',
-    blurbEn: 'Wengele Yohannes, Wudase Maryam and Mezmure Dawit.',
-    subjects: ['wengele', 'wudase', 'mezmur']
+    flatUSD: 30,
+    // adding a subject after enrolment, once the selection is fixed
+    addSubjectUSD: 10
   }
 };
 
-export const tierById = (id) => TIERS[id] || null;
-
-/* The subjects a tier opens. Returns ids; the caller resolves them against
-   lessons.js, which keeps this file free of curriculum imports so it stays
-   loadable on its own. */
-export const subjectIdsOfTier = (tierId) => TIERS[tierId]?.subjects ?? [];
-
-/* Ordered cheapest-first for the pricing list, so a parent reads up rather
-   than down and the smallest commitment is the easiest to find. */
-export const tiersByPrice = () =>
-  Object.values(TIERS).sort((a, b) => a.priceUSD - b.priceUSD);
+/* What a given enrolment costs, so the figure on screen and the figure a
+   teacher records come from the same function rather than two sums that
+   can drift apart. */
+export function priceFor(track, { prepaidTerm = false } = {}) {
+  if (track === 'bible') {
+    return prepaidTerm ? PRICING.bible.termPrepaidUSD : PRICING.bible.monthlyUSD;
+  }
+  if (track === 'zema') return PRICING.zema.flatUSD;
+  return null;
+}
 
 /* The version of privacy.html + terms.html a parent agreed to, recorded on
    their account at registration. Date-stamped rather than numbered so it is
