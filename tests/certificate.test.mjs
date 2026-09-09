@@ -28,7 +28,7 @@ const svg = certificateSVG({
 console.log('\nit is a real, standalone SVG');
 check('starts as an svg element', svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"'), true);
 check('closes', svg.trim().endsWith('</svg>'), true);
-check('declares its size', /width="1000" height="700"/.test(svg), true);
+check('declares its size', /width="1000" height="800"/.test(svg), true);
 // a downloaded file has no stylesheet, so a var() would render as nothing
 check('carries no CSS custom properties', /var\(--/.test(svg), false);
 check('carries no external reference', /https?:\/\//.test(svg.replace('http://www.w3.org/2000/svg', '')), false);
@@ -43,6 +43,22 @@ check('the lesson count in Geez', svg.includes('፪'), true);
 // the harag interlace carries meaning; a certificate without it is the
 // wrong object, so its two stroke colours must both be present
 check('the harag band is drawn', svg.includes('#E8A73C') && svg.includes('#B22F30'), true);
+
+console.log('\nthe signature block is unmistakably unfinished');
+/* Placeholders, not plausible invented names. A certificate reading
+   TEACHER_NAME gets caught before it reaches a family; one reading a
+   convincing Amharic name would ship, carrying a signature nobody gave.
+   Who actually signs is docs/CHURCH-DECISIONS.md §5. */
+check('the teacher line is a visible placeholder', svg.includes('TEACHER_NAME'), true);
+check('the priest line is a visible placeholder', svg.includes('PRIEST_NAME'), true);
+check('the parish line is a visible placeholder', svg.includes('PARISH_NAME'), true);
+check('the signature roles are labelled in Amharic',
+  svg.includes('መምህር') && svg.includes('የደብሩ አስተዳዳሪ'), true);
+/* terms.html §4: the service carries no accreditation or endorsement
+   from any diocese. A certificate implying otherwise makes that false. */
+check('it does not claim a diocesan endorsement',
+  svg.includes('የሀገረ ስብከት እውቅና አይደለም'), true);
+check('and says what it IS', svg.includes('የተሳትፎና የማጠናቀቅ ማረጋገጫ'), true);
 
 console.log('\nnames are escaped, because a name is text a parent typed');
 const nasty = certificateSVG({
