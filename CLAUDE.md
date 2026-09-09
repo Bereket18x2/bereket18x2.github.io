@@ -126,6 +126,9 @@ was not built to satisfy it. `privacy.html` therefore describes exactly what the
 does and claims nothing further. Do not add compliance language to it without a
 lawyer. This is the one open item that should gate real families enrolling.
 
+It is put to the parish, with the four other things only they can decide, in
+`docs/CHURCH-DECISIONS.md` — written for a treasurer rather than a developer.
+
 The Firebase API key is public by design and ships in every web app. Security is the
 rules, not the key. Do not "fix" it by hiding it.
 

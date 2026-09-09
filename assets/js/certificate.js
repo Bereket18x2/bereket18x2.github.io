@@ -40,6 +40,35 @@ const INK = {
 
 const SCHOOL_AM = 'ፍኖተ ያሬድ';
 
+/* ---------------- the signature block ----------------
+
+   WHO SIGNS A CERTIFICATE IS NOT A DEVELOPER'S DECISION. Whose names
+   appear, whether a priest signs alongside the teacher, which parish is
+   named, and whether a diocesan blessing is sought at all — those go
+   through the parish. See docs/CHURCH-DECISIONS.md §5.
+
+   These are deliberately left as ASCII placeholders rather than
+   plausible Amharic names. A certificate that goes out reading
+   TEACHER_NAME is obviously broken and gets caught; one reading a
+   convincing invented name would ship, and would put a name that never
+   agreed to it on a document about a child.
+
+   Replace all three at once, when the parish has answered. */
+const SIGNATORIES = {
+  teacher: 'TEACHER_NAME',
+  priest:  'PRIEST_NAME',
+  parish:  'PARISH_NAME'
+};
+
+/* terms.html states that the service carries no accreditation or
+   endorsement from any diocese or institution. A certificate that
+   implied otherwise would make that statement false, so it says what it
+   is on its face: a record that a child took part and finished. If a
+   blessing is ever granted, this line is what changes — and it changes
+   only after the parish says so. */
+const PARTICIPATION_NOTE =
+  'ይህ የተሳትፎና የማጠናቀቅ ማረጋገጫ ነው፤ የሀገረ ስብከት እውቅና አይደለም።';
+
 /* XML escaping. A student's name is text a parent typed, and it lands
    inside markup — the same care the dashboard takes with a teacher's
    note. An unescaped ampersand alone makes the file refuse to open. */
@@ -76,7 +105,10 @@ const geez = (n) => (Number.isInteger(n) && n > 0 && n < 100)
 export function certificateSVG({ studentName, subject, lessonCount = 0, date = new Date() }) {
   const subjectName = (subject && subject.am) || String(subject || '');
   const badge = subject && subject.badge;
-  const W = 1000, H = 700;
+  // The signature block is laid out from the BOTTOM edge (H - n) while the
+  // citation above is laid out from the top, so the height is what keeps the
+  // two from meeting. 800 leaves the lower harag clear of the lesson count.
+  const W = 1000, H = 800;
   const when = date instanceof Date ? date : new Date(date);
   const stamp = isNaN(when) ? '' : when.toISOString().slice(0, 10);
 
@@ -109,11 +141,32 @@ export function certificateSVG({ studentName, subject, lessonCount = 0, date = n
     ? `<text x="${W / 2}" y="580" fill="${INK.dim}" font-size="18">${x(geez(lessonCount))} ትምህርቶች</text>` : ''}
 </g>
 
-<g transform="translate(80 ${H - 128})">${harag(0, W - 160)}</g>
+<g transform="translate(80 ${H - 200})">${harag(0, W - 160)}</g>
 
-<g font-family="'Noto Sans Ethiopic',sans-serif" fill="${INK.dim}" font-size="16">
-  <text x="80" y="${H - 62}">ቀን፦ ${x(stamp)}</text>
-  <text x="${W - 80}" y="${H - 62}" text-anchor="end">${x(SCHOOL_AM)}</text>
+<g font-family="'Noto Sans Ethiopic',sans-serif">
+  <!-- two ruled signature lines: the teacher who taught, and the priest.
+       Whether both are used is the parish's call, not this file's. -->
+  <g stroke="${INK.line}" stroke-width="1">
+    <line x1="110" y1="${H - 140}" x2="430" y2="${H - 140}"/>
+    <line x1="570" y1="${H - 140}" x2="890" y2="${H - 140}"/>
+  </g>
+  <g fill="${INK.text}" font-size="19" text-anchor="middle">
+    <text x="270" y="${H - 150}">${x(SIGNATORIES.teacher)}</text>
+    <text x="730" y="${H - 150}">${x(SIGNATORIES.priest)}</text>
+  </g>
+  <g fill="${INK.dim}" font-size="15" text-anchor="middle">
+    <text x="270" y="${H - 116}">መምህር</text>
+    <text x="730" y="${H - 116}">የደብሩ አስተዳዳሪ</text>
+  </g>
+
+  <g fill="${INK.dim}" font-size="16">
+    <text x="80" y="${H - 84}">ቀን፦ ${x(stamp)}</text>
+    <text x="${W - 80}" y="${H - 84}" text-anchor="end">${x(SIGNATORIES.parish)}</text>
+  </g>
+
+  <!-- kept honest against terms.html §4 -->
+  <text x="${W / 2}" y="${H - 58}" fill="${INK.dim}" font-size="13"
+        text-anchor="middle">${x(PARTICIPATION_NOTE)}</text>
 </g>
 </svg>`;
 }

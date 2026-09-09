@@ -1,5 +1,9 @@
 # Data retention — open questions
 
+> Four of the questions below wait on the parish rather than on a developer.
+> Those are gathered for a non-technical reader in **`docs/CHURCH-DECISIONS.md`**;
+> this file keeps the engineering detail.
+
 `privacy.html` currently tells parents the truth: data is kept while the account
 exists, there is **no automatic expiry**, and it is deleted when they ask.
 
@@ -163,41 +167,32 @@ The split is done. How long the separated record is then *kept* is not, and is
 
 ## 7. How long is a receipt kept?
 
-**Open. For the church to answer, with an accountant — not for this repo to
-decide.**
+**Open, and not ours to answer — see `docs/CHURCH-DECISIONS.md` §3, which is
+where the question is put to the parish and its accountant.**
 
 §6 moved the financial record out of the child's document so the two could be
 kept for different lengths of time. It did not say what the second length is.
-Right now `payments/{uid}` and its `entries` are kept indefinitely and the rules
-refuse every client delete, which is correct while the answer is unknown —
-deleting is irreversible and keeping is not — but "keep receipts forever" is not
-a retention policy. It is the same absence of one this file opens with, moved
-to a different collection.
+Today `payments/{uid}` and its `entries` are kept indefinitely and the rules
+refuse every client delete — correct while the answer is unknown, since deleting
+is irreversible and keeping is not, but "forever" is a default rather than a
+decision.
 
-No period is proposed here on purpose. The right number comes from what the
-parish is actually required to keep and for how long, which depends on its
-jurisdiction, its nonprofit status and its accountant's advice. A developer
-picking a plausible-sounding number would be inventing a legal answer and
-burying it in a config file.
+The engineering consequences, which is all that belongs in this file:
 
-What is needed to answer it:
+- **No period is hardcoded anywhere**, and none should be added until the parish
+  answers. A plausible-sounding number in a config file is an invented legal
+  answer that nobody will ever find again.
+- **The per-uid versus totals-only choice has a deadline.** Receipts are
+  currently one document per family. Collapsing them to per-period totals keeps
+  far less about real people and is cheap while almost none exist; after several
+  terms it means discarding records or writing a conversion. CHURCH-DECISIONS.md
+  §3 states this to the parish in those terms.
+- **Nothing can expire them yet.** Spark has no scheduler and the rules refuse
+  client deletes, so an expiry routine is console work or a server-side job that
+  does not exist. It should not be built before the period exists.
 
-- What retention does the parish's accountant require for donation and fee
-  records? That period is the floor.
-- Does the receipt need to stay linked to a uid after the account is deleted, or
-  would a total per period satisfy the books? The second keeps far less.
-- Who deletes them when the period expires? There is no scheduler on Spark, and
-  the rules deliberately refuse client deletes, so this is console work or a
-  server-side job that does not exist yet.
-
-Until it is answered, `privacy.html` says what is true: the payment record is
-kept, it holds the parent's name, email and amount, and it holds nothing about
-the child. That is honest and incomplete in exactly the way the rest of this
-file is — which is why it is written down here rather than left in a chat log.
-
-This one belongs on the church's list, next to who owns the Stripe account and
-who owns the Firebase project. All three are decisions the parish makes and the
-code then follows.
+Until then `privacy.html` says what is true: the payment record is kept, it holds
+the parent's name, email and amount, and it holds nothing about the child.
 
 ---
 
