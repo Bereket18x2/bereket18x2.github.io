@@ -23,6 +23,31 @@ $5–20/month at this scale, plus per-GB egress. That is a real cost against a
 real benefit, and it is a decision to make deliberately later, not something
 to fake now. Until then this file is the honest record of the limitation.
 
+### There are now TWO gates with this same limitation
+
+`lesson.html` refuses a lesson on two separate grounds, and **neither is
+enforcement**. They are written up together here so nobody later assumes one
+is stronger than the other:
+
+1. **The paywall** — `requireAuth({ requirePaid })`. The term has not been
+   paid for, or has ended.
+2. **The subject gate** — the lesson belongs to a subject the family did not
+   enrol in. This is what makes the Zema selection mean anything: without it,
+   a parent who unticked four subjects at registration could still open them
+   by typing the URL, and the $10-per-subject add-on would be enforcing
+   nothing.
+
+Both fail for exactly the same reason: the curriculum ships to the browser and
+the videos are unlisted YouTube links. Both are honest UI, not a boundary, and
+both would become real together the day video moves behind signed URLs.
+
+What **is** real for the subject gate is the part that matters more:
+`selectedSubjects` is not writable by the student — the rules refuse it. So
+nobody can *grant themselves the subject*; the worst case is watching a video
+they were not sold. That distinction is the whole design: the money and the
+access grant are protected by the server, and only the convenience of not
+seeing locked content is protected by the page.
+
 The same applies to the watch-coverage rule in `assets/js/coverage.js`: it
 defeats *seeking to the end*, which is the common case, but a student who
 deliberately scrubs bucket by bucket can still register coverage. It is an
@@ -37,7 +62,11 @@ attendance measure, not an anti-cheat system.
 | No client can write `paid`, `role`, `email`, `uid`, `createdAt` | `firestore.rules` | Yes |
 | `studySeconds` only rises, ≤120 per write | `firestore.rules` | Yes |
 | Quiz results require a verified email | `firestore.rules` | Yes |
+| No client writes `selectedSubjects`, `plan`, `paidUntil` | `firestore.rules` | Yes |
+| Payment records cannot be edited or deleted from a browser | `firestore.rules` | Yes |
+| A teacher reads only their assigned students | `firestore.rules` | Yes |
 | Locked lessons are not playable in the UI | `requireAuth({requirePaid})` | **No — UI only** |
+| Un-enrolled subjects are not reachable in the UI | `lesson.html` subject gate | **No — UI only** |
 
 ## Why there is no Stripe integration yet
 

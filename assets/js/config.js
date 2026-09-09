@@ -61,7 +61,11 @@ export const PRICING = {
 
 /* What a given enrolment costs, so the figure on screen and the figure a
    teacher records come from the same function rather than two sums that
-   can drift apart. */
+   can drift apart.
+
+   Zema deliberately ignores the subject count — that IS the pricing, and
+   writing it as a sum over subjects would invite a later "optimisation"
+   into charging per subject. */
 export function priceFor(track, { prepaidTerm = false } = {}) {
   if (track === 'bible') {
     return prepaidTerm ? PRICING.bible.termPrepaidUSD : PRICING.bible.monthlyUSD;
@@ -70,12 +74,44 @@ export function priceFor(track, { prepaidTerm = false } = {}) {
   return null;
 }
 
+/* Adding Zema subjects AFTER the selection was fixed at enrolment. This is
+   the cost of unticking a box that was already ticked for free, which is
+   why registration warns before it happens rather than after. */
+export function priceToAddSubjects(count) {
+  const n = Math.max(0, Math.floor(Number(count) || 0));
+  return n * PRICING.zema.addSubjectUSD;
+}
+
+/* How long a term runs, so `paidUntil` on a payment a teacher records is
+   derived from the plan rather than typed by hand into a date box. Bible
+   monthly buys one month; the prepaid term buys all three. Zema's flat
+   price buys the same three-month term. */
+export function termMonthsFor(track, { prepaidTerm = false } = {}) {
+  if (track === 'bible') return prepaidTerm ? PRICING.bible.termMonths : 1;
+  if (track === 'zema') return PRICING.bible.termMonths;
+  return 0;
+}
+
+/* 'YYYY-MM-DD', n whole months after `from`. Kept as a plain string
+   because that is what paidUntil holds and what a date input reads, and
+   because a Timestamp would invite timezone questions nobody needs for a
+   term that ends at the end of a day. */
+export function addMonths(from, months) {
+  const d = from instanceof Date ? new Date(from.getTime()) : new Date(from);
+  const day = d.getDate();
+  d.setMonth(d.getMonth() + Number(months || 0));
+  // 31 Jan + 1 month is 28/29 Feb, not 3 March
+  if (d.getDate() < day) d.setDate(0);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 /* The version of privacy.html + terms.html a parent agreed to, recorded on
    their account at registration. Date-stamped rather than numbered so it is
    obvious which text was in force. Change it when the substance of either
    document changes — not for a typo — and existing parents can then be asked
    to agree again, because the record will no longer match. */
-export const CONSENT_VERSION = '2026-09-07';
+export const CONSENT_VERSION = '2026-09-08';
 
 /* Card payment is not live yet (see docs/PAYMENTS.md). Until it is, the
    billing page tells parents how to arrange payment with the church

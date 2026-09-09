@@ -98,8 +98,13 @@ a Stripe webhook or a teacher in the console. `verified` may only be written to 
 write. `admin.html` requires `role == 'admin'` — without it, it is a public list of
 children's names and emails.
 
+Creation is a write. Any field a client can set at create time is a field they
+control, and no update rule will ever see it. Every create rule uses `hasOnly`
+with an exact key whitelist.
+
 Making someone an admin is done by hand in the Firebase console. The rules deliberately
-prevent it from the browser. This is not a bug.
+prevent it from the browser — including for another admin, so a stolen session cannot
+mint a second permanent one. This is not a bug.
 
 Collect the minimum. Every extra field about a minor is a field you must protect. Before
 adding one, say what it is for.

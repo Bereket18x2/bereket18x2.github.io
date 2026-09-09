@@ -47,7 +47,20 @@ export const TRACKS = {
     id: 'zema',
     am: 'የዜማ ትምህርት ቤት',
     en: 'Zema school',
-    enrollable: false,   // placeholder lessons — see the note above
+    /* CLOSED, deliberately, and not because the pricing is unfinished.
+
+       The §2 pricing sells Zema at a flat $30 with the subjects chosen at
+       registration, and all of that is built and tested — the form, the
+       flat price, the all-five default, the $10 add-on. What is NOT ready
+       is the course: every Zema lesson in lessons.js is still a
+       placeholder. Taking $30 for unrecorded lessons is not shippable,
+       and an acceptance case is not a reason to.
+
+       Flip this to true when the recordings exist. Nothing else needs
+       changing — the form, the price, the dashboard and the tests all
+       read this flag, and tests/pricing.test.mjs has the skipped
+       assertions that turn back on with it. */
+    enrollable: false,
     hasQuizzes: false,
     hasExams: false,
     hasScores: false,
@@ -57,6 +70,43 @@ export const TRACKS = {
     eligibilityEn: 'Zema school is open from age 7 upward.'
   }
 };
+
+/* ---------------- roles ----------------
+
+   Five, and the order matters: each one below reaches strictly further
+   than the one above it.
+
+     student          a child's account, opened by their parent
+     pending_teacher  registered, waiting on approval — reaches NOTHING
+     rejected         a refused request, kept so there is a history
+     teacher          reads and manages ONLY their assigned students
+     admin            the above, plus approving teachers and assigning
+                      students. Created by hand in the Firebase console;
+                      the rules deliberately refuse to mint one from a
+                      browser, including for another admin.
+
+   `staff` is what a page asks before showing anything about a child.
+   Asking the capability rather than testing the id means a role added
+   later gets the right answer by declaring it, instead of by being
+   remembered at a dozen call sites. */
+export const ROLES = {
+  student:         { id: 'student',         am: 'ተማሪ',            staff: false },
+  pending_teacher: { id: 'pending_teacher', am: 'በመጠባበቅ ላይ',      staff: false },
+  rejected:        { id: 'rejected',        am: 'ያልተቀበለ',         staff: false },
+  teacher:         { id: 'teacher',         am: 'መምህር',           staff: true  },
+  admin:           { id: 'admin',           am: 'አስተዳዳሪ',         staff: true  }
+};
+
+/* An unknown role is treated as reaching nothing, which fails closed: a
+   page that cannot identify the account shows no children rather than
+   guessing that it is probably a teacher. */
+export const isStaff = (role) => ROLES[role]?.staff === true;
+export const roleLabel = (role) => ROLES[role]?.am ?? '—';
+
+/* Registration may open exactly these two. 'teacher' and 'admin' are
+   refused here AND in firestore.rules — the rules are what actually
+   enforces it, since this file runs in a browser the registrant owns. */
+export const REGISTERABLE_ROLES = ['student', 'pending_teacher'];
 
 export const NAME_REFUSED = 'እባክዎ ሙሉ ሕጋዊ ስም ያስገቡ።';
 
@@ -144,6 +194,31 @@ export function validateEnrollableTrack(trackId) {
   if (!track) return { ok: false, message: 'እባክዎ የትምህርት ክፍሉን ይምረጡ።' };
   if (!track.enrollable) {
     return { ok: false, message: `${track.am} ገና አልተከፈተም። ትምህርቶቹ ሲዘጋጁ ምዝገባ ይጀምራል።` };
+  }
+  return { ok: true };
+}
+
+/* ---------------- teacher comments ----------------
+
+   A note a teacher leaves on a child's record. Three things make it safe
+   enough to exist at all, and all three are enforced by firestore.rules
+   as well as here:
+
+     it is bounded          — 1000 characters, so it stays a note about
+                              this week's lesson and not a file on a child
+     it names its author    — `by` must equal the writer's own uid
+     the parent can read it — nothing is recorded about a child that the
+                              parent cannot see on their own dashboard
+
+   The last one is the reason the field is defensible. A private note a
+   family cannot read is a different thing wearing the same name. */
+export const COMMENT_MAX_CHARS = 1000;
+
+export function validateComment(text) {
+  const t = typeof text === 'string' ? text.trim() : '';
+  if (!t) return { ok: false, message: 'አስተያየቱ ባዶ ነው።' };
+  if (t.length > COMMENT_MAX_CHARS) {
+    return { ok: false, message: `አስተያየት ከ${COMMENT_MAX_CHARS} ፊደል መብለጥ አይችልም።` };
   }
   return { ok: true };
 }

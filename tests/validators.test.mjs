@@ -82,8 +82,10 @@ refuses('no domain', () => validateEmail('parent@'));
 refuses('no @', () => validateEmail('parent.example.org'));
 
 console.log('\nenrolment is gated separately from validity');
-// zema is a real track — an existing student is valid — but it is not on
-// offer until its placeholder lessons are replaced
+/* zema is a real track — an existing student is valid, and the whole §2
+   pricing for it is built and tested — but it is not on offer until its
+   placeholder lessons are replaced. Selling a $30 course whose lessons
+   are not recorded is the thing this flag exists to prevent. */
 accepts('zema is still a VALID track', () => validateTrack('zema'));
 refuses('zema is NOT enrollable', () => validateEnrollableTrack('zema'));
 accepts('bible is enrollable', () => validateEnrollableTrack('bible'));
@@ -94,6 +96,15 @@ check('only bible is offered', enrollableTracks().map(t => t.id), ['bible']);
 check('but both tracks still exist', Object.keys(TRACKS), ['bible', 'zema']);
 check('an existing zema student still passes the age gate',
   validateAge(30, 'zema').ok, true);
+
+/* The gate has to work in BOTH directions, or reopening Zema later is a
+   change nobody has tested. A synthetic open track asserts that flipping
+   the flag genuinely puts a course back on offer. */
+TRACKS.opened = { ...TRACKS.zema, id: 'opened', enrollable: true };
+accepts('a track with enrollable:true is offered', () => validateEnrollableTrack('opened'));
+check('and appears in the offer',
+  enrollableTracks().some(t => t.id === 'opened'), true);
+delete TRACKS.opened;
 
 console.log('\ntrack config sanity');
 check('bible max is 13', TRACKS.bible.max, 13);
