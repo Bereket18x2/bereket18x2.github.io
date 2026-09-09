@@ -31,12 +31,13 @@
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=6",
-    "@lessons":    "./assets/js/lessons.js?v=6",
-    "@validators": "./assets/js/validators.js?v=6",
-    "@coverage":   "./assets/js/coverage.js?v=6",
-    "@stats":      "./assets/js/stats.js?v=6",
-    "@config":     "./assets/js/config.js?v=6"
+    "@store":      "./assets/js/store.js?v=9",
+    "@lessons":    "./assets/js/lessons.js?v=9",
+    "@validators": "./assets/js/validators.js?v=9",
+    "@coverage":   "./assets/js/coverage.js?v=9",
+    "@stats":      "./assets/js/stats.js?v=9",
+    "@config":     "./assets/js/config.js?v=9",
+    "@certificate":"./assets/js/certificate.js?v=9"
   }
 }
 </script>
@@ -254,7 +255,7 @@
 </footer>
 
 <script type="module">
-import { Store, ready } from '@store';
+import { Store, ready, homeFor } from '@store';
 
 const $ = (id) => document.getElementById(id);
 const err = $('loginErr');
@@ -269,7 +270,13 @@ const say = (msg, ok) => {
 };
 
 // A signed-in parent landing here goes straight to the lessons.
-ready().then((u) => { if (u) location.href = 'dashboard.html'; });
+/* Route by role after auth. There is deliberately no role picker on the
+   form — a selector would tell an attacker which roles exist. */
+ready().then(async (u) => {
+  if (!u) return;
+  try { location.href = homeFor(await Store.current()); }
+  catch (e) { location.href = 'dashboard.html'; }
+});
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -277,11 +284,11 @@ form.addEventListener('submit', async (e) => {
   submitBtn.disabled = true;
   submitBtn.textContent = 'በመግባት ላይ…';
   try {
-    await Store.signIn({
+    const signedIn = await Store.signIn({
       email: $('loginEmail').value.trim(),
       password: $('loginPassword').value
     });
-    location.href = 'dashboard.html';
+    location.href = homeFor(signedIn);
   } catch (ex) {
     say(ex.message, false);
     submitBtn.disabled = false;

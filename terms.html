@@ -53,7 +53,7 @@
 <div data-lang-block="am">
   <p class="eyebrow">የአገልግሎት ሁኔታዎች</p>
   <h1 style="font-size:2rem">የአገልግሎት ሁኔታዎች</h1>
-  <p class="muted small">የመጨረሻ ማሻሻያ፦ 2026-09-07 · እትም <span class="consent-version"></span></p>
+  <p class="muted small">የመጨረሻ ማሻሻያ፦ 2026-09-08 · እትም <span class="consent-version"></span></p>
 
   <h2>፩ · መለያው የማን ነው</h2>
   <p class="muted">
@@ -63,8 +63,8 @@
   </p>
 
   <h2>፪ · ክፍያ</h2>
-  <p class="muted">ወርኃዊ ክፍያው በተመዘገቡበት ዓይነት ይለያያል፦</p>
-  <ul class="muted tier-prices" data-lang="am" data-per="ወር"></ul>
+  <p class="muted">ክፍያው በተመዘገቡበት የትምህርት ክፍል ይለያያል፦</p>
+  <ul class="muted tier-prices" data-lang="am"></ul>
   <p class="muted">
     የመጀመሪያው ትምህርት ያለ ክፍያ ይታያል፤ ቀሪዎቹ ክፍያ ከተረጋገጠ በኋላ ይከፈታሉ።
     ተጨማሪ ድጋፍ የሚያስፈልገው ተማሪ በዚሁ ክፍያ ውስጥ ይታገዛል፤ ተጨማሪ ክፍያ አይጠየቅም።
@@ -119,7 +119,7 @@
 <div data-lang-block="en" hidden>
   <p class="eyebrow">Terms</p>
   <h1 style="font-size:2rem">Terms of service</h1>
-  <p class="muted small">Last updated: 7 September 2026 · version <span class="consent-version"></span></p>
+  <p class="muted small">Last updated: 8 September 2026 · version <span class="consent-version"></span></p>
 
   <h2>1 · Whose account this is</h2>
   <p class="muted">
@@ -130,8 +130,8 @@
   </p>
 
   <h2>2 · Payment</h2>
-  <p class="muted">Monthly, per student, depending on the enrollment chosen:</p>
-  <ul class="muted tier-prices" data-lang="en" data-per="month"></ul>
+  <p class="muted">Per student, depending on the course chosen:</p>
+  <ul class="muted tier-prices" data-lang="en"></ul>
   <p class="muted">
     The first lesson is free to watch; the rest open once payment is confirmed.
     A student who needs extra help receives it within the same price — there is
@@ -203,19 +203,47 @@
 <script type="importmap">
 {
   "imports": {
-    "@config": "./assets/js/config.js?v=7"
+    "@config":     "./assets/js/config.js?v=9",
+    "@validators": "./assets/js/validators.js?v=9"
   }
 }
 </script>
 <script type="module">
-import { CONSENT_VERSION, tiersByPrice, CHURCH_CONTACT } from '@config';
+import { CONSENT_VERSION, PRICING, CHURCH_CONTACT } from '@config';
+import { TRACKS } from '@validators';
 document.querySelectorAll('.consent-version').forEach(el => { el.textContent = CONSENT_VERSION; });
-/* The price table is generated from TIERS so the terms can never quote a
-   figure the site does not charge. */
+
+/* The price table is generated from PRICING so the terms can never quote
+   a figure the site does not charge. Both Bible options are listed
+   together with the saving stated, because a discount a parent has to
+   compute themselves is not really being offered to them. */
+const B = PRICING.bible, Z = PRICING.zema;
+
+/* A price for a course nobody can enrol in is an offer we are not making.
+   The Zema figure stays listed — it is the price when the course opens —
+   but it says so, rather than quoting a number and letting a parent
+   discover at registration that the course is closed. */
+const zemaShut = {
+  am: TRACKS.zema.enrollable ? '' : ' <b>(ገና አልተከፈተም — ትምህርቶቹ ሲዘጋጁ ምዝገባ ይጀምራል።)</b>',
+  en: TRACKS.zema.enrollable ? '' : ' <b>(Not open yet — enrolment begins when the lessons are recorded.)</b>'
+};
+
+const ROWS = {
+  am: [
+    `<b>የቅዱሳት መጻሕፍት ትምህርት</b> — <b>$${B.monthlyUSD} በወር</b>፤ ${B.termMonths} ወር ኮርስ ስለሆነ በጠቅላላ $${B.termFullUSD}።`,
+    `<b>የቅዱሳት መጻሕፍት ትምህርት — ሦስቱን ወር በአንድ ጊዜ</b> — <b>$${B.termPrepaidUSD}</b>፤ ከ$${B.termFullUSD} ይልቅ ስለሆነ $${B.termSavingUSD} ይቆጥባሉ።`,
+    `<b>የዜማ ትምህርት ቤት</b> — <b>$${Z.flatUSD}</b>፤ የመረጡት ትምህርት ብዛት ምንም ይሁን ዋጋው አንድ ነው። ከተመዘገቡ በኋላ ትምህርት መጨመር በአንዳንዱ $${Z.addSubjectUSD} ነው።${zemaShut.am}`,
+    'ኮርሱ ሲጠናቀቅ በራሱ አይታደስም። እንደገና መቀጠል ከፈለጉ እርስዎ ይመርጣሉ።'
+  ],
+  en: [
+    `<b>Bible study</b> — <b>$${B.monthlyUSD} per month</b>; the course runs ${B.termMonths} months, so $${B.termFullUSD} in total.`,
+    `<b>Bible study — three months prepaid</b> — <b>$${B.termPrepaidUSD}</b> instead of $${B.termFullUSD}, saving $${B.termSavingUSD}.`,
+    `<b>Zema school</b> — <b>$${Z.flatUSD}</b> whichever subjects are chosen; the price is the same for one subject or all five. Adding a subject after enrolment is $${Z.addSubjectUSD} each.${zemaShut.en}`,
+    'Nothing renews automatically. When the term ends you choose again.'
+  ]
+};
 document.querySelectorAll('.tier-prices').forEach(el => {
-  el.innerHTML = tiersByPrice()
-    .map(t => `<li><b>${t.am}</b> — $${t.priceUSD} / ${el.dataset.per || 'month'}: ${el.dataset.lang === 'en' ? t.blurbEn : t.blurbAm}</li>`)
-    .join('');
+  el.innerHTML = (ROWS[el.dataset.lang] || ROWS.am).map(r => `<li>${r}</li>`).join('');
 });
 document.querySelectorAll('.contact-email').forEach(el => {
   el.textContent = CHURCH_CONTACT.email;

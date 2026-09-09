@@ -16,7 +16,8 @@ rules_version = '2';
 //   rejected         a refused request, kept as history
 //   teacher          reads and manages ONLY their assigned students
 //   admin            everything, plus approving teachers and assigning
-//                    students. Roles are only ever changed by an admin.
+//                    students. Roles are only ever changed by an admin,
+//                    and no browser can mint an 'admin' — see setRole().
 //
 // Deploy:  firebase deploy --only firestore:rules
 // Tested:  tools/rules.test.mjs against the Firestore emulator
@@ -44,10 +45,27 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    function myRole() {
+    /* A deactivated account keeps its record and loses its reach.
+       Deactivation has to be enforced HERE rather than by hiding the
+       teacher dashboard: a teacher whose role still says 'teacher' can
+       call Firestore directly from a console, so an `active: false` that
+       only greys out a page revokes nothing at all.
+
+       get(key, default) rather than a bare field read, because every
+       account created before this field existed has no `active` at all
+       and reading a missing field aborts the whole rule. */
+    function meActive() {
       return signedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        ? myDoc().role : '';
+        && myDoc().get('active', true) == true;
+    }
+
+    // An inactive account has no role, so deactivation revokes teacher
+    // AND admin powers through one check instead of two that can drift.
+    // It keeps isOwner() reads, so the account can still sign in and be
+    // told what happened rather than meeting a blank permission error.
+    function myRole() {
+      return meActive() ? myDoc().role : '';
     }
 
     // Each of these costs one document read every time it is evaluated.
@@ -66,9 +84,9 @@ service cloud.firestore {
        Two forms, and the difference matters. Inside /users/{uid},
        `resource` IS the student document, so the check reads it directly
        — which is one fewer document read AND the only form that works
-       for a list query, where get() is not evaluated per result. In the
-       progress subcollection `resource` is the progress document, so
-       there the parent has to be fetched. */
+       for a list query, where get() is not evaluated per result. In a
+       subcollection `resource` is the child document, so there the
+       parent has to be fetched. */
     function isMyStudentDoc() {
       return resource != null
         && resource.data.assignedTeacher == request.auth.uid
@@ -87,32 +105,92 @@ service cloud.firestore {
     /* Fields no account may ever write about itself.
 
        role                 self-promotion to teacher or admin
+       active               un-deactivating yourself
        assignedTeacher      a teacher choosing which children they can read
-       paid/amountPaid/
-       paidUntil            granting yourself a paid term
-       tier/track/
-       selectedSubjects     deciding which curriculum you bought
+       paid/paidUntil       granting yourself a paid term. These two are the
+                            ACCESS GRANT and belong to the child's record;
+                            the money itself lives in /payments/{uid}.
+       amountPaid/paidAt    retired from this document — see /payments. Kept
+                            on the list so an older client cannot put a
+                            financial field back onto a child's record.
+       plan/track/
+       selectedSubjects     deciding which curriculum you bought, and at
+                            what price. A student who could write
+                            selectedSubjects opens the Zema course for
+                            nothing; one who could write `plan` buys the
+                            three-month term at the one-month price.
+       tier                 the retired tier field, still refused so an
+                            old client cannot reintroduce it
        unlockedLessons      opening lessons a teacher has not opened
        remedial*            a teacher's judgement about a child
+       teachesSubjects/
+       parish               an APPROVED teacher's assignment. Chosen by
+                            the registrant at create, confirmed by an
+                            admin at approval, and frozen afterwards —
+                            otherwise a teacher edits their own approval.
        badges               computed at render; a stored one could be forged
        email/uid/createdAt  identity and history
-       consent*             a compliance record; one a parent can rewrite
-                            is not a record
+       consentGivenAt       when consent was FIRST given. Frozen forever;
+                            a date a parent can rewrite is not a record.
+
+       consentVersion is deliberately NOT on this list — see the update
+       rule. It may be moved forward, but only onto a version the parent
+       has an immutable, server-stamped consent record for.
+       approvedBy, approvedAt, rejectedReason
+                            who let them in, and why
 
        This is the single list every self-write is checked against, so a
        new privileged field is protected by being added here rather than
        by remembering to guard it at each call site. */
     function lockedFields() {
       return [
-        'role', 'assignedTeacher',
-        'paid', 'amountPaid', 'paidUntil',
-        'tier', 'track', 'selectedSubjects',
+        'role', 'active', 'assignedTeacher',
+        'paid', 'amountPaid', 'paidUntil', 'paidAt',
+        'tier', 'plan', 'track', 'selectedSubjects',
         'unlockedLessons', 'remedial', 'remedialSince', 'remedialBy',
+        'teachesSubjects', 'parish',
         'badges',
         'email', 'uid', 'createdAt',
-        'consentGivenAt', 'consentVersion',
+        'consentGivenAt',
         'approvedBy', 'approvedAt', 'rejectedReason'
       ];
+    }
+
+    /* What a TEACHER may write on one of their own students, as a
+       whitelist rather than a list of exclusions.
+
+       The difference is the whole point. A blacklist grants every field
+       nobody thought to forbid, so the next field added to a child's
+       record is writable by every teacher until someone remembers it.
+       This way a new field is unwritable until it is deliberately added
+       here. It also means a teacher cannot rename a child, change their
+       age, or inflate their study hours — none of which is a teacher's
+       job, and all of which a blacklist quietly allowed. */
+    function teacherWritableFields() {
+      return [
+        'paid', 'paidUntil',
+        'selectedSubjects', 'unlockedLessons',
+        'remedial', 'remedialSince', 'remedialBy'
+      ];
+    }
+
+    /* Staff: an admin, or the teacher this student is assigned to. The
+       same pair recurs on every collection a teacher may touch, so it is
+       named once rather than re-spelled at each match. */
+    function isStaffFor(uid) {
+      return isMyStudentByGet(uid) || isAdmin();
+    }
+
+    /* Roles that may be written from a browser at all.
+
+       'admin' is absent on purpose, and this is the rule that keeps
+       CLAUDE.md's promise that an admin is made by hand in the Firebase
+       console. It binds ADMINS too, not only students: an admin session
+       is one stolen laptop away from minting a second permanent admin,
+       and the console path costs the real administrator about a minute a
+       year. Approving a teacher does not need this power. */
+    function assignableRole(role) {
+      return role in ['student', 'pending_teacher', 'teacher', 'rejected'];
     }
 
     match /users/{uid} {
@@ -120,49 +198,79 @@ service cloud.firestore {
       // A student reads only their own row. A teacher reads their own
       // assigned students. An admin reads everyone. Without the scoping,
       // one compromised teacher account is the whole roster of children.
+      //
+      // pending_teacher and rejected match none of these except
+      // isOwner — they read their own document and nothing else.
       allow read: if isOwner(uid) || isMyStudentDoc() || isAdmin();
 
-      /* Registration. Two shapes are allowed and no others.
+      /* Registration. Two shapes are allowed and no others, each pinned
+         to an exact set of keys.
 
-         A student account pins the fields that decide privilege and
-         money, and carries the parental consent record. A teacher
-         request may only ever be created as 'pending_teacher' — never
-         'teacher', never 'admin' — so approval is something an admin
-         does, not something a registrant claims.
+         hasOnly() is doing real work here. Without it, a registrant
+         controls their own document at creation and can attach anything
+         the update rules would later refuse: paidUntil years out,
+         unlockedLessons covering the catalogue, or an approvedBy/
+         approvedAt pair forging an approval that never happened. The
+         update rules never see those, because they were present from
+         the very first write.
+
+         A teacher request may only ever be created as 'pending_teacher'
+         — never 'teacher', never 'admin' — so approval is something an
+         admin does, not something a registrant claims.
 
          consentGivenAt == request.time is what serverTimestamp()
-         resolves to, so a client cannot backdate when consent was given. */
+         resolves to, so a client cannot backdate when consent was
+         given. */
       allow create: if isOwner(uid)
         && request.resource.data.uid == uid
+        && request.resource.data.email == request.auth.token.email
         && request.resource.data.consentVersion is string
         && request.resource.data.consentVersion.size() > 0
         && request.resource.data.consentGivenAt == request.time
         && (
           (
             request.resource.data.role == 'student'
+            && request.resource.data.keys().hasOnly([
+                 'uid', 'role', 'guardianName', 'email', 'studentName', 'age',
+                 'track', 'selectedSubjects', 'plan',
+                 'paid', 'verified', 'studySeconds',
+                 'createdAt', 'lastSeen', 'consentGivenAt', 'consentVersion'
+               ])
             && request.resource.data.paid == false
             && request.resource.data.studySeconds == 0
-            && !('assignedTeacher' in request.resource.data)
-            && !('amountPaid' in request.resource.data)
-            && !('paidUntil' in request.resource.data)
+            && request.resource.data.track in ['bible', 'zema']
+            && request.resource.data.age is int
+            && request.resource.data.age > 0
+            && request.resource.data.age < 120
+            && request.resource.data.selectedSubjects is list
+            && request.resource.data.selectedSubjects.size() > 0
+            && request.resource.data.plan in ['monthly', 'term']
           ) || (
             request.resource.data.role == 'pending_teacher'
-            && !('assignedTeacher' in request.resource.data)
-            && !('paid' in request.resource.data)
+            && request.resource.data.keys().hasOnly([
+                 'uid', 'role', 'fullName', 'email', 'phone',
+                 'teachesSubjects', 'parish',
+                 'createdAt', 'lastSeen', 'consentGivenAt', 'consentVersion'
+               ])
+            && request.resource.data.teachesSubjects is list
+            && request.resource.data.parish is string
           )
         );
 
-      /* Three ways a document is updated, cheapest first.
+      /* Four ways a document is updated, cheapest first.
 
          1. The owner maintaining their own profile — no reads, and
             forbidden from every field in lockedFields().
          2. Their assigned teacher confirming payment, unlocking a
-            lesson, or recording remedial support. A teacher may NOT
-            write role or assignedTeacher: a teacher who could do either
-            could promote a student to admin, or hand themselves another
-            teacher's class.
-         3. An admin, who may write anything — including approving a
-            teacher and assigning students.
+            lesson, or recording remedial support — and NOTHING else,
+            per teacherWritableFields(). A teacher may not write role or
+            assignedTeacher: a teacher who could do either could promote
+            a student to admin, or hand themselves another teacher's
+            class.
+         3. An admin changing a role — approving a teacher, rejecting
+            one, or deactivating an account — bounded by assignableRole()
+            so that no browser session can create a second admin.
+         4. An admin writing anything that is not a role.
 
          studySeconds may only ever rise, and by one batch at a time.
          lesson.html flushes every 30s; the +120 ceiling leaves slack for
@@ -181,11 +289,32 @@ service cloud.firestore {
             && request.resource.data.studySeconds <= resource.data.studySeconds + 120
           )
         )
+        /* Re-consent. When privacy.html or terms.html change in
+           substance, CONSENT_VERSION moves and every existing parent's
+           recorded version stops matching — that is the mechanism
+           working, and it has to lead somewhere. The parent is shown the
+           new text and agrees again.
+
+           They may therefore move consentVersion FORWARD, but only onto
+           a version they hold a consent record for. The record itself is
+           in the consents subcollection below: one document per version,
+           server-stamped, and immutable once written. So the audit trail
+           is the subcollection, and this field is only the cached
+           "which one are they on" that saves a read on every page load. */
+        && (
+          !changed().hasAny(['consentVersion'])
+          || exists(/databases/$(database)/documents/users/$(uid)/consents/$(request.resource.data.consentVersion))
+        )
       ) || (
-        isMyStudentDoc()
-        && !changed().hasAny(['role', 'assignedTeacher', 'uid', 'email', 'createdAt',
-                              'consentGivenAt', 'consentVersion'])
-      ) || isAdmin();
+        changed().hasOnly(teacherWritableFields())
+        && isMyStudentDoc()
+      ) || (
+        isAdmin()
+        && (
+          !changed().hasAny(['role'])
+          || assignableRole(request.resource.data.role)
+        )
+      );
 
       // These are records of children. A misfired script in a browser
       // must not be able to erase a student's history; removal is a
@@ -243,6 +372,60 @@ service cloud.firestore {
 
         allow delete: if false;
       }
+
+      /* A teacher's note about a child.
+
+         The parent can read every one of them. That is the property that
+         makes the field defensible at all: nothing is recorded about a
+         child that the family cannot see. Remove the isOwner() read and
+         this becomes a private file on a minor, which is a different
+         thing wearing the same name — and would make privacy.html false.
+
+         Bounded at 1000 characters so it stays a note about a lesson.
+         `by` is pinned to the writer's own uid and `at` to request.time,
+         so a comment cannot be attributed to another teacher or
+         backdated. No update at all: a note the parent has already read
+         must not change underneath them. A correction is a new note, and
+         the author may delete their own. */
+      match /comments/{commentId} {
+
+        allow read: if isOwner(uid) || isAdmin() || isMyStudentByGet(uid);
+
+        allow create: if (isAdmin() || isMyStudentByGet(uid))
+          && request.resource.data.keys().hasOnly(['by', 'byName', 'text', 'at'])
+          && request.resource.data.by == request.auth.uid
+          && request.resource.data.at == request.time
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000
+          && request.resource.data.byName is string;
+
+        allow update: if false;
+        allow delete: if isAdmin()
+          || (resource.data.by == request.auth.uid && myRole() == 'teacher');
+      }
+
+      /* The consent trail. One document per policy version, the document
+         id IS the version, so a parent holds exactly one record per
+         version and cannot flood the collection.
+
+         Immutable: no update, no delete, by anyone. A consent record that
+         can be edited afterwards proves nothing, and this is the evidence
+         that a parent agreed to a specific text on a specific date. `at`
+         is pinned to the server clock so it cannot be backdated.
+
+         The parent writes their own — which is right, because consent is
+         theirs to give and nobody else's to record for them. */
+      match /consents/{version} {
+        allow read: if isOwner(uid) || isStaffFor(uid);
+
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['version', 'at'])
+          && request.resource.data.version == version
+          && request.resource.data.at == request.time;
+
+        allow update, delete: if false;
+      }
     }
 
     // A parent asking for their child's record to be erased. This raises
@@ -259,14 +442,111 @@ service cloud.firestore {
         && request.resource.data.status == 'pending'
         && request.resource.data.requestedAt == request.time;
 
-      // Only a teacher marks one done. An owner who could update it could
+      // Only an admin marks one done. An owner who could update it could
       // mark their own request handled, quietly removing it from the queue
       // it was meant to enter.
       allow update, delete: if isAdmin();
     }
 
+    /* A parent asking to add Zema subjects after enrolment, at $10 each.
+
+       This exists so that "add a subject" can be a button without
+       selectedSubjects being writable by the account that benefits from
+       it. The parent writes a REQUEST; a teacher or admin fulfils it by
+       writing selectedSubjects on the user document after the $10 is
+       actually paid. A student who forged this document straight to
+       `status: 'done'` would have granted themselves precisely nothing,
+       because nothing reads it to decide access.
+
+       One document per uid, so a parent cannot flood the collection. */
+    match /subjectRequests/{uid} {
+      allow read: if isOwner(uid) || isAdmin() || isMyStudentByGet(uid);
+
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['uid', 'subjects', 'status', 'requestedAt'])
+        && request.resource.data.uid == uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.subjects is list
+        && request.resource.data.subjects.size() > 0
+        && request.resource.data.requestedAt == request.time;
+
+      allow update, delete: if isAdmin() || isMyStudentByGet(uid);
+    }
+
+    /* ---------------- the money ----------------
+
+       Payment records live HERE and not on /users/{uid}, and the split is
+       the point rather than tidiness.
+
+       A parish may be required to keep payment and tax records for years.
+       COPPA argues for deleting a child's record promptly. Those two
+       rules are only satisfiable at once if the financial record and the
+       child's record are separable — and while they sat in the same
+       document they were not. So a payment record is about the PARENT:
+       it carries their name, their email, what they paid and for which
+       period, and it can outlive the child's account without keeping the
+       child's name, age, scores or watch history alongside it.
+       privacy.html says this in as many words.
+
+       What stays on /users/{uid} is only the ACCESS GRANT — `paid` and
+       `paidUntil`, meaning "this child may open lessons until this date".
+       That is not a financial record and it is deleted with the child.
+
+       Nothing here is deletable from a browser: a receipt a parish may
+       need at tax time must not be removable by the person who paid, or
+       by a teacher tidying up. See docs/RETENTION.md §6. */
+    match /payments/{uid} {
+
+      // The parent can see what they were charged. So can their teacher
+      // and an admin. Nobody else — this is a financial record.
+      allow read: if isOwner(uid) || isStaffFor(uid);
+
+      /* The running summary. Written by staff only: a parent who could
+         write their own totalPaid could not grant themselves access
+         (nothing reads this to decide that) but could forge a receipt,
+         and a forged receipt in a church's books is worth refusing. */
+      allow create, update: if isStaffFor(uid)
+        && request.resource.data.keys().hasOnly([
+             'uid', 'guardianName', 'email',
+             'totalPaid', 'lastAmount', 'lastPaidAt', 'lastPaidUntil',
+             'recordedBy', 'recordedByName'
+           ])
+        && request.resource.data.uid == uid
+        && request.resource.data.totalPaid is number
+        && request.resource.data.totalPaid >= 0
+        && request.resource.data.recordedBy == request.auth.uid;
+
+      allow delete: if false;
+
+      /* One immutable receipt per payment taken. create only — no update
+         and no delete, by anyone, including an admin. A financial record
+         that can be edited after the fact is not a financial record, and
+         a correction is a new entry rather than a rewritten one.
+
+         `at` is pinned to the server clock and `recordedBy` to the
+         writer's own uid, so a receipt cannot be backdated or attributed
+         to another teacher. */
+      match /entries/{entryId} {
+        allow read: if isOwner(uid) || isStaffFor(uid);
+
+        allow create: if isStaffFor(uid)
+          && request.resource.data.keys().hasOnly([
+               'amount', 'at', 'periodUntil', 'subjects', 'kind',
+               'recordedBy', 'recordedByName'
+             ])
+          && request.resource.data.amount is number
+          && request.resource.data.amount >= 0
+          && request.resource.data.at == request.time
+          && request.resource.data.recordedBy == request.auth.uid
+          && request.resource.data.kind in ['term', 'subject-addon']
+          && request.resource.data.subjects is list;
+
+        allow update, delete: if false;
+      }
+    }
+
     // Curriculum is readable by any signed-in student but authored only
-    // by teachers — otherwise a student could rewrite the quiz answers
+    // by an admin — otherwise a student could rewrite the quiz answers
     // they are about to be marked against.
     match /lessons/{lessonId} {
       allow read: if signedIn();

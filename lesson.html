@@ -30,11 +30,12 @@
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=6",
-    "@lessons":    "./assets/js/lessons.js?v=6",
-    "@validators": "./assets/js/validators.js?v=6",
-    "@coverage":   "./assets/js/coverage.js?v=6",
-    "@config":     "./assets/js/config.js?v=6"
+    "@store":      "./assets/js/store.js?v=9",
+    "@lessons":    "./assets/js/lessons.js?v=9",
+    "@validators": "./assets/js/validators.js?v=9",
+    "@coverage":   "./assets/js/coverage.js?v=9",
+    "@config":     "./assets/js/config.js?v=9",
+    "@certificate":"./assets/js/certificate.js?v=9"
   }
 }
 </script>
@@ -156,7 +157,24 @@ const id = new URLSearchParams(location.search).get('id') || 'l1';
 const u = await requireAuth({ requirePaid: !isFree(id) });
 const L = u ? findLesson(id) : null;
 
+/* A lesson also has to belong to a subject the family actually enrolled
+   in. Without this, the Zema selection is decoration: a parent who
+   unticked four subjects at registration could still open them by typing
+   the URL, and the $10-per-subject add-on would be enforcing nothing.
+
+   Like the paywall, this is a UI gate rather than a boundary — the
+   curriculum ships to the browser and the videos are unlisted YouTube
+   links, so a determined visitor can reach the video either way. See
+   docs/PAYMENTS.md. What the RULES enforce is the part that matters:
+   selectedSubjects is not writable by the student, so nobody can grant
+   themselves the subject, only watch a video they were not sold. */
+const enrolledSubjects = (u && Array.isArray(u.selectedSubjects)) ? u.selectedSubjects : [];
+const outsideEnrolment = !!L && !isFree(L.id) && enrolledSubjects.length > 0
+  && !enrolledSubjects.includes(L.subject);
+
 if (u && !L) {
+  location.href = 'dashboard.html';
+} else if (u && outsideEnrolment) {
   location.href = 'dashboard.html';
 } else if (u && L) {
   $('authedContent').style.display = 'block';

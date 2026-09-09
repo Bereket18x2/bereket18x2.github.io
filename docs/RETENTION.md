@@ -32,11 +32,19 @@ and watch history sit in Firestore indefinitely.
 
 This is the hardest one, and it will not resolve itself.
 
-A certificate is a public record: `verify.html?id=…` returns a first name, a
-last initial, a course and a date, to anyone with the link. It exists precisely
-so it can be checked later — that is the whole point of issuing one.
+**Status, 2026-09-08.** A certificate now exists, and it is *not* yet a public
+record. `assets/js/certificate.js` builds an SVG in the browser from the child's
+name and their completed subject, and the parent downloads it. Nothing is
+published, nothing is stored server-side, and there is no `verify.html` — so
+today, deleting the account really does delete everything the school holds about
+that certificate. The copy in the family's possession is theirs.
 
-So when a parent asks for deletion:
+That is the easy state, and it is temporary. The moment verification is added —
+a `verify.html?id=…` returning a first name, a last initial, a course and a date
+to anyone with the link — the conflict below becomes real. Verification is the
+whole point of issuing a certificate, so it probably is coming.
+
+So when verification exists and a parent asks for deletion:
 
 - If the certificate survives, the deletion is **incomplete** — a first name and
   a date about that child remain published.
@@ -53,7 +61,32 @@ Possible answers, none free:
   should probably be the default.
 
 Whichever is chosen, `privacy.html` has to say it in advance. A parent should
-not discover the answer at the moment they ask for erasure.
+not discover the answer at the moment they ask for erasure. The window to decide
+this cheaply is now, while no certificate has been published and no promise about
+verification has been made.
+
+## 2b. Teacher comments about a child
+
+Added 2026-09-08, at `users/{uid}/comments/{commentId}`: free text a teacher
+writes about a named minor, bounded at 1000 characters, attributed, and readable
+by the parent. The parent reading them is what makes the field defensible, and
+`privacy.html` now says so.
+
+The open questions are retention-shaped, not access-shaped:
+
+- These outlive the term. A note about a struggling eight-year-old is still
+  there when they are fourteen. Should comments expire on their own — end of
+  term, end of year — even while the account continues?
+- They are the most subjective thing in the database and the most likely to be
+  wrong. There is no correction mechanism beyond the author deleting and
+  rewriting, and once a teacher is deactivated nobody can delete their notes but
+  an admin.
+- A deactivated or departed teacher's notes remain readable by the parent, the
+  admin, and whichever teacher is assigned next. That is probably right, but it
+  was not a decision anybody made.
+
+They are also a subcollection, so Firestore will **not** cascade-delete them —
+see the routine in "What would need to change in code" below.
 
 ## 3. Does progress survive the account?
 
@@ -102,6 +135,70 @@ Deletion must cover both, in the right order. See `docs/DELETION.md`.
 
 That separation is worth designing before there is a large database to migrate.
 
+**Done, 2026-09-08.** This is no longer an open question — the split was made
+before the first parent paid, which was the only cheap moment it would ever have.
+
+- `payments/{uid}` holds the running summary: the **parent's** name and email,
+  `totalPaid`, and the last amount and period. It is a record about the parent.
+- `payments/{uid}/entries/{id}` holds one immutable receipt per payment taken —
+  amount, server-stamped date, period covered, subjects, and who recorded it.
+  Create only. No update and no delete, for anybody including an admin: a
+  financial record that can be edited after the fact is not one, and a correction
+  is a new entry.
+- `users/{uid}` keeps only `paid` and `paidUntil` — the **access grant**, meaning
+  "this child may open lessons until this date". That is not a financial record
+  and it is deleted with the child.
+
+So the two clocks can now run at different speeds, which was the whole problem:
+a parish can keep its books for as long as tax requires while a child's name,
+age, scores and watch history are deleted promptly, because they no longer live
+in the same document. `privacy.html` states this to parents in both languages.
+
+`amountPaid` and `paidAt` remain on the rules' locked-field list even though
+nothing writes them to `users/{uid}` any more, so an older client cannot put a
+financial field back onto a child's record.
+
+The split is done. How long the separated record is then *kept* is not, and is
+§7 below.
+
+## 7. How long is a receipt kept?
+
+**Open. For the church to answer, with an accountant — not for this repo to
+decide.**
+
+§6 moved the financial record out of the child's document so the two could be
+kept for different lengths of time. It did not say what the second length is.
+Right now `payments/{uid}` and its `entries` are kept indefinitely and the rules
+refuse every client delete, which is correct while the answer is unknown —
+deleting is irreversible and keeping is not — but "keep receipts forever" is not
+a retention policy. It is the same absence of one this file opens with, moved
+to a different collection.
+
+No period is proposed here on purpose. The right number comes from what the
+parish is actually required to keep and for how long, which depends on its
+jurisdiction, its nonprofit status and its accountant's advice. A developer
+picking a plausible-sounding number would be inventing a legal answer and
+burying it in a config file.
+
+What is needed to answer it:
+
+- What retention does the parish's accountant require for donation and fee
+  records? That period is the floor.
+- Does the receipt need to stay linked to a uid after the account is deleted, or
+  would a total per period satisfy the books? The second keeps far less.
+- Who deletes them when the period expires? There is no scheduler on Spark, and
+  the rules deliberately refuse client deletes, so this is console work or a
+  server-side job that does not exist yet.
+
+Until it is answered, `privacy.html` says what is true: the payment record is
+kept, it holds the parent's name, email and amount, and it holds nothing about
+the child. That is honest and incomplete in exactly the way the rest of this
+file is — which is why it is written down here rather than left in a chat log.
+
+This one belongs on the church's list, next to who owns the Stripe account and
+who owns the Firebase project. All three are decisions the parish makes and the
+code then follows.
+
 ---
 
 ## What would need to change in code
@@ -113,7 +210,13 @@ For whoever implements this later:
    distinguish an active student from an anxious parent.
 2. A scheduled job. Spark has no scheduler; this needs Blaze Cloud Functions or
    an external cron hitting an endpoint.
-3. A deletion routine covering: the user document, the `progress` subcollection
-   (Firestore does **not** cascade — see `docs/DELETION.md`), the Auth account,
-   the certificate decision from §2, and the export files from §4.
-4. `privacy.html` updated in the same change, per the rule in CLAUDE.md.
+3. A deletion routine covering: the user document, the `progress` subcollection,
+   the `comments` subcollection (§2b), the `deletionRequests/{uid}` and
+   `subjectRequests/{uid}` documents — Firestore does **not** cascade, see
+   `docs/DELETION.md` — the Auth account, the certificate decision from §2, and
+   the export files from §4. It must **not** touch `payments/{uid}`: that record
+   is retained on purpose (§6), the rules refuse the delete, and a routine that
+   quietly removed it would be destroying the parish's books.
+4. Separately, and only once §7 is answered: a job that expires payment records
+   when their period is up. It does not exist and should not be guessed at.
+5. `privacy.html` updated in the same change, per the rule in CLAUDE.md.

@@ -47,18 +47,48 @@ that doing so is itself part of the request — see `docs/RETENTION.md` §4.
 ## 3. Delete the Firestore data — subcollection FIRST
 
 **Firestore does not cascade.** Deleting `users/{uid}` leaves
-`users/{uid}/progress/*` behind as orphans. They remain readable, because the
-progress rules key off the uid in the path, which still matches. A parent told
-"your child's record is gone" would be told something false.
+`users/{uid}/progress/*` and `users/{uid}/comments/*` behind as orphans. They
+remain readable, because those rules key off the uid in the path, which still
+matches. A parent told "your child's record is gone" would be told something
+false.
 
 So, in this order:
 
-1. Open `users/{uid}` → `progress` subcollection.
-2. Delete every document in it.
+1. Open `users/{uid}` → `progress` subcollection. Delete every document in it.
+2. Open `users/{uid}` → `comments` subcollection. Delete every document in it.
+   These are the teachers' notes about the child; they are the most sensitive
+   free text in the database and the easiest to forget, because a child with no
+   notes has no subcollection at all and a child with notes looks identical in
+   the console listing.
 3. Then delete `users/{uid}` itself.
 
-Confirm the subcollection is empty before deleting the parent document, because
-once the parent is gone the subcollection is harder to find in the console.
+Confirm both subcollections are empty before deleting the parent document,
+because once the parent is gone they are harder to find in the console.
+
+There is also a `consents` subcollection — one immutable document per policy
+version the parent agreed to. Delete it with the rest; it is a record about this
+account and it goes when the account goes.
+
+Then delete `subjectRequests/{uid}` if it exists — an outstanding request to add
+a Zema subject, keyed by the same uid.
+
+### What you must NOT delete
+
+`payments/{uid}` and `payments/{uid}/entries/*` **stay**. This is deliberate and
+it is why the split exists: the payment record is about the *parent* — their
+name, their email, what they paid — and a parish may need it for its accounts
+and for tax. It holds nothing about the child, so leaving it does not leave the
+child's data behind. `privacy.html` tells parents this in advance, in both
+languages, under "How long we keep it".
+
+The rules will refuse the delete anyway (`allow delete: if false` on both), so
+this is not a step you can get wrong by accident. It is written down so that
+nobody later reads the refusal as a bug and "fixes" it.
+
+`deletionRequests/{uid}` is **not** deleted either. It is closed in step 6
+instead: it is the record that the request was made and honoured, and once the
+steps above are done it holds nothing about the child beyond a uid that points
+at nothing.
 
 ## 4. Delete the Auth account
 
@@ -71,8 +101,16 @@ copies and both have to go.
 
 ## 5. Certificates
 
-Follow whatever `docs/RETENTION.md` §2 has been settled as. If it has not been
-settled, see the warning above.
+As of 2026-09-08 there is nothing to do here, and that is worth understanding
+rather than skipping. A certificate is built in the parent's browser from the
+child's name and their completed subjects, and downloaded. The school stores no
+copy, publishes nothing, and runs no `verify.html`, so steps 3 and 4 have already
+removed everything that could regenerate one. The file in the family's possession
+is theirs to keep.
+
+This changes the moment certificate verification is added. Then follow whatever
+`docs/RETENTION.md` §2 has been settled as — and if it has not been settled by
+then, verification should not ship.
 
 ## 6. Close the request
 

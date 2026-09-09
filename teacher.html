@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>የመምህር ገጽ — ፍኖተ ያሬድ</title>
+<script>
+  try {
+    var t = localStorage.getItem('eotc.theme');
+    if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'day' : 'night';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'night'); }
+</script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="shortcut icon" href="assets/favicon.svg">
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:title" content="የመምህር ገጽ — ፍኖተ ያሬድ">
+<meta property="og:description" content="የተመደቡልዎ ተማሪዎች፡ የጥናት ሰዓት፣ እድገትና ክትትል።">
+<meta property="og:image" content="https://bereket18x2.github.io/assets/og.png">
+<meta property="og:url" content="https://bereket18x2.github.io/teacher.html">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="am_ET">
+<script type="importmap">
+{
+  "imports": {
+    "@store":      "./assets/js/store.js?v=9",
+    "@lessons":    "./assets/js/lessons.js?v=9",
+    "@validators": "./assets/js/validators.js?v=9",
+    "@coverage":   "./assets/js/coverage.js?v=9",
+    "@stats":      "./assets/js/stats.js?v=9",
+    "@config":     "./assets/js/config.js?v=9",
+    "@certificate":"./assets/js/certificate.js?v=9"
+  }
+}
+</script>
+</head>
+<body class="sky">
+<canvas id="sky"></canvas>
+
+<div class="harag"></div>
+<div class="shell">
+  <nav class="nav">
+    <a class="brand" href="index.html">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
+      </svg>
+      ፍኖተ ያሬድ
+    </a>
+    <div class="nav-links">
+      <a href="teacher.html" aria-current="page">ተማሪዎቼ</a>
+      <a href="admin.html" id="adminLink" style="display:none">አስተዳደር</a>
+      <a href="#" id="out">ውጣ</a>
+      <button class="theme-toggle" type="button" aria-label="ገጽታ ቀይር"></button>
+    </div>
+  </nav>
+</div>
+
+<main class="shell section">
+  <div id="authedContent" style="display:none">
+
+    <p class="eyebrow">የመምህር ገጽ</p>
+    <h1 style="font-size:2rem;margin-bottom:6px" id="hello">…</h1>
+    <p class="muted small" id="whoami" style="margin-bottom:26px">…</p>
+
+    <div class="grid-3" style="margin:22px 0">
+      <div class="panel"><p class="eyebrow">የተመደቡ ተማሪዎች</p><div class="stat" id="kTotal">…</div></div>
+      <div class="panel"><p class="eyebrow">በዚህ ሳምንት ገብተዋል</p><div class="stat" id="kActive">…</div></div>
+      <div class="panel"><p class="eyebrow">ትኩረት የሚሹ</p><div class="stat" id="kConcern">…</div></div>
+    </div>
+
+    <!-- Concern-first is the DEFAULT, not a filter someone has to find.
+         A roster sorted by name puts the child who has stopped showing up
+         wherever the alphabet happens to put them. -->
+    <div class="between" style="margin-bottom:14px">
+      <h2 style="margin:0;font-size:1.25rem">ተማሪዎቼ</h2>
+      <div class="row">
+        <label class="muted small" for="sortBy">ደርድር፦</label>
+        <select class="input" id="sortBy" style="width:auto;padding:6px 10px">
+          <option value="concern" selected>ትኩረት የሚሹ ቀድመው</option>
+          <option value="name">በስም</option>
+          <option value="seen">መጨረሻ በታዩበት</option>
+          <option value="progress">በእድገት</option>
+        </select>
+        <button class="btn btn--ghost btn--sm" type="button" id="exportBtn">CSV አውርድ</button>
+      </div>
+    </div>
+
+    <p id="rosterMsg" class="note small" style="display:none"></p>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ተማሪ</th><th>ዕድሜ</th><th>ክፍል</th><th>የጥናት ሰዓት</th>
+              <th>ትምህርት</th><th>አማካይ</th><th>ተከታታይ</th>
+              <th>መጨረሻ የታየበት</th><th>ሁኔታ</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="note small" style="margin-top:20px">
+      የሚያዩት የተመደቡልዎትን ተማሪዎች ብቻ ነው። ይህ በFirestore ደንብ የተጠበቀ ነው —
+      በገጽ ንድፍ ላይ ብቻ የተመሠረተ አይደለም። ተማሪ መመደብ የሚችለው አስተዳዳሪው ነው።
+    </p>
+  </div>
+</main>
+
+<!-- ---------------- one student, opened from the roster ---------------- -->
+<div id="drawer" class="panel" style="display:none;position:fixed;inset:auto 0 0 0;max-height:82vh;overflow:auto;z-index:40;border-radius:14px 14px 0 0">
+  <div class="between" style="margin-bottom:12px">
+    <h2 style="margin:0;font-size:1.2rem" id="dName">…</h2>
+    <button class="btn btn--ghost btn--sm" type="button" id="dClose">ዝጋ</button>
+  </div>
+  <p class="muted small" id="dMeta" style="margin:0 0 16px">…</p>
+
+  <div class="harag harag--thin" style="margin:16px 0"></div>
+
+  <!-- payment: what was paid, for which subjects, until when -->
+  <p class="eyebrow">ክፍያ አረጋግጥ</p>
+  <div class="field">
+    <label for="dAmount">የተከፈለው መጠን (USD)</label>
+    <input class="input" id="dAmount" type="number" min="0" step="1" inputmode="numeric">
+    <p class="help" id="dAmountHelp"></p>
+  </div>
+  <div class="field">
+    <label for="dUntil">የሚያገለግልበት መጨረሻ ቀን</label>
+    <input class="input" id="dUntil" type="date">
+    <p class="help">ከዚህ ቀን በኋላ አዲስ ትምህርት አይከፈትም። ያገኙት ውጤትና ምስክር ወረቀት ግን አይጠፋም።</p>
+  </div>
+  <div class="field">
+    <label>የተከፈለባቸው ትምህርቶች</label>
+    <div id="dSubjects" class="tiers"></div>
+  </div>
+  <p id="dPayMsg" class="note small" style="display:none"></p>
+  <div class="row">
+    <button class="btn btn--gold btn--sm" type="button" id="dPay">ክፍያ መዝግብ</button>
+    <button class="btn btn--ghost btn--sm" type="button" id="dUnpay">ክፍያ ሰርዝ</button>
+  </div>
+
+  <!-- The receipts. Immutable once written: a correction is a new entry,
+       never an edited one. -->
+  <p class="eyebrow" style="margin-top:18px">የክፍያ መዝገብ</p>
+  <p class="muted small" style="margin:0 0 8px">
+    የተመዘገበ ክፍያ አይታረምም፤ ማስተካከያ አዲስ መዝገብ ነው። ይህ መዝገብ ለሒሳብ አያያዝ ሲባል
+    ከተማሪው መዝገብ ተለይቶ ይቀመጣል።
+  </p>
+  <div id="dReceipts"></div>
+
+  <div class="harag harag--thin" style="margin:18px 0"></div>
+
+  <p class="eyebrow">ተጨማሪ ድጋፍ</p>
+  <p class="muted small" style="margin:0 0 10px">
+    ይህ በተማሪው ገጽ ላይ ለወላጅ ይታያል። ተጨማሪ ክፍያ አያስከትልም።
+  </p>
+  <div class="row">
+    <button class="btn btn--ghost btn--sm" type="button" id="dRemedial">…</button>
+  </div>
+
+  <div class="harag harag--thin" style="margin:18px 0"></div>
+
+  <p class="eyebrow">አስተያየት</p>
+  <p class="muted small" style="margin:0 0 10px">
+    የሚጽፉት ለወላጅ ይታያል። ከተላከ በኋላ ማረም አይቻልም — ማረም ከፈለጉ ሰርዘው እንደገና ይጻፉ።
+  </p>
+  <div class="field">
+    <textarea class="input" id="dComment" rows="3" maxlength="1000"
+              placeholder="ስለ ተማሪው ለወላጅ የሚጽፉት…"></textarea>
+    <p class="help"><span id="dCommentLeft"></span></p>
+  </div>
+  <p id="dCommentMsg" class="note small" style="display:none"></p>
+  <button class="btn btn--gold btn--sm" type="button" id="dCommentSend">አስተያየት ላክ</button>
+  <div id="dComments" style="margin-top:16px"></div>
+</div>
+
+<script type="module">
+import { Store, fmtHours, fmtAgo, toMillis, requireAuth,
+         accessActive, accessExpired } from '@store';
+import { lessonsFor, subjectsFor, subjectById } from '@lessons';
+import { TRACKS, hasScores, COMMENT_MAX_CHARS } from '@validators';
+import { PRICING, priceFor, termMonthsFor, addMonths } from '@config';
+import { completedCount, averageScore, streakFrom, toDate } from '@stats';
+
+const $ = id => document.getElementById(id);
+const me = await requireAuth();
+
+/* requireAuth has already painted a panel and returned null for a
+   pending, rejected or deactivated account, so nothing below runs for
+   one. This check is for a STUDENT who typed the URL: the rules would
+   refuse the query anyway, so this turns a permission error into an
+   explanation. */
+if (me && me.role !== 'teacher' && me.role !== 'admin') {
+  document.querySelector('main').innerHTML = `
+    <div class="panel">
+      <p class="eyebrow">ለመምህራን ብቻ</p>
+      <h1 style="font-size:1.6rem;margin:0 0 8px">ይህ ገጽ የመምህራን ነው</h1>
+      <p class="muted small">የተማሪዎችን ዝርዝር ማየት የሚችሉት መምህራን ብቻ ናቸው።</p>
+      <div class="row" style="margin-top:16px">
+        <a class="btn btn--gold" href="dashboard.html">ወደ ትምህርቶች</a>
+      </div>
+    </div>`;
+}
+
+if (me && (me.role === 'teacher' || me.role === 'admin')) {
+  $('authedContent').style.display = 'block';
+  Store.touch();
+  if (me.role === 'admin') $('adminLink').style.display = '';
+
+  $('hello').textContent = `እንኳን ደህና መጡ፣ ${me.fullName || ''}`;
+  const mine = Array.isArray(me.teachesSubjects) ? me.teachesSubjects : [];
+  $('whoami').textContent = [
+    me.parish ? `ደብር፦ ${me.parish}` : '',
+    mine.length ? `ትምህርቶች፦ ${mine.map(id => subjectById(id)?.am ?? id).join('፣ ')}` : ''
+  ].filter(Boolean).join(' · ') || 'የተመደቡ ትምህርቶች የሉም።';
+
+  let students = [];
+  try {
+    students = await Store.myStudents();
+  } catch (e) {
+    $('rosterMsg').textContent = e.message;
+    $('rosterMsg').className = 'note note--red small';
+    $('rosterMsg').style.display = 'block';
+  }
+
+  const WEEK = 86400000 * 7;
+
+  /* ---------------- concern ----------------
+
+     A single number, so the default sort is "who needs me first" rather
+     than "who happens to be first alphabetically". It is deliberately
+     crude and deliberately explainable: every point below corresponds to
+     a sentence a teacher would say out loud about a child. `reasons` is
+     what the roster shows, because a score with no reason attached is
+     something a teacher learns to ignore. */
+  function concernOf(s) {
+    const scored = hasScores(s.track);
+    const lessons = lessonsFor(s.track);
+    const done = completedCount(s.progress, lessons, { scored });
+    const seen = toMillis(s.lastSeen);
+    const idle = seen ? Date.now() - seen : Infinity;
+    const avg = scored ? averageScore(s.progress) : null;
+    const flagged = Object.values(s.progress || {}).filter(p => p.suspicious).length;
+
+    let score = 0;
+    const reasons = [];
+
+    if (!s.verified) { score += 2; reasons.push('ኢሜይል አልተረጋገጠም'); }
+    if (accessExpired(s)) { score += 2; reasons.push('ጊዜው አልቋል'); }
+    else if (!s.paid) { score += 1; reasons.push('ክፍያ የለም'); }
+
+    if (idle === Infinity) { score += 3; reasons.push('ገና አልገባም'); }
+    else if (idle > WEEK * 2) { score += 3; reasons.push('ከ2 ሳምንት በላይ አልታየም'); }
+    else if (idle > WEEK) { score += 2; reasons.push('ከሳምንት በላይ አልታየም'); }
+
+    if (lessons.length && done === 0) { score += 2; reasons.push('አንድም አልጨረሰም'); }
+    if (scored && avg !== null && avg > 0 && avg < 50) { score += 2; reasons.push(`አማካይ ${avg}%`); }
+    if (flagged) { score += 2; reasons.push(`${flagged} አጠራጣሪ`); }
+    if (s.remedial === true) { score += 1; reasons.push('ተጨማሪ ድጋፍ'); }
+
+    return { score, reasons, done, total: lessons.length, avg, scored };
+  }
+
+  const enriched = () => students.map(s => ({ ...s, c: concernOf(s) }));
+
+  const SORTS = {
+    concern:  (a, b) => b.c.score - a.c.score || toMillis(a.lastSeen) - toMillis(b.lastSeen),
+    name:     (a, b) => String(a.studentName || '').localeCompare(String(b.studentName || ''), 'am'),
+    seen:     (a, b) => toMillis(b.lastSeen) - toMillis(a.lastSeen),
+    progress: (a, b) => (a.c.done / (a.c.total || 1)) - (b.c.done / (b.c.total || 1))
+  };
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g,
+    ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+  function render() {
+    const rows = enriched().sort(SORTS[$('sortBy').value] || SORTS.concern);
+
+    $('kTotal').textContent = students.length;
+    $('kActive').textContent = students.filter(s => toMillis(s.lastSeen) > Date.now() - WEEK).length;
+    $('kConcern').textContent = rows.filter(r => r.c.score >= 3).length;
+
+    if (!rows.length) {
+      $('rows').innerHTML =
+        '<tr><td colspan="10" class="muted">ገና ተማሪ አልተመደበልዎትም። አስተዳዳሪው ተማሪ ሲመድብ እዚህ ይታያሉ።</td></tr>';
+      return;
+    }
+
+    $('rows').innerHTML = rows.map(s => {
+      const c = s.c;
+      const status = accessExpired(s) ? '<span class="pill pill--locked">ጊዜው አልቋል</span>'
+        : !s.verified ? '<span class="pill">አልተረጋገጠም</span>'
+        : !s.paid ? '<span class="pill pill--locked">ክፍያ የለም</span>'
+        : '<span class="pill pill--done">ንቁ</span>';
+      const flags = c.reasons.length
+        ? `<br><span class="muted small">${esc(c.reasons.join(' · '))}</span>` : '';
+
+      // a concerning row is tinted with the rubric crimson token, not a
+      // hardcoded hex — see the palette note in CLAUDE.md
+      return `<tr${c.score >= 3 ? ' style="background:rgb(var(--danger-rgb) / .08)"' : ''}>
+        <td><b>${esc(s.studentName ?? '—')}</b>${flags}
+            <br><span class="muted small">${esc(s.guardianName ?? '')} · ${esc(s.email ?? '')}</span></td>
+        <td class="num">${esc(s.age ?? '—')}</td>
+        <td>${esc(TRACKS[s.track]?.am ?? '—')}</td>
+        <td class="num">${fmtHours(s.studySeconds)}</td>
+        <td class="num">${c.done}/${c.total}</td>
+        <td class="num">${c.scored ? c.avg + '%' : '—'}</td>
+        <td class="num">${streakFrom(s.progress)}</td>
+        <td class="muted">${fmtAgo(s.lastSeen)}</td>
+        <td>${status}</td>
+        <td><button class="btn btn--ghost btn--sm" data-open="${esc(s.uid)}">ክፈት</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  $('sortBy').addEventListener('change', render);
+  render();
+
+  /* ---------------- CSV ----------------
+
+     Only the students this teacher is assigned. The confirm() is the
+     reminder that survives the file leaving the browser: once it is on a
+     laptop it is a list of children's names that no rule protects. */
+  $('exportBtn').addEventListener('click', () => {
+    if (!students.length) return;
+    const ok = confirm(
+      'የሚወርደው ፋይል የልጆችን ስም፣ የወላጅ ስምና ኢሜይል ይዟል።\n\n' +
+      'ከወረደ በኋላ የሚጠብቀው የድረ-ገጹ ደንብ ሳይሆን እርስዎ ነዎት። ' +
+      'በጋራ በሚጠቀሙበት ኮምፒውተር ላይ አያስቀምጡ፤ ሲጨርሱ ይሰርዙት።\n\nልውረድ?'
+    );
+    if (!ok) return;
+
+    const cell = (v) => {
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const head = ['ተማሪ', 'ወላጅ', 'ኢሜይል', 'ዕድሜ', 'ክፍል', 'የጥናት ሰዓት',
+                  'የተጠናቀቀ', 'ጠቅላላ', 'አማካይ', 'ተከታታይ', 'ክፍያ', 'እስከ', 'መጨረሻ የታየበት'];
+    const body = enriched().sort(SORTS.concern).map(s => [
+      s.studentName, s.guardianName, s.email, s.age, TRACKS[s.track]?.am ?? '',
+      Math.round((s.studySeconds || 0) / 60) + ' ደቂቃ',
+      s.c.done, s.c.total, s.c.scored ? s.c.avg + '%' : '',
+      streakFrom(s.progress),
+      accessActive(s) ? 'ንቁ' : (s.paid ? 'አልቋል' : 'የለም'),
+      s.paidUntil || '', fmtAgo(s.lastSeen)
+    ].map(cell).join(','));
+
+    // BOM, or Excel opens Ethiopic as mojibake
+    const blob = new Blob(['﻿' + [head.map(cell).join(','), ...body].join('\r\n')],
+                          { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `finote-yared-teachers-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+
+  /* ---------------- one student ---------------- */
+  let open = null;
+
+  const say = (el, text, bad) => {
+    el.textContent = text;
+    el.className = bad ? 'note note--red small' : 'note small';
+    el.style.display = 'block';
+  };
+
+  async function openStudent(uid) {
+    open = students.find(s => s.uid === uid);
+    if (!open) return;
+
+    $('drawer').style.display = 'block';
+    $('dName').textContent = open.studentName || '—';
+    $('dMeta').textContent =
+      `${open.age ?? '—'} ዓመት · ${TRACKS[open.track]?.am ?? '—'} · ${open.guardianName ?? ''} · ${open.email ?? ''}`;
+
+    // what this student's course and plan actually cost, prefilled so a
+    // teacher confirms a figure rather than inventing one
+    const prepaid = open.plan === 'term';
+    const price = priceFor(open.track, { prepaidTerm: prepaid });
+    $('dAmount').value = price ?? '';
+    $('dAmountHelp').textContent = open.track === 'bible'
+      ? (prepaid
+          ? `ሦስቱን ወር በአንድ ጊዜ፦ $${PRICING.bible.termPrepaidUSD} (ከ$${PRICING.bible.termFullUSD} ይልቅ)`
+          : `በየወሩ፦ $${PRICING.bible.monthlyUSD}`)
+      : `የዜማ ትምህርት፦ $${PRICING.zema.flatUSD} — የመረጡት ትምህርት ብዛት ምንም ይሁን።`;
+
+    $('dUntil').value = addMonths(new Date(), termMonthsFor(open.track, { prepaidTerm: prepaid }));
+
+    const chosen = Array.isArray(open.selectedSubjects) ? open.selectedSubjects : [];
+    $('dSubjects').innerHTML = subjectsFor(open.track).map(s => `
+      <label class="tier">
+        <input type="checkbox" name="dSubject" value="${esc(s.id)}" ${chosen.includes(s.id) ? 'checked' : ''}>
+        <span class="tier__body"><b>${esc(s.am)}</b></span>
+      </label>`).join('');
+
+    $('dRemedial').textContent = open.remedial === true
+      ? 'ተጨማሪ ድጋፍን አንሳ' : 'ተጨማሪ ድጋፍ መዝግብ';
+
+    $('dPayMsg').style.display = 'none';
+    $('dCommentMsg').style.display = 'none';
+    $('dComment').value = '';
+    paintLeft();
+    await paintReceipts();
+    await paintComments();
+    $('drawer').scrollIntoView({ block: 'nearest' });
+  }
+
+  /* The receipts held in /payments/{uid}/entries. Built as nodes rather
+     than interpolated markup, same as the notes — a recorded name is
+     text a person typed. */
+  async function paintReceipts() {
+    const host = $('dReceipts');
+    host.innerHTML = '';
+    const [summary, entries] = await Promise.all([
+      Store.paymentOf(open.uid),
+      Store.paymentHistory(open.uid)
+    ]);
+
+    if (summary && typeof summary.totalPaid === 'number') {
+      const total = document.createElement('p');
+      total.style.cssText = 'margin:0 0 8px';
+      total.innerHTML = '<b></b>';
+      total.querySelector('b').textContent = `በጠቅላላ $${summary.totalPaid}`;
+      host.appendChild(total);
+    }
+
+    if (!entries.length) {
+      const p = document.createElement('p');
+      p.className = 'muted small';
+      p.textContent = 'ገና የተመዘገበ ክፍያ የለም።';
+      host.appendChild(p);
+      return;
+    }
+
+    for (const e of entries) {
+      const when = toDate(e.at);
+      const row = document.createElement('div');
+      row.className = 'between';
+      row.style.cssText = 'padding:8px 0;border-top:1px solid var(--line);gap:10px;flex-wrap:wrap';
+
+      const left = document.createElement('div');
+      const amt = document.createElement('b');
+      amt.textContent = `$${e.amount}`;
+      const meta = document.createElement('span');
+      meta.className = 'muted small';
+      meta.style.display = 'block';
+      meta.textContent = [
+        e.kind === 'subject-addon' ? 'ተጨማሪ ትምህርት' : 'የትምህርት ጊዜ',
+        when ? when.toLocaleDateString() : '',
+        e.periodUntil ? `እስከ ${e.periodUntil}` : '',
+        e.recordedByName ? `በ${e.recordedByName}` : ''
+      ].filter(Boolean).join(' · ');
+      left.append(amt, meta);
+
+      const subs = document.createElement('span');
+      subs.className = 'muted small';
+      subs.textContent = (e.subjects || [])
+        .map(id => subjectById(id)?.am ?? id).join('፣ ');
+
+      row.append(left, subs);
+      host.appendChild(row);
+    }
+  }
+
+  async function paintComments() {
+    const list = $('dComments');
+    list.innerHTML = '';
+    const cs = await Store.commentsFor(open.uid);
+    if (!cs.length) {
+      const p = document.createElement('p');
+      p.className = 'muted small';
+      p.textContent = 'ገና አስተያየት የለም።';
+      list.appendChild(p);
+      return;
+    }
+    for (const c of cs) {
+      const when = toDate(c.at);
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'padding:10px 0;border-top:1px solid var(--line)';
+
+      const head = document.createElement('p');
+      head.className = 'muted small';
+      head.style.margin = '0 0 4px';
+      head.textContent = (c.byName || 'መምህር') + (when ? ' · ' + when.toLocaleDateString() : '');
+
+      const body = document.createElement('p');
+      body.style.cssText = 'margin:0;white-space:pre-wrap';
+      body.textContent = c.text || '';
+      wrap.append(head, body);
+
+      // only your own note, and only because there is no editing
+      if (c.by === me.uid) {
+        const del = document.createElement('button');
+        del.className = 'btn btn--ghost btn--sm';
+        del.type = 'button';
+        del.style.marginTop = '6px';
+        del.textContent = 'ሰርዝ';
+        del.addEventListener('click', async () => {
+          if (!confirm('ይህን አስተያየት ይሰርዙ? ወላጅ አስቀድሞ አይቶት ሊሆን ይችላል።')) return;
+          try { await Store.deleteComment(open.uid, c.id); await paintComments(); }
+          catch (ex) { say($('dCommentMsg'), ex.message, true); }
+        });
+        wrap.appendChild(del);
+      }
+      list.appendChild(wrap);
+    }
+  }
+
+  const paintLeft = () => {
+    const left = COMMENT_MAX_CHARS - $('dComment').value.length;
+    $('dCommentLeft').textContent = `${left} ፊደል ይቀራል · የሚጽፉት ለወላጅ ይታያል።`;
+  };
+  $('dComment').addEventListener('input', paintLeft);
+
+  $('rows').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-open]');
+    if (btn) openStudent(btn.dataset.open);
+  });
+  $('dClose').addEventListener('click', () => { $('drawer').style.display = 'none'; open = null; });
+
+  $('dPay').addEventListener('click', async () => {
+    if (!open) return;
+    const subjects = [...document.querySelectorAll('input[name="dSubject"]:checked')].map(i => i.value);
+    if (!subjects.length) { say($('dPayMsg'), 'ቢያንስ አንድ ትምህርት ይምረጡ።', true); return; }
+    $('dPay').disabled = true;
+    try {
+      await Store.recordPayment(open.uid, {
+        amountPaid: Number($('dAmount').value) || 0,
+        paidUntil: $('dUntil').value || null,
+        subjects,
+        // copied onto the payment record so it still says who paid after
+        // the child's document is deleted — see docs/RETENTION.md §6
+        guardianName: open.guardianName,
+        email: open.email
+      });
+      Object.assign(open, {
+        paid: true,
+        paidUntil: $('dUntil').value || null,
+        selectedSubjects: subjects
+      });
+      say($('dPayMsg'), 'ክፍያው ተመዝግቧል።', false);
+      await paintReceipts();
+      render();
+    } catch (ex) { say($('dPayMsg'), ex.message, true); }
+    $('dPay').disabled = false;
+  });
+
+  $('dUnpay').addEventListener('click', async () => {
+    if (!open) return;
+    if (!confirm('የዚህን ተማሪ ክፍያ ይሰርዙ? አዲስ ትምህርት አይከፈትም።')) return;
+    try {
+      await Store.setPaid(open.uid, false);
+      open.paid = false;
+      say($('dPayMsg'), 'ክፍያው ተሰርዟል።', false);
+      render();
+    } catch (ex) { say($('dPayMsg'), ex.message, true); }
+  });
+
+  $('dRemedial').addEventListener('click', async () => {
+    if (!open) return;
+    const next = open.remedial !== true;
+    try {
+      await Store.setRemedial(open.uid, next, me.fullName || '');
+      open.remedial = next;
+      $('dRemedial').textContent = next ? 'ተጨማሪ ድጋፍን አንሳ' : 'ተጨማሪ ድጋፍ መዝግብ';
+      say($('dPayMsg'), next ? 'ተመዝግቧል። በወላጅ ገጽ ላይ ይታያል።' : 'ተነስቷል።', false);
+      render();
+    } catch (ex) { say($('dPayMsg'), ex.message, true); }
+  });
+
+  $('dCommentSend').addEventListener('click', async () => {
+    if (!open) return;
+    $('dCommentSend').disabled = true;
+    try {
+      await Store.addComment(open.uid, $('dComment').value);
+      $('dComment').value = '';
+      paintLeft();
+      say($('dCommentMsg'), 'ተልኳል። ወላጅ በተማሪው ገጽ ላይ ያየዋል።', false);
+      await paintComments();
+    } catch (ex) { say($('dCommentMsg'), ex.message, true); }
+    $('dCommentSend').disabled = false;
+  });
+
+  $('out').addEventListener('click', async (e) => {
+    e.preventDefault();
+    await Store.signOut();
+    location.href = 'index.html';
+  });
+}
+</script>
+<script src="assets/js/sky.js" defer></script>
+<script src="assets/js/theme.js" defer></script>
+</body>
+</html>

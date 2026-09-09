@@ -16,28 +16,44 @@
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="shortcut icon" href="assets/favicon.svg">
+<meta name="robots" content="noindex, nofollow">
 <meta property="og:title" content="አስተዳደር — ፍኖተ ያሬድ">
-<meta property="og:description" content="የተማሪዎች ሪፖርት፡ የጥናት ሰዓት፣ ውጤትና እንቅስቃሴ።">
+<meta property="og:description" content="የመምህራን ጥያቄ፣ የተማሪ ምደባና የክፍያ ማረጋገጫ።">
 <meta property="og:image" content="https://bereket18x2.github.io/assets/og.png">
 <meta property="og:url" content="https://bereket18x2.github.io/admin.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="am_ET">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="አስተዳደር — ፍኖተ ያሬድ">
-<meta name="twitter:description" content="የተማሪዎች ሪፖርት፡ የጥናት ሰዓት፣ ውጤትና እንቅስቃሴ።">
-<meta name="twitter:image" content="https://bereket18x2.github.io/assets/og.png">
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=6",
-    "@lessons":    "./assets/js/lessons.js?v=6",
-    "@validators": "./assets/js/validators.js?v=6",
-    "@coverage":   "./assets/js/coverage.js?v=6",
-    "@stats":      "./assets/js/stats.js?v=6",
-    "@config":     "./assets/js/config.js?v=6"
+    "@store":      "./assets/js/store.js?v=9",
+    "@lessons":    "./assets/js/lessons.js?v=9",
+    "@validators": "./assets/js/validators.js?v=9",
+    "@coverage":   "./assets/js/coverage.js?v=9",
+    "@stats":      "./assets/js/stats.js?v=9",
+    "@config":     "./assets/js/config.js?v=9",
+    "@certificate":"./assets/js/certificate.js?v=9"
   }
 }
 </script>
+<style>
+  /* A count badge, so a waiting teacher is not something you have to
+     remember to go looking for. */
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:18px }
+  .tab { display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:999px;
+         border:1px solid var(--line); background:transparent; color:inherit;
+         font-family:inherit; font-size:.92rem; cursor:pointer }
+  .tab[aria-selected="true"] { background:var(--accent); color:var(--accent-ink); border-color:var(--accent) }
+  .tab .count { min-width:20px; padding:1px 7px; border-radius:999px; font-size:.78rem;
+                background:var(--danger); color:var(--text) }
+  .tab[aria-selected="true"] .count { background:rgb(var(--shadow-rgb) / .35); color:var(--text) }
+  .tab .count[hidden] { display:none }
+  .req { border-top:1px solid var(--line); padding:16px 0 }
+  .req dl { display:grid; grid-template-columns:auto 1fr; gap:6px 14px; margin:10px 0 0 }
+  .req dt { color:var(--text-dim); font-size:.86rem }
+  .req dd { margin:0; font-size:.94rem }
+  .step { border:1px solid var(--line); border-radius:10px; padding:14px; margin-top:14px }
+</style>
 </head>
 <body class="sky">
 <canvas id="sky"></canvas>
@@ -52,138 +68,505 @@
       ፍኖተ ያሬድ
     </a>
     <div class="nav-links">
-      <a href="dashboard.html">ትምህርቶች</a>
+      <a href="teacher.html">ተማሪዎቼ</a>
       <a href="admin.html" aria-current="page">አስተዳደር</a>
+      <a href="#" id="out">ውጣ</a>
+      <button class="theme-toggle" type="button" aria-label="ገጽታ ቀይር"></button>
     </div>
   </nav>
 </div>
 
 <main class="shell section">
-  <p class="eyebrow">የመምህራን ገጽ</p>
-  <h1 style="font-size:2rem">ተማሪዎች</h1>
+  <div id="authedContent" style="display:none">
+    <p class="eyebrow">የአስተዳዳሪ ገጽ</p>
+    <h1 style="font-size:2rem;margin-bottom:22px">አስተዳደር</h1>
 
-  <div class="grid-3" style="margin:22px 0">
-    <div class="panel"><p class="eyebrow">ጠቅላላ ተማሪ</p><div class="stat" id="kTotal">…</div></div>
-    <div class="panel"><p class="eyebrow">በዚህ ሳምንት ገብተዋል</p><div class="stat" id="kActive">…</div></div>
-    <div class="panel"><p class="eyebrow">ጠቅላላ የጥናት ሰዓት</p><div class="stat" id="kHours">…</div></div>
-  </div>
-
-  <div class="panel">
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>ተማሪ</th><th>ዕድሜ</th><th>ክፍል</th><th>ምዝገባ</th><th>የጥናት ሰዓት</th>
-            <th>ትምህርት</th><th>አማካይ</th><th>መጨረሻ የታየበት</th><th>ሁኔታ</th><th>ክፍያ</th>
-          </tr>
-        </thead>
-        <tbody id="rows"></tbody>
-      </table>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="pending" aria-selected="true">
+        የመምህርነት ጥያቄ <span class="count" id="cPending" hidden>0</span>
+      </button>
+      <button class="tab" role="tab" data-tab="teachers" aria-selected="false">መምህራን</button>
+      <button class="tab" role="tab" data-tab="students" aria-selected="false">ተማሪዎች</button>
+      <button class="tab" role="tab" data-tab="requests" aria-selected="false">
+        የትምህርት ጥያቄ <span class="count" id="cReq" hidden>0</span>
+      </button>
+      <button class="tab" role="tab" data-tab="rejected" aria-selected="false">ያልተቀበሉ</button>
     </div>
-  </div>
 
-  <p class="note small" style="margin-top:20px">
-    ይህ ገጽ በFirestore ደንብ (<code>role == 'admin'</code>) የተጠበቀ ነው። ክፍያ ማረጋገጥም
-    የሚቻለው በመምህር መለያ ብቻ ነው — ተማሪ ቢሞክር ደንቡ ይከለክለዋል።
-  </p>
+    <p id="msg" class="note small" style="display:none"></p>
+
+    <!-- ============ pending teacher requests ============ -->
+    <section data-pane="pending">
+      <div class="panel">
+        <p class="eyebrow">በመጠባበቅ ላይ</p>
+        <p class="muted small" style="margin:0 0 6px">
+          ያልጸደቀ መለያ የተማሪዎችን መረጃ በምንም መንገድ አያይም። ማጽደቅ ሁለት ደረጃ አለው —
+          ትምህርት መመደብና ደብሩን ማረጋገጥ።
+        </p>
+        <div id="pendingList"></div>
+      </div>
+    </section>
+
+    <!-- ============ approved teachers ============ -->
+    <section data-pane="teachers" hidden>
+      <div class="panel">
+        <p class="eyebrow">የጸደቁ መምህራን</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>መምህር</th><th>ደብር</th><th>ትምህርቶች</th><th>ተማሪዎች</th>
+              <th>መጨረሻ የገቡበት</th><th>ሁኔታ</th><th></th>
+            </tr></thead>
+            <tbody id="teacherRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ students + assignment + payment ============ -->
+    <section data-pane="students" hidden>
+      <div class="grid-3" style="margin-bottom:22px">
+        <div class="panel"><p class="eyebrow">ጠቅላላ ተማሪ</p><div class="stat" id="kTotal">…</div></div>
+        <div class="panel"><p class="eyebrow">በዚህ ሳምንት ገብተዋል</p><div class="stat" id="kActive">…</div></div>
+        <div class="panel"><p class="eyebrow">ጠቅላላ የጥናት ሰዓት</p><div class="stat" id="kHours">…</div></div>
+      </div>
+      <div class="panel">
+        <p class="eyebrow">ተማሪዎች</p>
+        <p class="muted small" style="margin:0 0 6px">
+          መምህር መመደብ የሚችለው አስተዳዳሪ ብቻ ነው። መምህር የሚያየው የተመደቡለትን ተማሪዎች ብቻ ነው።
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>ተማሪ</th><th>ዕድሜ</th><th>ክፍል</th><th>ክፍያ</th>
+              <th>የጥናት ሰዓት</th><th>ትምህርት</th><th>አማካይ</th>
+              <th>መጨረሻ የታየበት</th><th>የተመደበ መምህር</th>
+            </tr></thead>
+            <tbody id="studentRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ zema subject add requests ============ -->
+    <section data-pane="requests" hidden>
+      <div class="panel">
+        <p class="eyebrow">ተጨማሪ የዜማ ትምህርት ጥያቄ</p>
+        <p class="muted small" style="margin:0 0 6px" id="reqIntro"></p>
+        <div id="reqList"></div>
+      </div>
+    </section>
+
+    <!-- ============ rejected ============ -->
+    <section data-pane="rejected" hidden>
+      <div class="panel">
+        <p class="eyebrow">ያልተቀበሉ ጥያቄዎች</p>
+        <p class="muted small" style="margin:0 0 6px">
+          መዝገቡ አይሰረዝም። ማን እንደጠየቀ ማወቅ ከንጹሕ ዝርዝር ይበልጣል።
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ስም</th><th>ኢሜይል</th><th>ደብር</th><th>ምክንያት</th><th>የተወሰነበት</th></tr></thead>
+            <tbody id="rejectedRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <p class="note small" style="margin-top:20px">
+      ይህ ገጽ በFirestore ደንብ (<code>role == 'admin'</code>) የተጠበቀ ነው።
+      አዲስ <b>አስተዳዳሪ</b> ከዚህ ገጽ ማድረግ አይቻልም — ደንቡ ሆን ብሎ ይከለክላል፤
+      በFirebase console በእጅ ብቻ ነው። ይህ ስህተት አይደለም።
+    </p>
+  </div>
 </main>
 
 <script type="module">
-import { Store, fmtHours, fmtAgo, toMillis, requireAuth } from '@store';
-import { lessonsFor } from '@lessons';
+import { Store, fmtHours, fmtAgo, toMillis, requireAuth, accessExpired } from '@store';
+import { lessonsFor, subjectById, SUBJECTS } from '@lessons';
 import { TRACKS, hasScores } from '@validators';
-import { tierById } from '@config';
-import { completedCount, averageScore } from '@stats';
+import { PRICING, priceToAddSubjects } from '@config';
+import { completedCount, averageScore, toDate } from '@stats';
 
+const $ = id => document.getElementById(id);
 const me = await requireAuth();
 
-// The rules reject allUsers() for a student anyway; this just turns a
-// permission error into an explanation instead of an empty table.
 if (me && me.role !== 'admin') {
   document.querySelector('main').innerHTML = `
     <div class="panel">
-      <p class="eyebrow">ለመምህራን ብቻ</p>
-      <h1 style="font-size:1.6rem;margin:0 0 8px">ይህ ገጽ የመምህራን ነው</h1>
-      <p class="muted small">የተማሪዎችን ዝርዝር ማየት የሚችሉት መምህራን ብቻ ናቸው።
-        የእርስዎን ትምህርቶች ለማየት ወደ ትምህርቶች ገጽ ይሂዱ።</p>
+      <p class="eyebrow">ለአስተዳዳሪ ብቻ</p>
+      <h1 style="font-size:1.6rem;margin:0 0 8px">ይህ ገጽ የአስተዳዳሪ ነው</h1>
+      <p class="muted small">የመምህራንን ጥያቄ ማጽደቅና ተማሪ መመደብ የሚችለው አስተዳዳሪ ብቻ ነው።</p>
       <div class="row" style="margin-top:16px">
-        <a class="btn btn--gold" href="dashboard.html">ወደ ትምህርቶች</a>
+        <a class="btn btn--gold" href="${me.role === 'teacher' ? 'teacher.html' : 'dashboard.html'}">ወደ ገጽዎ</a>
       </div>
     </div>`;
 }
 
 if (me && me.role === 'admin') {
-let users = [];
-try {
-  users = await Store.allUsers();
-} catch (e) {
-  document.getElementById('rows').innerHTML =
-    `<tr><td colspan="10" class="muted">${e.message}</td></tr>`;
-}
+  $('authedContent').style.display = 'block';
+  Store.touch();
 
-const week = Date.now() - 86400000 * 7;
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g,
+    ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
-document.getElementById('kTotal').textContent = users.length;
-document.getElementById('kActive').textContent = users.filter(u => toMillis(u.lastSeen) > week).length;
-document.getElementById('kHours').textContent =
-  Math.round(users.reduce((a, u) => a + (u.studySeconds || 0), 0) / 3600) + ' ሰዓት';
+  const say = (text, bad) => {
+    $('msg').textContent = text;
+    $('msg').className = bad ? 'note note--red small' : 'note small';
+    $('msg').style.display = 'block';
+  };
 
-function render(users) {
-  document.getElementById('rows').innerHTML = users
-    .sort((a, b) => toMillis(b.lastSeen) - toMillis(a.lastSeen))
-    .map(u => {
-      // count against the student's own course, not the whole catalogue,
-      // and use that course's notion of "complete" — a Zema lesson is
-      // finished by attendance, since it has no quiz to answer
-      const scored = hasScores(u.track);
-      const lessons = lessonsFor(u.track);
-      const done = completedCount(u.progress, lessons, { scored });
-      const status = !u.verified ? '<span class="pill">አልተረጋገጠም</span>'
-        : !u.paid ? '<span class="pill pill--locked">ክፍያ የለም</span>'
-        : '<span class="pill pill--done">ንቁ</span>';
-      const payCell = u.paid
-        ? `<button class="btn btn--ghost btn--sm" data-uid="${u.uid}" data-paid="0">ክፍያ ሰርዝ</button>`
-        : `<button class="btn btn--gold btn--sm" data-uid="${u.uid}" data-paid="1">ክፍያ አረጋግጥ</button>`;
+  let pending = [], teachers = [], rejected = [], students = [], requests = [];
 
-      return `<tr>
-        <td><b>${u.studentName ?? '—'}</b><br><span class="muted small">${u.guardianName ?? ''} · ${u.email}</span></td>
-        <td class="num">${u.age ?? '—'}</td>
-        <td>${TRACKS[u.track]?.am ?? '—'}</td>
-        <td class="muted small">${tierById(u.tier)?.am ?? '—'}</td>
-        <td class="num">${fmtHours(u.studySeconds)}</td>
-        <td class="num">${done}/${lessons.length}</td>
-        <td class="num">${scored ? averageScore(u.progress) + '%' : '—'}</td>
-        <td class="muted">${fmtAgo(u.lastSeen)}</td>
-        <td>${status}</td>
-        <td>${payCell}</td>
-      </tr>`;
-    }).join('');
-}
-
-if (users.length) render(users);
-
-/* Confirming payment is a teacher action. The rules are what actually
-   enforce that — this button simply exposes it, and shows whatever the
-   write returns rather than assuming it worked. */
-document.getElementById('rows').addEventListener('click', async (e) => {
-  const btn = e.target.closest('button[data-uid]');
-  if (!btn) return;
-  const uid = btn.dataset.uid;
-  const next = btn.dataset.paid === '1';
-  const label = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = '…';
-  try {
-    await Store.setPaid(uid, next);
-    const row = users.find(x => x.uid === uid);
-    if (row) row.paid = next;
-    render(users);
-  } catch (ex) {
-    btn.disabled = false;
-    btn.textContent = label;
-    alert(ex.message);
+  async function load() {
+    const [p, t, r, s] = await Promise.all([
+      Store.teachersByRole('pending_teacher').catch(() => []),
+      Store.teachersByRole('teacher').catch(() => []),
+      Store.teachersByRole('rejected').catch(() => []),
+      Store.allUsers().catch(() => [])
+    ]);
+    pending = p; teachers = t; rejected = r; students = s;
+    requests = await Store.allSubjectRequests().catch(() => []);
   }
-});
+
+  await load();
+
+  /* ---------------- tabs ---------------- */
+  const tabs = [...document.querySelectorAll('.tab')];
+  tabs.forEach(tab => tab.addEventListener('click', () => {
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t === tab)));
+    document.querySelectorAll('[data-pane]').forEach(p => {
+      p.hidden = p.dataset.pane !== tab.dataset.tab;
+    });
+  }));
+
+  const badge = (el, n) => { el.textContent = n; el.hidden = n === 0; };
+
+  /* ---------------- pending: the approval screen ----------------
+
+     Designed so that approving is something you DO rather than something
+     you tap past. Everything they submitted is on screen, including when
+     they registered and whether the email is verified, and approval is
+     two deliberate steps: assign at least one subject, then confirm the
+     parish on a second panel that restates exactly what is being granted.
+
+     A single tap on a phone should not be able to hand a stranger the
+     roster of a class of children. */
+  function renderPending() {
+    badge($('cPending'), pending.length);
+    const host = $('pendingList');
+    host.innerHTML = '';
+
+    if (!pending.length) {
+      host.innerHTML = '<p class="muted small" style="margin:12px 0 0">በመጠባበቅ ላይ ያለ ጥያቄ የለም።</p>';
+      return;
+    }
+
+    for (const t of pending) {
+      const when = toDate(t.createdAt);
+      const asked = (Array.isArray(t.teachesSubjects) ? t.teachesSubjects : []);
+      const wrap = document.createElement('div');
+      wrap.className = 'req';
+      wrap.innerHTML = `
+        <div class="between">
+          <b>${esc(t.fullName || '—')}</b>
+          ${t.verified ? '<span class="pill pill--done">ኢሜይል ተረጋግጧል</span>'
+                       : '<span class="pill pill--locked">ኢሜይል አልተረጋገጠም</span>'}
+        </div>
+        <dl>
+          <dt>ኢሜይል</dt><dd>${esc(t.email || '—')}</dd>
+          <dt>ስልክ</dt><dd>${esc(t.phone || '—')}</dd>
+          <dt>ደብር (እንደጻፉት)</dt><dd>${esc(t.parish || '—')}</dd>
+          <dt>ያመለከቱት ትምህርት</dt><dd>${asked.length
+            ? esc(asked.map(id => subjectById(id)?.am ?? id).join('፣ ')) : '—'}</dd>
+          <dt>የጠየቁበት ቀን</dt><dd>${when ? esc(when.toLocaleString()) : '—'}</dd>
+        </dl>
+        <div class="row" style="margin-top:12px">
+          <button class="btn btn--gold btn--sm" data-review="${esc(t.uid)}">ገምግም</button>
+          <button class="btn btn--ghost btn--sm" data-reject="${esc(t.uid)}">አልተቀበልም</button>
+        </div>
+        <div class="step" data-step1 hidden>
+          <p class="eyebrow" style="margin-top:0">ደረጃ ፩ — ትምህርት መድብ</p>
+          <p class="muted small" style="margin:0 0 10px">
+            ያመለከቱት ከላይ ተመልክቷል። የሚያስተምሩትን እርስዎ ይወስናሉ — ቢያንስ አንድ።
+          </p>
+          <div class="tiers" data-subjects></div>
+          <div class="field" style="margin-top:12px">
+            <label>ደብሩን አረጋግጥ</label>
+            <input class="input" data-parish value="${esc(t.parish || '')}">
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn btn--gold btn--sm" data-next="${esc(t.uid)}">ቀጥል</button>
+          </div>
+        </div>
+        <div class="step" data-step2 hidden>
+          <p class="eyebrow" style="margin-top:0">ደረጃ ፪ — አረጋግጥ</p>
+          <p class="muted small" style="margin:0 0 10px" data-summary></p>
+          <p class="muted small" style="margin:0 0 10px">
+            ከጸደቀ በኋላ ይህ መለያ የሚመደቡለትን ተማሪዎች ያያል። ተማሪ እስኪመድቡለት ድረስ
+            ምንም አያይም።
+          </p>
+          <div class="row">
+            <button class="btn btn--gold btn--sm" data-approve="${esc(t.uid)}">አጽድቅ</button>
+            <button class="btn btn--ghost btn--sm" data-back>ተመለስ</button>
+          </div>
+        </div>`;
+
+      wrap.querySelector('[data-subjects]').innerHTML = SUBJECTS.map(s => `
+        <label class="tier">
+          <input type="checkbox" name="subj-${esc(t.uid)}" value="${esc(s.id)}"
+                 ${asked.includes(s.id) ? 'checked' : ''}>
+          <span class="tier__body">
+            <b>${esc(s.am)}</b>
+            <span class="muted small">${esc(TRACKS[s.track]?.am ?? '')}</span>
+          </span>
+        </label>`).join('');
+
+      host.appendChild(wrap);
+    }
+  }
+
+  $('pendingList').addEventListener('click', async (e) => {
+    const wrap = e.target.closest('.req');
+    if (!wrap) return;
+
+    const review = e.target.closest('button[data-review]');
+    if (review) { wrap.querySelector('[data-step1]').hidden = false; return; }
+
+    if (e.target.closest('button[data-back]')) {
+      wrap.querySelector('[data-step2]').hidden = true;
+      wrap.querySelector('[data-step1]').hidden = false;
+      return;
+    }
+
+    const next = e.target.closest('button[data-next]');
+    if (next) {
+      const subjects = [...wrap.querySelectorAll('input[type=checkbox]:checked')].map(i => i.value);
+      const parish = wrap.querySelector('[data-parish]').value.trim();
+      if (!subjects.length) { say('ቢያንስ አንድ ትምህርት መመደብ ያስፈልጋል።', true); return; }
+      if (!parish) { say('ደብሩን ያረጋግጡ።', true); return; }
+      $('msg').style.display = 'none';
+      wrap.querySelector('[data-summary]').textContent =
+        `${subjects.map(id => subjectById(id)?.am ?? id).join('፣ ')} — ደብር፦ ${parish}`;
+      wrap.querySelector('[data-step1]').hidden = true;
+      wrap.querySelector('[data-step2]').hidden = false;
+      return;
+    }
+
+    const approve = e.target.closest('button[data-approve]');
+    if (approve) {
+      const uid = approve.dataset.approve;
+      const subjects = [...wrap.querySelectorAll('input[type=checkbox]:checked')].map(i => i.value);
+      const parish = wrap.querySelector('[data-parish]').value.trim();
+      approve.disabled = true;
+      try {
+        await Store.approveTeacher(uid, { subjects, parish });
+        say('ጸድቋል። አሁን ተማሪ መመደብ ይችላሉ።', false);
+        await load(); renderAll();
+      } catch (ex) { approve.disabled = false; say(ex.message, true); }
+      return;
+    }
+
+    const reject = e.target.closest('button[data-reject]');
+    if (reject) {
+      const reason = prompt('ምክንያት (አማራጭ) — ለጠያቂው ይታያል፦', '');
+      if (reason === null) return;
+      try {
+        await Store.rejectTeacher(reject.dataset.reject, reason);
+        say('ጥያቄው አልተቀበለም። መዝገቡ ተይዟል።', false);
+        await load(); renderAll();
+      } catch (ex) { say(ex.message, true); }
+    }
+  });
+
+  /* ---------------- approved teachers ---------------- */
+  function renderTeachers() {
+    const counts = {};
+    for (const s of students) {
+      if (s.assignedTeacher) counts[s.assignedTeacher] = (counts[s.assignedTeacher] || 0) + 1;
+    }
+    $('teacherRows').innerHTML = teachers.length ? teachers.map(t => {
+      const off = t.active === false;
+      return `<tr${off ? ' style="opacity:.55"' : ''}>
+        <td><b>${esc(t.fullName || '—')}</b><br><span class="muted small">${esc(t.email || '')}</span></td>
+        <td>${esc(t.parish || '—')}</td>
+        <td class="muted small">${esc((t.teachesSubjects || []).map(id => subjectById(id)?.am ?? id).join('፣ ') || '—')}</td>
+        <td class="num">${counts[t.uid] || 0}</td>
+        <td class="muted">${fmtAgo(t.lastSeen)}</td>
+        <td>${off ? '<span class="pill pill--locked">ታግዷል</span>' : '<span class="pill pill--done">ንቁ</span>'}</td>
+        <td><button class="btn btn--ghost btn--sm" data-active="${esc(t.uid)}" data-to="${off ? '1' : '0'}">
+          ${off ? 'እንደገና ክፈት' : 'አግድ'}</button></td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="7" class="muted">ገና የጸደቀ መምህር የለም።</td></tr>';
+  }
+
+  $('teacherRows').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-active]');
+    if (!btn) return;
+    const to = btn.dataset.to === '1';
+    if (!to && !confirm('ይህን መምህር ያግዱ? መዝገባቸው አይሰረዝም፤ ወዲያውኑ ግን የተማሪ መረጃ ማየት አይችሉም።')) return;
+    btn.disabled = true;
+    try {
+      await Store.setActive(btn.dataset.active, to);
+      say(to ? 'መለያው እንደገና ተከፍቷል።' : 'መለያው ታግዷል። መዝገቡ አልተሰረዘም።', false);
+      await load(); renderAll();
+    } catch (ex) { btn.disabled = false; say(ex.message, true); }
+  });
+
+  /* ---------------- students + assignment ---------------- */
+  function renderStudents() {
+    const week = Date.now() - 86400000 * 7;
+    $('kTotal').textContent = students.length;
+    $('kActive').textContent = students.filter(u => toMillis(u.lastSeen) > week).length;
+    $('kHours').textContent =
+      Math.round(students.reduce((a, u) => a + (u.studySeconds || 0), 0) / 3600) + ' ሰዓት';
+
+    const live = teachers.filter(t => t.active !== false);
+
+    $('studentRows').innerHTML = students.length ? students
+      .slice()
+      .sort((a, b) => toMillis(b.lastSeen) - toMillis(a.lastSeen))
+      .map(u => {
+        const scored = hasScores(u.track);
+        const lessons = lessonsFor(u.track);
+        const done = completedCount(u.progress, lessons, { scored });
+        const pay = accessExpired(u) ? '<span class="pill pill--locked">አልቋል</span>'
+          : !u.verified ? '<span class="pill">አልተረጋገጠም</span>'
+          : !u.paid ? '<span class="pill pill--locked">ክፍያ የለም</span>'
+          : '<span class="pill pill--done">ንቁ</span>';
+
+        const options = ['<option value="">— አልተመደበም —</option>']
+          .concat(live.map(t =>
+            `<option value="${esc(t.uid)}" ${u.assignedTeacher === t.uid ? 'selected' : ''}>${esc(t.fullName || t.email)}</option>`))
+          .join('');
+
+        return `<tr>
+          <td><b>${esc(u.studentName ?? '—')}</b><br><span class="muted small">${esc(u.guardianName ?? '')} · ${esc(u.email ?? '')}</span></td>
+          <td class="num">${esc(u.age ?? '—')}</td>
+          <td>${esc(TRACKS[u.track]?.am ?? '—')}</td>
+          <td>${pay}${u.paidUntil ? `<br><span class="muted small">${esc(u.paidUntil)}</span>` : ''}</td>
+          <td class="num">${fmtHours(u.studySeconds)}</td>
+          <td class="num">${done}/${lessons.length}</td>
+          <td class="num">${scored ? averageScore(u.progress) + '%' : '—'}</td>
+          <td class="muted">${fmtAgo(u.lastSeen)}</td>
+          <td><select class="input" style="padding:6px 8px" data-assign="${esc(u.uid)}">${options}</select></td>
+        </tr>`;
+      }).join('') : '<tr><td colspan="9" class="muted">ገና ተማሪ የለም።</td></tr>';
+  }
+
+  $('studentRows').addEventListener('change', async (e) => {
+    const sel = e.target.closest('select[data-assign]');
+    if (!sel) return;
+    sel.disabled = true;
+    try {
+      await Store.assignStudent(sel.dataset.assign, sel.value || null);
+      const row = students.find(s => s.uid === sel.dataset.assign);
+      if (row) row.assignedTeacher = sel.value || null;
+      say('ተማሪው ተመድቧል።', false);
+      renderTeachers();
+    } catch (ex) { say(ex.message, true); }
+    sel.disabled = false;
+  });
+
+  /* ---------------- zema subject requests ---------------- */
+  function renderRequests() {
+    badge($('cReq'), requests.length);
+    $('reqIntro').textContent =
+      `ወላጅ ከተመዘገበ በኋላ ትምህርት ሲጠይቅ እዚህ ይታያል። በአንዳንዱ $${PRICING.zema.addSubjectUSD}። ` +
+      'ክፍያው ከተፈጸመ በኋላ ብቻ ይክፈቱ — ማጽደቅ ትምህርቱን ወዲያውኑ ይከፍታል።';
+
+    const host = $('reqList');
+    if (!requests.length) {
+      host.innerHTML = '<p class="muted small" style="margin:12px 0 0">ጥያቄ የለም።</p>';
+      return;
+    }
+    host.innerHTML = requests.map(r => {
+      const s = students.find(x => x.uid === r.uid);
+      const want = Array.isArray(r.subjects) ? r.subjects : [];
+      const have = (s && Array.isArray(s.selectedSubjects)) ? s.selectedSubjects : [];
+      const when = toDate(r.requestedAt);
+      return `<div class="req">
+        <div class="between">
+          <b>${esc(s ? s.studentName : r.uid)}</b>
+          <span class="pill">$${priceToAddSubjects(want.length)}</span>
+        </div>
+        <dl>
+          <dt>ወላጅ</dt><dd>${esc(s ? `${s.guardianName ?? ''} · ${s.email ?? ''}` : '—')}</dd>
+          <dt>የጠየቁት</dt><dd>${esc(want.map(id => subjectById(id)?.am ?? id).join('፣ ') || '—')}</dd>
+          <dt>አሁን ያላቸው</dt><dd>${esc(have.map(id => subjectById(id)?.am ?? id).join('፣ ') || '—')}</dd>
+          <dt>የጠየቁበት</dt><dd>${when ? esc(when.toLocaleString()) : '—'}</dd>
+        </dl>
+        <div class="row" style="margin-top:10px">
+          <button class="btn btn--gold btn--sm" data-fulfil="${esc(r.uid)}">ክፍያ ደርሷል — ክፈት</button>
+          <button class="btn btn--ghost btn--sm" data-drop="${esc(r.uid)}">ጥያቄውን አስወግድ</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  $('reqList').addEventListener('click', async (e) => {
+    const fulfil = e.target.closest('button[data-fulfil]');
+    const drop = e.target.closest('button[data-drop]');
+    if (!fulfil && !drop) return;
+    const uid = (fulfil || drop).dataset.fulfil || (fulfil || drop).dataset.drop;
+    const req = requests.find(r => r.uid === uid);
+    const s = students.find(x => x.uid === uid);
+    if (!req) return;
+
+    if (drop) {
+      if (!confirm('ጥያቄውን ያስወግዱ? ትምህርቱ አይከፈትም።')) return;
+      try {
+        // no amount, so no receipt is written — nothing was paid
+        await Store.fulfilSubjectRequest(uid, (s && s.selectedSubjects) || []);
+        say('ጥያቄው ተወግዷል።', false);
+        await load(); renderAll();
+      } catch (ex) { say(ex.message, true); }
+      return;
+    }
+
+    const want = Array.isArray(req.subjects) ? req.subjects : [];
+    const total = priceToAddSubjects(want.length);
+    if (!confirm(`$${total} ተከፍሎ መሆኑን አረጋግጠዋል?\n\nከጫኑ በኋላ ትምህርቶቹ ወዲያውኑ ይከፈታሉ።`)) return;
+    // union, so fulfilling never removes a subject they already had
+    const merged = [...new Set([...((s && s.selectedSubjects) || []), ...want])];
+    try {
+      // the $10 buys curriculum, not more time — this writes a receipt to
+      // /payments and leaves paid/paidUntil alone
+      await Store.fulfilSubjectRequest(uid, merged, {
+        amount: total,
+        guardianName: s && s.guardianName,
+        email: s && s.email
+      });
+      say('ትምህርቶቹ ተከፍተዋል።', false);
+      await load(); renderAll();
+    } catch (ex) { say(ex.message, true); }
+  });
+
+  /* ---------------- rejected ---------------- */
+  function renderRejected() {
+    $('rejectedRows').innerHTML = rejected.length ? rejected.map(t => {
+      const when = toDate(t.approvedAt);
+      return `<tr>
+        <td>${esc(t.fullName || '—')}</td>
+        <td class="muted small">${esc(t.email || '—')}</td>
+        <td>${esc(t.parish || '—')}</td>
+        <td class="muted small">${esc(t.rejectedReason || '—')}</td>
+        <td class="muted">${when ? esc(when.toLocaleDateString()) : '—'}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="5" class="muted">የለም።</td></tr>';
+  }
+
+  function renderAll() {
+    renderPending(); renderTeachers(); renderStudents();
+    renderRequests(); renderRejected();
+  }
+  renderAll();
+
+  $('out').addEventListener('click', async (e) => {
+    e.preventDefault();
+    await Store.signOut();
+    location.href = 'index.html';
+  });
 }
 </script>
 <script src="assets/js/sky.js" defer></script>

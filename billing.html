@@ -29,12 +29,13 @@
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=6",
-    "@lessons":    "./assets/js/lessons.js?v=6",
-    "@validators": "./assets/js/validators.js?v=6",
-    "@coverage":   "./assets/js/coverage.js?v=6",
-    "@stats":      "./assets/js/stats.js?v=6",
-    "@config":     "./assets/js/config.js?v=6"
+    "@store":      "./assets/js/store.js?v=9",
+    "@lessons":    "./assets/js/lessons.js?v=9",
+    "@validators": "./assets/js/validators.js?v=9",
+    "@coverage":   "./assets/js/coverage.js?v=9",
+    "@stats":      "./assets/js/stats.js?v=9",
+    "@config":     "./assets/js/config.js?v=9",
+    "@certificate":"./assets/js/certificate.js?v=9"
   }
 }
 </script>
@@ -108,7 +109,28 @@
 
     <div class="note" id="paidNote" style="display:none;margin-top:16px">
       ✓ ክፍያዎ ተረጋግጧል። ሁሉም ትምህርቶች ተከፍተዋል።
+      <span id="paidUntilNote"></span>
       <a href="dashboard.html" style="display:inline-block;margin-top:8px">ወደ ትምህርቶች →</a>
+    </div>
+
+    <!-- A finished term is not a lockout. Everything the child earned
+         stays on their page whether or not the family continues. -->
+    <div class="note" id="expiredNote" style="display:none;margin-top:16px">
+      <b>የትምህርት ጊዜው ተጠናቋል።</b>
+      <span id="expiredWhen"></span>
+      በራሱ አይታደስም — መቀጠል ከፈለጉ ከትምህርት ቤቱ ጋር ተነጋግረው ክፍያውን ያድሱ፤ መምህራን መለያውን እንደገና ይከፍታሉ።
+      <br>
+      ልጅዎ እስካሁን ያገኘው ውጤት፣ ባጅና የምስክር ወረቀት <b>አልጠፋም</b> — በትምህርቶች ገጽ ላይ ይታያል፤ ማውረድም ይችላሉ።
+      <a href="dashboard.html" style="display:inline-block;margin-top:8px">ወደ ትምህርቶች →</a>
+    </div>
+
+    <!-- What the family has actually been charged. Kept separately from
+         the child's record so it can be retained for the parish's books
+         without retaining the child's — see docs/RETENTION.md §6. -->
+    <div class="panel" id="receiptPanel" style="display:none;margin-top:16px">
+      <p class="eyebrow">የክፍያ መዝገብዎ</p>
+      <p class="muted small" style="margin:0 0 12px" id="receiptIntro"></p>
+      <div id="receiptList"></div>
     </div>
 
     <!-- ---------------- live card preview + form ---------------- -->
@@ -260,9 +282,11 @@
 </footer>
 
 <script type="module">
-import { Store, requireAuth, STRIPE_PAYMENT_LINK } from '@store';
+import { Store, requireAuth, accessActive, accessExpired, STRIPE_PAYMENT_LINK } from '@store';
 import { lessonsFor } from '@lessons';
-import { CHURCH_CONTACT, tierById } from '@config';
+import { CHURCH_CONTACT, PRICING, priceFor } from '@config';
+import { TRACKS } from '@validators';
+import { toDate } from '@stats';
 
 const $ = id => document.getElementById(id);
 const u = await requireAuth();
@@ -270,13 +294,20 @@ const u = await requireAuth();
 if (u) {
   $('authedContent').style.display = 'block';
   Store.touch();
-  /* The price shown is the student's own tier, not a flat rate — quoting
-     a number they were never charged would be worse than quoting none. */
-  const tier = tierById(u.tier);
-  $('planPrice').innerHTML = tier
-    ? `$${tier.priceUSD} <span class="muted" style="font-size:1rem;font-weight:400">/ ወር / ተማሪ</span>`
+  /* The price shown is what THIS student's course and plan actually
+     cost, not a flat rate — quoting a number they were never charged
+     would be worse than quoting none. It comes from priceFor() so the
+     figure here, the figure at registration and the figure a teacher
+     records are one function rather than three sums that drift. */
+  const prepaid = u.plan === 'term';
+  const price = priceFor(u.track, { prepaidTerm: prepaid });
+  const per = u.track === 'bible'
+    ? (prepaid ? `/ ${PRICING.bible.termMonths} ወር / ተማሪ` : '/ ወር / ተማሪ')
+    : '/ ተማሪ';
+  $('planPrice').innerHTML = price != null
+    ? `$${price} <span class="muted" style="font-size:1rem;font-weight:400">${per}</span>`
     : '<span class="muted" style="font-size:1rem">ከትምህርት ቤቱ ጋር ይነጋገሩ</span>';
-  $('planName').textContent = tier ? tier.am : '—';
+  $('planName').textContent = TRACKS[u.track]?.am ?? '—';
   $('studentName').textContent = u.studentName;
   $('lessonCount').textContent = lessonsFor(u.track).length;
   $('email').value = u.email || '';
@@ -287,12 +318,52 @@ if (u) {
   $('contactEmail').href = 'mailto:' + CHURCH_CONTACT.email;
   $('contactPhone').textContent = CHURCH_CONTACT.phone;
 
-  // an already-paid parent does not need to be sold to again
-  if (u.paid) {
+  /* Three states, not two. A parent whose term is still running does not
+     need to be sold to again; one whose term has FINISHED needs to be
+     told that plainly, and told that nothing their child earned was
+     taken away — which is why the expired note leads with the
+     certificates rather than with the price. */
+  if (accessActive(u)) {
     $('form').style.display = 'none';
     $('paidNote').style.display = 'block';
+    if (u.paidUntil) $('paidUntilNote').textContent = `እስከ ${u.paidUntil} ድረስ።`;
+  } else if (accessExpired(u)) {
+    $('form').style.display = 'none';
+    $('expiredNote').style.display = 'block';
+    if (u.paidUntil) $('expiredWhen').textContent = `(${u.paidUntil} ላይ አብቅቷል።)`;
   }
   if (u.guardianName) $('ccName').value = u.guardianName;
+
+  /* The parent's own receipts. privacy.html says they can see what they
+     were charged; this is where they see it. */
+  const [paySummary, payEntries] = await Promise.all([
+    Store.paymentOf(u.uid),
+    Store.paymentHistory(u.uid)
+  ]);
+  if (payEntries.length) {
+    $('receiptPanel').style.display = 'block';
+    $('receiptIntro').textContent = paySummary && typeof paySummary.totalPaid === 'number'
+      ? `እስካሁን በጠቅላላ $${paySummary.totalPaid} ተመዝግቧል። ይህ መዝገብ ለሒሳብ አያያዝ ሲባል ይቀመጣል።`
+      : 'የተመዘገቡ ክፍያዎችዎ።';
+    const host = $('receiptList');
+    for (const e of payEntries) {
+      const when = toDate(e.at);
+      const row = document.createElement('div');
+      row.className = 'between';
+      row.style.cssText = 'padding:10px 0;border-top:1px solid var(--line);gap:10px;flex-wrap:wrap';
+      const amt = document.createElement('b');
+      amt.textContent = `$${e.amount}`;
+      const meta = document.createElement('span');
+      meta.className = 'muted small';
+      meta.textContent = [
+        e.kind === 'subject-addon' ? 'ተጨማሪ ትምህርት' : 'የትምህርት ጊዜ',
+        when ? when.toLocaleDateString() : '',
+        e.periodUntil ? `እስከ ${e.periodUntil}` : ''
+      ].filter(Boolean).join(' · ');
+      row.append(amt, meta);
+      host.appendChild(row);
+    }
+  }
 
   if (!STRIPE_PAYMENT_LINK) {
     $('cfg').style.display = 'block';

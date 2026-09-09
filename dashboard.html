@@ -29,12 +29,13 @@
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=6",
-    "@lessons":    "./assets/js/lessons.js?v=6",
-    "@validators": "./assets/js/validators.js?v=6",
-    "@coverage":   "./assets/js/coverage.js?v=6",
-    "@stats":      "./assets/js/stats.js?v=6",
-    "@config":     "./assets/js/config.js?v=6"
+    "@store":      "./assets/js/store.js?v=9",
+    "@lessons":    "./assets/js/lessons.js?v=9",
+    "@validators": "./assets/js/validators.js?v=9",
+    "@coverage":   "./assets/js/coverage.js?v=9",
+    "@stats":      "./assets/js/stats.js?v=9",
+    "@config":     "./assets/js/config.js?v=9",
+    "@certificate":"./assets/js/certificate.js?v=9"
   }
 }
 </script>
@@ -70,6 +71,24 @@
     <div id="payNote" class="note note--red" style="display:none;margin-bottom:22px">
       ክፍያ አልተፈጸመም። ከመጀመሪያው ነጻ ትምህርት በስተቀር ሌሎቹ ተቆልፈዋል።
       <a href="billing.html" style="display:inline-block;margin-top:8px">ክፍያ ፈጽም →</a>
+    </div>
+
+    <!-- A finished term closes NEW lessons. It does not close the account,
+         and it does not take away anything the child earned. A family that
+         cannot afford the next term keeps its certificates. -->
+    <div id="expiryPanel" class="note" style="display:none;margin-bottom:22px">
+      <b>የትምህርት ጊዜው ተጠናቋል።</b> <span id="expiredWhen"></span>
+      ኮርሱ በራሱ አይታደስም፤ መቀጠል ከፈለጉ እንደገና ይመርጣሉ።
+      <br><br>
+      ልጅዎ እስካሁን የሠራው ሁሉ <b>እንዳለ ነው</b> — ውጤቱ፣ ባጆቹና የምስክር ወረቀቶቹ
+      ከዚህ በታች ይታያሉ፤ ማውረድም ይችላሉ። ያገኙትን ነገር አያጡም።
+      <a href="billing.html" style="display:inline-block;margin-top:8px">ትምህርቱን ማደስ →</a>
+    </div>
+
+    <!-- A teacher's judgement about a child, shown to the child's family. -->
+    <div id="remedialPanel" class="note" style="display:none;margin-bottom:22px">
+      <b>ተጨማሪ ድጋፍ።</b> መምህሩ ልጅዎ ተጨማሪ እገዛ እንዲያገኝ መዝግቧል።
+      ይህ ተጨማሪ ክፍያ አያስከትልም። <span class="muted small" id="remedialWho"></span>
     </div>
 
     <!-- stat strip -->
@@ -114,6 +133,40 @@
     </div>
     <div id="list"></div>
 
+    <!-- ---------------- what the child earned ----------------
+         Deliberately NOT gated on paid or paidUntil. A term that has
+         finished closes new lessons; it never takes back a certificate
+         that was earned. -->
+    <div class="panel" id="earnedPanel" style="display:none;margin-top:26px">
+      <p class="eyebrow">ያገኙት</p>
+      <p class="muted small" style="margin:0 0 14px" id="earnedIntro"></p>
+      <div id="earnedList"></div>
+    </div>
+
+    <!-- ---------------- Zema: subjects available to add ----------------
+         The selection was fixed when the course started. Adding one now
+         costs $10, which is exactly why registration ticks all five by
+         default and warns before any of them is unticked. -->
+    <div class="panel" id="addSubjectPanel" style="display:none;margin-top:26px">
+      <p class="eyebrow">ሌሎች የዜማ ትምህርቶች</p>
+      <p class="muted small" style="margin:0 0 14px" id="addSubjectIntro"></p>
+      <div id="addSubjectList" class="tiers"></div>
+      <p id="addSubjectMsg" class="note small" style="display:none;margin:14px 0 0"></p>
+      <div class="row" style="margin-top:14px">
+        <button class="btn btn--gold btn--sm" type="button" id="addSubjectBtn">ትምህርት መጨመር ጠይቅ</button>
+        <span class="muted small" id="addSubjectTotal"></span>
+      </div>
+    </div>
+
+    <!-- ---------------- what the teacher has written ----------------
+         Every note a teacher leaves about this child is readable here by
+         the family. Nothing is recorded about a child that the parent
+         cannot see — that is enforced in firestore.rules, not just here. -->
+    <div class="panel" id="commentsPanel" style="display:none;margin-top:26px">
+      <p class="eyebrow">ከመምህሩ የተጻፈ</p>
+      <div id="commentList"></div>
+    </div>
+
     <!-- ---------------- data controls ---------------- -->
     <div class="panel" style="margin-top:26px">
       <p class="eyebrow">የመረጃ መብትዎ</p>
@@ -129,17 +182,19 @@
 </main>
 
 <script type="module">
-import { Store, fmtHours, fmtAgo, requireAuth } from '@store';
+import { Store, fmtHours, fmtAgo, requireAuth, accessActive, accessExpired } from '@store';
 import { subjectsFor, lessonsForSubject, lessonsFor, isFree } from '@lessons';
 import { TRACKS, hasScores } from '@validators';
-import { tierById, subjectIdsOfTier } from '@config';
+import { PRICING, priceToAddSubjects } from '@config';
+import { certificateSVG, certificateFilename } from '@certificate';
 import { streakFrom, averageScore, completedCount, subjectProgress,
          coverageOfLesson, toDate, toGeez } from '@stats';
 
 const $ = id => document.getElementById(id);
 
 // The dashboard itself is not behind the paywall — an unpaid parent must
-// be able to see what they have and what is locked.
+// be able to see what they have and what is locked, and a parent whose
+// term has ENDED must still reach everything their child earned.
 const u = await requireAuth();
 
 if (u) {
@@ -149,25 +204,51 @@ if (u) {
   const track = TRACKS[u.track];
   const progress = u.progress || {};
 
-  /* A tier decides which subjects appear, and therefore which lessons are
-     counted. An account created before tiers existed has none, so it falls
-     back to the whole track rather than showing an empty course. */
-  const tier = tierById(u.tier);
-  const allowed = subjectIdsOfTier(u.tier);
+  /* What the parent actually enrolled in decides which subjects appear,
+     and therefore which lessons are counted. An account created before
+     selectedSubjects existed has none, so it falls back to the whole
+     track rather than showing an empty course.
+
+     The parent cannot write this field — the rules refuse it. Adding a
+     Zema subject goes through a request a teacher fulfils, below. */
+  const allowed = Array.isArray(u.selectedSubjects) ? u.selectedSubjects : [];
   const subjects = subjectsFor(u.track)
     .filter(s => allowed.length === 0 || allowed.includes(s.id));
 
-  // counted against what the tier actually opens, not the whole catalogue
+  // counted against what was enrolled in, not the whole catalogue
   const lessons = subjects.flatMap(s => lessonsForSubject(s.id));
+
+  /* Access has an end date and is NOT a lockout. `active` decides only
+     whether NEW lessons open; everything already earned stays visible
+     and downloadable below, whatever the state of the account. */
+  const active = accessActive(u);
+  const expired = accessExpired(u);
 
   $('hello').textContent = `እንኳን ደህና መጡ፣ ${u.studentName}`;
   $('whoami').textContent = `${u.age} ዓመት · ${track ? track.am : '—'}`;
   $('seen').textContent = fmtAgo(u.lastSeen);
   $('hours').textContent = fmtHours(u.studySeconds);
-  $('trackName').textContent = tier ? tier.am : (track ? track.am : '—');
+  $('trackName').textContent = track ? track.am : '—';
   $('trackNote').textContent = track ? track.eligibilityAm : '';
   if (u.role === 'admin') $('adminLink').style.display = '';
+
+  /* Never paid at all, versus a term that has finished. They are
+     different messages and conflating them tells a family who paid for
+     three months that they never paid. */
   if (!u.paid) $('payNote').style.display = 'block';
+  else if (expired) $('expiryPanel').style.display = 'block';
+  if (expired && u.paidUntil) $('expiredWhen').textContent = `(${u.paidUntil} ላይ አብቅቷል።)`;
+
+  /* Remedial support, shown to the parent. A teacher's judgement that a
+     child needs extra help is recorded on the child's record, so the
+     family reads it here rather than finding out by accident. */
+  if (u.remedial === true) {
+    const since = toDate(u.remedialSince);
+    $('remedialPanel').style.display = 'block';
+    $('remedialWho').textContent = u.remedialBy
+      ? `በ${u.remedialBy}${since ? ' · ' + since.toLocaleDateString() : ''}`
+      : (since ? since.toLocaleDateString() : '');
+  }
 
   /* Everything score-shaped is gated on the track's capability rather than
      on its id, so a future course gets the right behaviour by declaring it
@@ -200,7 +281,10 @@ if (u) {
      the subscription opens. The lock is a UI gate — see docs/PAYMENTS.md. */
   const renderLesson = (l) => {
     const p = progress[l.id];
-    const locked = !u.paid && !isFree(l.id);
+    /* Locked on ACCESS, not on `paid`. An account whose term has ended
+       has paid == true, and the old check left its lessons looking open
+       on this page while lesson.html bounced them to billing. */
+    const locked = !active && !isFree(l.id);
     const cov = coverageOfLesson(progress, l.id);
     const when = toDate(p?.at) || toDate(p?.completedAt);
     const complete = scored ? p?.done === true : p?.videoCompleted === true;
@@ -248,6 +332,153 @@ if (u) {
       ${body}
     </section>`;
   }).join('') || '<p class="muted">በዚህ ክፍል ገና ትምህርት አልተጨመረም።</p>';
+
+  /* ---------------- badges and certificates ----------------
+
+     A certificate per COMPLETED subject, built in the browser and saved
+     as an SVG. Nothing here consults `active` or `paidUntil`: a family
+     whose term has ended keeps every certificate their child earned, and
+     can still download it. That is the whole point of the panel. */
+  const earned = subjects
+    .map(s => ({ subject: s, sp: subjectProgress(progress, lessonsForSubject(s.id), opts) }))
+    .filter(e => e.sp.complete);
+
+  if (earned.length) {
+    $('earnedPanel').style.display = 'block';
+    $('earnedIntro').textContent = expired
+      ? 'የትምህርት ጊዜው ቢጠናቀቅም ልጅዎ ያገኘው ይህ ነው። ማውረድና ማተም ይችላሉ።'
+      : 'ልጅዎ ያጠናቀቃቸው ትምህርቶች። የምስክር ወረቀቱን ማውረድና ማተም ይችላሉ።';
+
+    const host = $('earnedList');
+    for (const { subject, sp } of earned) {
+      const row = document.createElement('div');
+      row.className = 'between';
+      row.style.cssText = 'padding:12px 0;border-top:1px solid var(--line);gap:12px;flex-wrap:wrap';
+
+      const left = document.createElement('div');
+      const title = document.createElement('b');
+      title.textContent = subject.am;
+      const sub = document.createElement('span');
+      sub.className = 'muted small';
+      sub.style.display = 'block';
+      sub.textContent = (subject.badge ? `«${subject.badge}» · ` : '') + `${sp.done}/${sp.total} ትምህርት`;
+      left.append(title, sub);
+
+      const btn = document.createElement('button');
+      btn.className = 'btn btn--gold btn--sm';
+      btn.type = 'button';
+      btn.textContent = 'የምስክር ወረቀት አውርድ';
+      btn.addEventListener('click', () => {
+        const svg = certificateSVG({
+          studentName: u.studentName,
+          subject,
+          lessonCount: sp.total,
+          date: new Date()
+        });
+        const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = certificateFilename(u.studentName, subject.id);
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      });
+
+      row.append(left, btn);
+      host.appendChild(row);
+    }
+  }
+
+  /* ---------------- Zema subjects available to add ----------------
+
+     The parent picks; the parent does NOT get selectedSubjects. This
+     writes a request that a teacher fulfils once the $10 per subject is
+     actually paid — the rules refuse a student's write to
+     selectedSubjects outright, which is the same class of hole as
+     writing your own plan or your own paidUntil. */
+  if (u.track === 'zema' && allowed.length) {
+    const missing = subjectsFor('zema').filter(s => !allowed.includes(s.id));
+    if (missing.length) {
+      $('addSubjectPanel').style.display = 'block';
+      $('addSubjectIntro').textContent =
+        `እነዚህን ትምህርቶች በምዝገባ ጊዜ አልመረጡም። አሁን መጨመር ይችላሉ — በአንዳንዱ $${PRICING.zema.addSubjectUSD}። ` +
+        `ጥያቄው ለመምህራን ይደርሳል፤ ክፍያው ከተፈጸመ በኋላ ትምህርቱ ይከፈታል።`;
+      $('addSubjectList').innerHTML = missing.map(s => `
+        <label class="tier">
+          <input type="checkbox" name="addSubject" value="${s.id}">
+          <span class="tier__body">
+            <span class="tier__head">
+              <b>${s.am}</b>
+              <span class="tier__price">$${PRICING.zema.addSubjectUSD}</span>
+            </span>
+          </span>
+        </label>`).join('');
+
+      const picked = () =>
+        [...document.querySelectorAll('input[name="addSubject"]:checked')].map(i => i.value);
+      const paintTotal = () => {
+        const n = picked().length;
+        $('addSubjectTotal').textContent = n
+          ? `${n} ትምህርት · በጠቅላላ $${priceToAddSubjects(n)}`
+          : '';
+      };
+      $('addSubjectList').addEventListener('change', paintTotal);
+
+      const addMsg = $('addSubjectMsg');
+      const sayAdd = (text, bad) => {
+        addMsg.textContent = text;
+        addMsg.className = bad ? 'note note--red small' : 'note small';
+        addMsg.style.display = 'block';
+      };
+
+      const pendingReq = await Store.mySubjectRequest();
+      if (pendingReq && pendingReq.status === 'pending') {
+        $('addSubjectBtn').disabled = true;
+        sayAdd('ጥያቄዎ ደርሶናል። መምህራን ካዩት በኋላ ትምህርቱ ይከፈታል።', false);
+      }
+
+      $('addSubjectBtn').addEventListener('click', async () => {
+        const want = picked();
+        if (!want.length) { sayAdd('ቢያንስ አንድ ትምህርት ይምረጡ።', true); return; }
+        $('addSubjectBtn').disabled = true;
+        try {
+          await Store.requestSubjects(want);
+          sayAdd(`ጥያቄዎ ተልኳል — ${want.length} ትምህርት · $${priceToAddSubjects(want.length)}። ` +
+                 'ክፍያውን ከትምህርት ቤቱ ጋር አስተካክለው መምህራን ይከፍቱልዎታል።', false);
+        } catch (ex) {
+          $('addSubjectBtn').disabled = false;
+          sayAdd(ex.message, true);
+        }
+      });
+    }
+  }
+
+  /* ---------------- the teacher's notes, for the family ---------------- */
+  const comments = await Store.commentsFor(u.uid);
+  if (comments.length) {
+    $('commentsPanel').style.display = 'block';
+    const list = $('commentList');
+    /* Built as nodes with textContent rather than interpolated into an
+       innerHTML string. Both the note and the teacher's name are text a
+       person typed, and a note is the one thing on this page written by
+       someone who is neither the parent nor us. */
+    for (const c of comments) {
+      const when = toDate(c.at);
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'padding:12px 0;border-top:1px solid var(--line)';
+
+      const who = document.createElement('p');
+      who.className = 'muted small';
+      who.style.margin = '0 0 6px';
+      who.textContent = (c.byName || 'መምህር') + (when ? ' · ' + when.toLocaleDateString() : '');
+
+      const body = document.createElement('p');
+      body.style.cssText = 'margin:0;white-space:pre-wrap';
+      body.textContent = c.text || '';
+
+      wrap.append(who, body);
+      list.appendChild(wrap);
+    }
+  }
 
   /* Deletion is requested, never performed here — see Store.requestDeletion. */
   const delBtn = $('requestDeletion'), delMsg = $('delMsg');
