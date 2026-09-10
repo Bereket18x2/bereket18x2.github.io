@@ -46,7 +46,7 @@
 <div class="harag"></div>
 <div class="shell">
   <nav class="nav">
-    <a class="brand" href="index.html">
+    <a class="brand" href="index.html#home">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
         <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
       </svg>
@@ -145,12 +145,17 @@
 
 <script type="module">
 import { Store, requireAuth } from '@store';
-import { findLesson, isFree, trackOfLesson, subjectById } from '@lessons';
+import { findLesson, isFree, trackOfLesson, subjectById, FREE_PREVIEW_ID } from '@lessons';
 import { hasQuizzes } from '@validators';
 import { markBucket, coverageOf, isComplete, shortfallMessage, isSuspicious } from '@coverage';
 
 const $ = id => document.getElementById(id);
-const id = new URLSearchParams(location.search).get('id') || 'l1';
+/* Falls back to whatever the free preview currently is, rather than to a
+   hardcoded lesson id — the curriculum is data and any fixed id here
+   becomes a dangling reference the first time it is rewritten. When
+   there are no lessons at all this is null, findLesson misses, and the
+   visitor is sent back to the dashboard. */
+const id = new URLSearchParams(location.search).get('id') || FREE_PREVIEW_ID;
 
 /* The free preview is playable without paying so a parent can see what
    they are buying; everything else sends an unpaid account to billing. */
@@ -465,5 +470,6 @@ if (u && !L) {
 </script>
 <script src="assets/js/sky.js" defer></script>
 <script src="assets/js/theme.js" defer></script>
+<script src="assets/js/nav.js" defer></script>
 </body>
 </html>

@@ -46,7 +46,7 @@
 <div class="harag"></div>
 <div class="shell">
   <nav class="nav">
-    <a class="brand" href="index.html">
+    <a class="brand" href="index.html#home">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
         <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
       </svg>
@@ -145,7 +145,7 @@
 
     <!-- ---------------- Zema: subjects available to add ----------------
          The selection was fixed when the course started. Adding one now
-         costs $10, which is exactly why registration ticks all five by
+         costs $10, which is exactly why registration ticks every subject by
          default and warns before any of them is unticked. -->
     <div class="panel" id="addSubjectPanel" style="display:none;margin-top:26px">
       <p class="eyebrow">ሌሎች የዜማ ትምህርቶች</p>
@@ -316,11 +316,13 @@ if (u) {
     const subjectLessons = lessonsForSubject(s.id);
     const sp = subjectProgress(progress, subjectLessons, opts);
 
-    // A subject with no lessons yet says so, rather than rendering an
-    // empty box that looks like a fault.
+    /* A subject with no lessons yet SAYS SO, rather than rendering an
+       empty box that reads as a fault. The whole curriculum is in this
+       state until the sub-topics are written, so this is the normal
+       view a parent sees today — not an edge case. */
     const body = subjectLessons.length
       ? subjectLessons.map(renderLesson).join('')
-      : '<p class="muted small" style="margin:0">በዚህ ትምህርት ገና ትምህርቶች አልተጨመሩም።</p>';
+      : '<p class="muted small" style="margin:0">ትምህርቶቹ በቅርቡ ይጀምራሉ።</p>';
 
     return `<section style="margin-bottom:26px">
       <div class="between" style="margin-bottom:10px">
@@ -331,7 +333,12 @@ if (u) {
       </div>
       ${body}
     </section>`;
-  }).join('') || '<p class="muted">በዚህ ክፍል ገና ትምህርት አልተጨመረም።</p>';
+  /* No SUBJECTS at all — different from a subject with no lessons, and
+     it means this account's selectedSubjects no longer match anything in
+     the curriculum. The Bible subject ids were kept stable across the
+     curriculum rewrite precisely so this stays unreachable, but if it
+     ever fires, the family needs a person rather than a message. */
+  }).join('') || `<p class="muted">የተመዘገቡበት ትምህርት አልተገኘም። እባክዎ ትምህርት ቤቱን ያግኙ።</p>`;
 
   /* ---------------- badges and certificates ----------------
 
@@ -515,5 +522,6 @@ if (u) {
 </script>
 <script src="assets/js/sky.js" defer></script>
 <script src="assets/js/theme.js" defer></script>
+<script src="assets/js/nav.js" defer></script>
 </body>
 </html>

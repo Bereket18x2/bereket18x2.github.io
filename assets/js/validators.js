@@ -17,12 +17,11 @@
    bible: 7–13 inclusive — the material is written for children.
    zema:  7 and up, no ceiling — adults learn chant too. */
 /* `enrollable` gates whether a course is OFFERED, not whether it exists.
-   The Zema lessons are placeholders a teacher has not yet replaced, and
-   enrolling a child into an empty course would be selling something that
-   isn't there. The track stays in the data model — existing zema accounts
-   keep working, the homepage keeps describing the course — it simply is
-   not on the registration form until it has real content. Flip it back to
-   true once the lessons are recorded. */
+   A course can be closed to new enrolment while remaining perfectly valid
+   for the families already in it: the track stays in the data model,
+   existing accounts keep working, and the homepage keeps describing it.
+   Only the registration form and the terms price table change.
+   Both tracks are currently open — see the note on zema below. */
 /* Capabilities, not assumptions. Zema is listen-and-learn: it has no
    quizzes, no scores, no pass mark and no exams, and a page must ask
    the track rather than assuming every course works like the Bible one.
@@ -47,20 +46,22 @@ export const TRACKS = {
     id: 'zema',
     am: 'የዜማ ትምህርት ቤት',
     en: 'Zema school',
-    /* CLOSED, deliberately, and not because the pricing is unfinished.
+    /* OPEN, since 2026-09-10. The recordings exist.
 
-       The §2 pricing sells Zema at a flat $30 with the subjects chosen at
-       registration, and all of that is built and tested — the form, the
-       flat price, the all-five default, the $10 add-on. What is NOT ready
-       is the course: every Zema lesson in lessons.js is still a
-       placeholder. Taking $30 for unrecorded lessons is not shippable,
-       and an acceptance case is not a reason to.
+       History, kept rather than deleted because the reasoning is what
+       makes the flag worth having: Zema was deliberately CLOSED while its
+       pricing was already built and tested — the flat $30, the all-ticked
+       default, the $10 add-on all worked — because the lessons themselves
+       were still placeholders, and taking $30 for unrecorded lessons is
+       not shippable. An acceptance case was not a reason to open it.
 
-       Flip this to true when the recordings exist. Nothing else needs
-       changing — the form, the price, the dashboard and the tests all
-       read this flag, and tests/pricing.test.mjs has the skipped
-       assertions that turn back on with it. */
-    enrollable: false,
+       The whole course now reads this one flag: the registration form,
+       the terms price table, the dashboard and the tests. Flipping it
+       back to false closes enrolment again in one edit, and the skipped
+       assertions in tests/pricing.test.mjs turn themselves off with it.
+       That round trip is tested in both directions in
+       tests/validators.test.mjs, so it stays a real switch. */
+    enrollable: true,
     hasQuizzes: false,
     hasExams: false,
     hasScores: false,

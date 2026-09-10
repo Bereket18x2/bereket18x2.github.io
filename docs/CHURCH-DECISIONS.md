@@ -22,7 +22,7 @@ longer.
 | 2 | Who owns the Firebase project | Parish council | Children's records sit in one person's private Google account |
 | 3 | How long payment receipts are kept | Treasurer + accountant | We keep them forever by default, and the cheap option expires |
 | 4 | Whether the consent method is lawful | A lawyer, paid for by the parish | We should not enrol paying families |
-| 5 | Whose names sign a certificate | Priest + parish council | Certificates cannot be issued |
+| 5 | Whose names, and which titles, go on a certificate | A መምህር + priest + parish council | Certificates cannot be issued |
 
 ---
 
@@ -235,19 +235,20 @@ One of three things:
 
 ---
 
-## 5. Whose names sign a certificate
+## 5. Whose names, and which titles, go on a certificate
 
 ### The decision
 
 When a child finishes a subject, they receive a certificate they can download
 and print. It carries the school's name, the child's name, the subject, the
-badge earned and the date.
+**title the child has earned**, and the date.
 
-It also has two signature lines and the parish's name — and all three are
-currently blank placeholders reading `TEACHER_NAME`, `PRIEST_NAME` and
+Two separate things on that document need a church's authority behind them, and
+neither has it yet.
+
+**a) The signature lines.** There are two, plus the parish's name, and all three
+are currently blank placeholders reading `TEACHER_NAME`, `PRIEST_NAME` and
 `PARISH_NAME`.
-
-The parish needs to decide:
 
 - **Which teacher signs** — the teacher who taught that subject, or one person
   for the whole school?
@@ -257,6 +258,36 @@ The parish needs to decide:
 - **Is a diocesan blessing sought?** A certificate carrying a diocese's
   recognition means something quite different from one that does not — and it is
   not something a school may simply claim.
+
+**b) The earned titles.** Each subject awards a title, printed on the
+certificate as the thing the child is now called. There are twelve, one per
+subject, and **a መምህር should name them — not a developer.** They are the
+language of a tradition, and they are what a family will read aloud.
+
+| Subject | Title as it currently reads |
+|---|---|
+| አምስቱ አዕማደ ምስጢራት | የምስጢራት ዐዋቂ |
+| ሥርዓተ ቤተ ክርስቲያን | የሥርዓት ጠባቂ |
+| የመጽሐፍ ቅዱስ ታሪክ | የታሪክ ዐዋቂ |
+| የቤተ ክርስቲያን ታሪክ | የአበው ታሪክ ዐዋቂ |
+| ክርስቲያናዊ ሥነ ምግባር | የመልካም ምግባር ባለቤት |
+| ውዳሴ ማርያም | የውዳሴ ማርያም ዘማሪ |
+| መዝሙረ ዳዊት | የመዝሙር ባለቤት |
+| አቋቋም | የአቋቋም ሰልጣኝ |
+| ጾመ ድጓ | የጾመ ድጓ ዘማሪ |
+| ምዕራፍ | የምዕራፍ ዐዋቂ |
+| ቅዳሴ | የቅዳሴ ዘማሪ |
+| ዝማሬ መዋሥዕት | የዝማሬ መዋሥዕት ዘማሪ |
+
+To be plain about where these came from: **the last four were written by a
+developer**, following the pattern of the ones above them, when the Zema
+curriculum was expanded to seven subjects. The other eight were written earlier
+in the project and have never been reviewed by anyone in the church either. So
+the honest position is that **none of the twelve carries a መምህር's approval**,
+and the four newest are simply the ones nobody has ever pretended did.
+
+They can be kept, changed, or replaced wholesale. The point is that somebody
+qualified should look at the list before a child is handed one.
 
 ### Why it cannot be decided in code
 
@@ -270,22 +301,36 @@ The placeholders are deliberately left as obvious English capitals rather than
 plausible Amharic names, so that a certificate escaping in this state is
 instantly recognisable as unfinished rather than quietly wrong.
 
+The titles are the same kind of question wearing a friendlier face. They are
+easier to overlook precisely because they *already read plausibly* — nothing
+about `የቅዳሴ ዘማሪ` announces that a developer chose it, which is exactly why it
+needs a መምህር's eye rather than a shrug. Naming what a child has become in a
+tradition is not a formatting decision.
+
 ### If it is deferred
 
 Certificates cannot be issued. A child who finishes a subject can still download
 one, but it will read `TEACHER_NAME`, which is obviously not something to hand a
 family.
 
+The titles carry a quieter risk: unlike the signature lines, they would not stop
+anybody. A certificate reading `TEACHER_NAME` gets caught; one awarding a title
+no መምህር chose would simply be printed, framed, and read aloud. If only one half
+of this item is answered, answer the titles.
+
 This is the least urgent item on the page, because no child has finished a
 subject yet. It becomes urgent the moment one does.
 
 ### What changes once it is answered
 
-Three names are filled in and certificates are ready. If a blessing is granted,
-the certificate also carries it. Until then it states plainly what it is — a
-record that a child took part and completed the subject — and explicitly says it
-is **not** a diocesan accreditation, which matches what the terms of service
-already tell parents.
+Three names are filled in, the twelve titles are confirmed or replaced, and
+certificates are ready. Both are data edits in one file each — no rebuild, no
+migration, and nothing already issued to correct, since none has been.
+
+If a blessing is granted, the certificate also carries it. Until then it states
+plainly what it is — a record that a child took part and completed the subject —
+and explicitly says it is **not** a diocesan accreditation, which matches what
+the terms of service already tell parents.
 
 ---
 

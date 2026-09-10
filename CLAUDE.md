@@ -9,9 +9,16 @@ children in the US diaspora. Two tracks:
 
 1. **Bible study** — preachers upload 10–20 minute video lessons; students watch,
    answer questions, and the hosts see who is actually learning.
-2. **Zema (ዜማ)** — the chant school, beginning at ወንጌለ ዮሐንስ and running through
-   ድጓ / ጾመ ድጓ / ምዕራፍ / ዝማሬ / መዋሥዕት / ቅዳሴ, with St. Yared's three modes
-   (ግዕዝ, ዕዝል, አራራይ) and አቋቋም.
+2. **Zema (ዜማ)** — the chant school. Seven subjects: ውዳሴ ማርያም / መዝሙረ ዳዊት /
+   አቋቋም / ጾመ ድጓ / ምዕራፍ / ቅዳሴ / ዝማሬ መዋሥዕት, sung in St. Yared's three modes
+   (ግዕዝ, ዕዝል, አራራይ).
+
+**The curriculum lives in `assets/js/lessons.js` and nowhere else.** `SUBJECTS` is
+the source of truth for both tracks; `LESSONS` is currently empty while the
+sub-topics are written, which is a supported state every page handles. Adding a
+lesson is a data edit in that file alone — no page, test, or rules change. Do not
+restate the subject list in prose anywhere without a test that checks it: the
+homepage advertised ወንጌለ ዮሐንስ for a while after it stopped being a subject.
 
 Live: `https://bereket18x2.github.io/`
 Repo: `Bereket18x2/bereket18x2.github.io` (named for the root URL — see Naming)

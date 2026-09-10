@@ -35,7 +35,7 @@ export const firebaseConfig = {
    parent chooses again, deliberately.
 
    ZEMA is a flat price whatever subjects are chosen — which is exactly
-   why registration ticks all five by default. A parent who unticks gains
+   why registration ticks every subject by default. A parent who unticks gains
    nothing today and pays to undo it later, so unticking has to be a
    deliberate act rather than an oversight.
 

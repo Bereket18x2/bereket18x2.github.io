@@ -47,6 +47,24 @@ let authUser = null;
 let authKnown = false;
 let readyPromise = null;
 
+/* A UI-only hint, so assets/js/nav.js can show a sign-out link on pages
+   that must not load the Firebase SDK at all — privacy.html and
+   terms.html are read by people who have not registered, and are linked
+   from the consent gate.
+
+   It is NOT a credential and must never gate anything. Forging it buys a
+   visitor a sign-out link for a session they do not have. Access is
+   decided by requireAuth() and firestore.rules, both of which ignore it.
+   Written here because this callback is the single place in the codebase
+   that learns whether someone is signed in. */
+const SESSION_HINT = 'eotc.signedin';
+const setSessionHint = (signedIn) => {
+  try {
+    if (signedIn) localStorage.setItem(SESSION_HINT, '1');
+    else localStorage.removeItem(SESSION_HINT);
+  } catch (e) { /* private mode; the link simply will not appear */ }
+};
+
 export const ready = () => {
   if (authKnown) return Promise.resolve(authUser);
   if (!readyPromise) {
@@ -54,6 +72,7 @@ export const ready = () => {
       onAuthStateChanged(auth, (u) => {
         authUser = u;
         authKnown = true;
+        setSessionHint(!!u);
         resolve(u);
       });
     });
@@ -253,6 +272,9 @@ export const Store = {
   async signOut() {
     try { await fbSignOut(auth); } catch (e) { fail(e); }
     authUser = null;
+    // cleared here as well as in the auth callback, so the sign-out link
+    // disappears immediately rather than on the next page load
+    setSessionHint(false);
   },
 
   /* The profile doc, its progress subcollection, and emailVerified off

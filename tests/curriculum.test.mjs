@@ -12,6 +12,7 @@ import {
 } from '../assets/js/lessons.js';
 import { TRACKS, hasScores, hasQuizzes, hasExams } from '../assets/js/validators.js';
 import { isLessonComplete, completedCount, subjectProgress } from '../assets/js/stats.js';
+import { readFileSync } from 'node:fs';
 
 let pass = 0, fail = 0;
 const check = (label, actual, expected) => {
@@ -20,9 +21,25 @@ const check = (label, actual, expected) => {
   else { fail++; console.log(`  FAIL  ${label} — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`); }
 };
 
-console.log('\nstructure');
-check('five Bible subjects', subjectsFor('bible').length, 5);
-check('five Zema subjects', subjectsFor('zema').length, 5);
+console.log('\nstructure — the curriculum itself');
+/* Acceptance 1 and 2: these are the exact subjects, in this order, and
+   nothing else. Asserted by NAME rather than by count, because a count
+   passes just as happily when the wrong subject is in the list. */
+check('the five Bible subjects, in order',
+  subjectsFor('bible').map(s => s.am),
+  ['አምስቱ አዕማደ ምስጢራት', 'ሥርዓተ ቤተ ክርስቲያን', 'የመጽሐፍ ቅዱስ ታሪክ',
+   'የቤተ ክርስቲያን ታሪክ', 'ክርስቲያናዊ ሥነ ምግባር']);
+check('the seven Zema subjects, in order',
+  subjectsFor('zema').map(s => s.am),
+  ['ውዳሴ ማርያም', 'መዝሙረ ዳዊት', 'አቋቋም', 'ጾመ ድጓ', 'ምዕራፍ', 'ቅዳሴ', 'ዝማሬ መዋሥዕት']);
+check('twelve subjects and no others', SUBJECTS.length, 12);
+// ወንጌለ ዮሐንስ was removed from the Zema track; it must not survive anywhere
+check('ወንጌለ ዮሐንስ appears nowhere',
+  SUBJECTS.some(s => s.am.includes('ወንጌለ ዮሐንስ') || s.id === 'wengele'), false);
+check('each track numbers itself from ፩',
+  [subjectsFor('bible')[0].num, subjectsFor('zema')[0].num], ['፩', '፩']);
+check('the numerals run to ፭ and ፯',
+  [subjectsFor('bible').at(-1).num, subjectsFor('zema').at(-1).num], ['፭', '፯']);
 check('every lesson belongs to a real subject',
   LESSONS.every(l => !!subjectById(l.subject)), true);
 check('every lesson resolves to a track',
@@ -33,6 +50,14 @@ check('lesson ids are unique',
   new Set(LESSONS.map(l => l.id)).size, LESSONS.length);
 check('every subject carries a badge title',
   SUBJECTS.every(s => typeof s.badge === 'string' && s.badge.length > 0), true);
+/* The one-sentence Amharic descriptions are the parish's to write. The
+   slot must EXIST on every subject so filling it stays a data edit, and
+   the form renders nothing while it is empty. */
+check('every subject has a description slot',
+  SUBJECTS.every(s => typeof s.descAm === 'string'), true);
+// every description is empty for now, and that is the shipped state
+check('none has been written yet, so the form shows none',
+  SUBJECTS.every(s => s.descAm === ''), true);
 check('lessonsFor(bible) equals the union of its subjects',
   lessonsFor('bible').length,
   subjectsFor('bible').reduce((n, s) => n + lessonsForSubject(s.id).length, 0));
@@ -40,8 +65,11 @@ check('lessonsFor(bible) equals the union of its subjects',
 console.log('\nacceptance 1: a Zema student can never be shown a score');
 check('no Zema lesson carries questions',
   lessonsFor('zema').filter(l => l.questions && l.questions.length).length, 0);
-check('Bible lessons do carry questions',
-  lessonsFor('bible').filter(l => l.questions && l.questions.length).length > 0, true);
+/* Stated as an invariant over whatever lessons exist, rather than as
+   "some Bible lesson has questions" — the latter fails while the
+   curriculum is empty and would have to be deleted rather than kept. */
+check('no Zema lesson will ever carry questions, however many are added',
+  lessonsFor('zema').every(l => !l.questions), true);
 check('zema declares no scores', hasScores('zema'), false);
 check('zema declares no quizzes', hasQuizzes('zema'), false);
 check('zema declares no exams', hasExams('zema'), false);
@@ -91,10 +119,68 @@ check('boundaries are inclusive',
 check('ignores a lesson with no declared minutes',
   outOfRangeLessons([{ id: 'x' }]).length, 0);
 
-console.log('\nfree preview');
-check('l1 is free', isFree(FREE_PREVIEW_ID), true);
-check('another lesson is not', isFree('l2'), false);
-check('the free lesson exists', !!LESSONS.find(l => l.id === FREE_PREVIEW_ID), true);
+console.log('\nacceptance 2: the homepage advertises what we actually teach');
+/* The homepage sold ወንጌለ ዮሐንስ in prose long after it was a subject, and
+   nothing caught it — the curriculum data was right and the marketing
+   copy was stale. These read the shipped HTML so the two cannot part
+   company again without a test failing. */
+{
+  /* Comments stripped: what a parent reads is the markup, not the notes
+     to the next developer, and the note beside this copy names the
+     retired subject in order to explain why it was removed. */
+  const home = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
+    .replace(/<!--[\s\S]*?-->/g, '');
+  const unnamed = SUBJECTS.filter(s => !home.includes(s.am));
+  check('every current subject is named on the homepage',
+    unnamed.map(s => s.am), []);
+  check('no retired subject is still advertised',
+    /ወንጌለ ዮሐንስ|Wengele Yohannes/.test(home), false);
+}
+
+console.log('\nthe badge titles awaiting a መምህር are listed accurately');
+/* docs/CHURCH-DECISIONS.md §5 prints every earned title so a መምህር can
+   approve or replace the list. That table is what somebody signs off,
+   so it has to be what actually ships — a title changed in the code but
+   not in the document would be approved in one form and printed in
+   another. Same drift class as the homepage above. */
+{
+  const doc = readFileSync(new URL('../docs/CHURCH-DECISIONS.md', import.meta.url), 'utf8');
+  const absent = SUBJECTS.filter(s => !doc.includes(`| ${s.am} | ${s.badge} |`));
+  check('every subject and its title appear in the decisions table',
+    absent.map(s => `${s.am} / ${s.badge}`), []);
+  check('and the table lists no more than the twelve that exist',
+    (doc.match(/^\| [^|]*\| የ[^|]*\|$/gm) || []).length, SUBJECTS.length);
+}
+
+console.log('\nacceptance 3: an empty curriculum is a supported state');
+/* The sub-topics have not been written yet, so LESSONS is empty. That is
+   deliberate, and every one of these must hold in that state — a page
+   that divided by lesson count or assumed a first lesson would break the
+   moment a real family signed in. */
+check('there are no lessons yet', LESSONS.length, 0);
+check('every subject reports zero lessons rather than throwing',
+  SUBJECTS.every(s => lessonsForSubject(s.id).length === 0), true);
+check('a track with no lessons returns an empty list, not undefined',
+  [Array.isArray(lessonsFor('bible')), Array.isArray(lessonsFor('zema'))], [true, true]);
+check('an empty subject is 0 of 0 and not complete',
+  (() => { const sp = subjectProgress({}, lessonsForSubject('amestu'), { scored: true });
+           return [sp.done, sp.total, sp.complete]; })(), [0, 0, false]);
+
+console.log('\nfree preview is DERIVED, so it survives a curriculum rewrite');
+/* terms.html promises parents the first lesson is free. A hardcoded id
+   would have withdrawn that promise silently the moment the curriculum
+   was replaced, while the terms went on advertising it. */
+if (LESSONS.length === 0) {
+  check('no lessons means no free preview, and nothing claims otherwise',
+    FREE_PREVIEW_ID, null);
+  check('isFree is false for everything, including undefined',
+    [isFree('l1'), isFree(undefined), isFree(null)], [false, false, false]);
+} else {
+  check('the free lesson exists', !!LESSONS.find(l => l.id === FREE_PREVIEW_ID), true);
+  check('it is the first lesson of the first Bible subject that has any',
+    FREE_PREVIEW_ID, lessonsFor('bible')[0].id);
+  check('it is free', isFree(FREE_PREVIEW_ID), true);
+}
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
