@@ -46,7 +46,7 @@
 <div class="harag"></div>
 <div class="shell">
   <nav class="nav">
-    <a class="brand" href="index.html">
+    <a class="brand" href="index.html#home">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
         <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
       </svg>
@@ -123,9 +123,12 @@
         <p class="field-msg" id="ageMsg"></p>
       </div>
 
+      <!-- Each course shows what the child will actually study, not just
+           a name and a price. The Zema subjects are tickable in place. -->
       <div class="field">
-        <label>የትምህርት ክፍልና ክፍያ</label>
-        <div id="trackList" class="tiers"></div>
+        <label>የትምህርት ክፍል ይምረጡ</label>
+        <p class="help">ልጅዎ የሚማረውን ይምረጡ። ከታች የሚማራቸው ትምህርቶች ተዘርዝረዋል።</p>
+        <div id="trackList" class="courses"></div>
         <p class="field-msg" id="trackMsg"></p>
       </div>
 
@@ -133,13 +136,6 @@
       <div class="field" id="biblePlanField" hidden>
         <label>የክፍያ አማራጭ</label>
         <div id="biblePlan" class="tiers"></div>
-      </div>
-
-      <!-- Zema: all five ticked by default -->
-      <div class="field" id="zemaSubjectsField" hidden>
-        <label>የሚማራቸው የዜማ ትምህርቶች</label>
-        <div id="zemaSubjects" class="tiers"></div>
-        <p class="note small" id="zemaUntickNote" hidden></p>
       </div>
 
       <p class="help">ስለ ልጅዎ የምንሰበስበው መረጃ ይህ ብቻ ነው — ስም፣ ዕድሜና የትምህርት ክፍል። አድራሻ ወይም የልጅ ኢሜይል አንጠይቅም።</p>
@@ -252,28 +248,88 @@ let prepaidTerm = false;
 
 const B = PRICING.bible, Z = PRICING.zema;
 
-$('trackList').innerHTML = `
-  <label class="tier">
-    <input type="radio" name="track" value="bible">
-    <span class="tier__body">
-      <span class="tier__head">
-        <b>${TRACKS.bible.am}</b>
-        <span class="tier__price">$${B.monthlyUSD}<span class="muted small"> / ወር</span></span>
-      </span>
-      <span class="muted small">አምስቱ ትምህርት ክፍሎች · ${B.termMonths} ወር ኮርስ · ለ፯–፲፫ ዓመት</span>
-    </span>
-  </label>
-  <label class="tier${TRACKS.zema.enrollable ? '' : ' tier--closed'}">
-    <input type="radio" name="track" value="zema" ${TRACKS.zema.enrollable ? '' : 'disabled'}>
-    <span class="tier__body">
-      <span class="tier__head">
-        <b>${TRACKS.zema.am}</b>
-        <span class="tier__price">$${Z.flatUSD}</span>
-      </span>
-      <span class="muted small">የመረጡት ትምህርት ብዛት ምንም ይሁን ዋጋው አንድ ነው — አንድም ይምረጡ አምስቱንም፣ $${Z.flatUSD}።</span>
-      ${TRACKS.zema.enrollable ? '' : '<span class="pill pill--locked">ትምህርቶቹ ሲዘጋጁ ይከፈታል</span>'}
-    </span>
-  </label>`;
+/* Text a parent typed never reaches these, but a subject name from
+   lessons.js does, and that file is edited by hand. Escaping keeps a
+   stray angle bracket in a subject title from breaking the form. */
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g,
+  c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* The one-sentence Amharic description from lessons.js. Every one is
+   empty until the parish writes them, and an empty one renders NOTHING
+   rather than a placeholder — a parent should never be shown the seams. */
+const descOf = (s) => s.descAm
+  ? `<span class="course__desc">${esc(s.descAm)}</span>` : '';
+
+const bibleSubjects = subjectsFor('bible');
+const zemaSubjects = subjectsFor('zema');
+
+/* Bible: every subject is included, so they are listed rather than
+   chosen. The three-month total and the prepaid saving are both stated
+   here, because a parent comparing two courses should not have to open
+   the payment section to learn what the term actually costs. */
+const bibleCourse = `
+  <div class="course" data-course="bible">
+    <input type="radio" name="track" value="bible" id="trackBible">
+    <div class="course__body">
+      <div class="course__head">
+        <label class="course__name" for="trackBible">${esc(TRACKS.bible.am)}</label>
+        <span class="course__price">$${B.monthlyUSD}<small> / ወር</small></span>
+      </div>
+      <p class="course__alt" style="margin:0">
+        ${B.termMonths} ወር ኮርስ — በጠቅላላ $${B.termFullUSD}።
+        በአንድ ጊዜ ከከፈሉ <b>$${B.termPrepaidUSD}</b> ብቻ፤ $${B.termSavingUSD} ይቆጥባሉ።
+      </p>
+      <span class="course__age">ዕድሜ ከ፯ እስከ ፲፫</span>
+      <div class="course__rule"></div>
+      <p class="course__lead" style="margin:0">አምስቱንም ትምህርቶች ይማራል፦</p>
+      <ul class="course__subjects">
+        ${bibleSubjects.map(s => `
+          <li class="course__subject">
+            <span class="course__geez">${esc(s.num)}</span>
+            <span><b>${esc(s.am)}</b>${descOf(s)}</span>
+          </li>`).join('')}
+      </ul>
+    </div>
+  </div>`;
+
+/* Zema: the subjects are the choice, so they are ticked in place — all
+   of them, by default. The price is identical either way, which is
+   exactly why unticking has to be a deliberate act. */
+const zemaOpen = TRACKS.zema.enrollable;
+const zemaCourse = `
+  <div class="course${zemaOpen ? '' : ' course--closed'}" data-course="zema">
+    <input type="radio" name="track" value="zema" id="trackZema" ${zemaOpen ? '' : 'disabled'}>
+    <div class="course__body">
+      <div class="course__head">
+        <label class="course__name" for="trackZema">${esc(TRACKS.zema.am)}</label>
+        <span class="course__price">$${Z.flatUSD}</span>
+      </div>
+      <p class="course__alt" style="margin:0">
+        የመረጡት ትምህርት ብዛት ምንም ይሁን ዋጋው አንድ ነው — አንዱንም ይምረጡ ሰባቱንም፣ <b>$${Z.flatUSD}</b>።
+      </p>
+      <span class="course__age">ዕድሜ ከ፯ ዓመት ጀምሮ</span>
+      ${zemaOpen ? '' : '<span class="pill pill--locked">ትምህርቶቹ ሲዘጋጁ ይከፈታል</span>'}
+      <div class="course__rule"></div>
+      <p class="course__lead" style="margin:0">የሚማራቸውን ይምረጡ — ሁሉም ተመርጠዋል፦</p>
+      <ul class="course__subjects" id="zemaSubjects">
+        ${zemaSubjects.map(s => `
+          <li class="course__subject">
+            <span class="course__geez">${esc(s.num)}</span>
+            <span>
+              <label class="course__tick">
+                <input type="checkbox" name="zemaSubject" value="${esc(s.id)}" checked
+                       ${zemaOpen ? '' : 'disabled'}>
+                <b>${esc(s.am)}</b>
+              </label>
+              ${descOf(s)}
+            </span>
+          </li>`).join('')}
+      </ul>
+      <p class="note small" id="zemaUntickNote" hidden style="margin:0"></p>
+    </div>
+  </div>`;
+
+$('trackList').innerHTML = bibleCourse + zemaCourse;
 
 /* Both Bible options are shown together with the saving stated plainly.
    There is no auto-renewal: the term ends and a parent chooses again. */
@@ -300,16 +356,9 @@ $('biblePlan').innerHTML = `
     </span>
   </label>`;
 
-/* All five ticked by default. The price is the same either way, so a
+/* All seven ticked by default. The price is the same either way, so a
    parent who unticks gains nothing today and pays $10 to undo it later —
    unticking has to be a deliberate act, never an oversight. */
-const zemaSubjects = subjectsFor('zema');
-$('zemaSubjects').innerHTML = zemaSubjects.map(s => `
-  <label class="tier">
-    <input type="checkbox" name="zemaSubject" value="${s.id}" checked>
-    <span class="tier__body"><b>${s.am}</b></span>
-  </label>`).join('');
-
 const selectedZema = () =>
   [...document.querySelectorAll('input[name="zemaSubject"]:checked')].map(i => i.value);
 
@@ -323,13 +372,17 @@ function paintZemaNote() {
       `አሁን ያልመረጡትን በኋላ ለመጨመር በአንዳንዱ $${Z.addSubjectUSD} ይከፍላሉ።`;
   }
 }
-$('zemaSubjects').addEventListener('change', paintZemaNote);
 
+/* One listener for the whole chooser: the track radios and the Zema
+   ticks live in the same subtree now. */
 $('trackList').addEventListener('change', (e) => {
+  if (e.target.name === 'zemaSubject') { paintZemaNote(); return; }
   if (e.target.name !== 'track') return;
+
   chosenTrack = e.target.value;
   $('biblePlanField').hidden = chosenTrack !== 'bible';
-  $('zemaSubjectsField').hidden = chosenTrack !== 'zema';
+  document.querySelectorAll('.course').forEach(c =>
+    c.classList.toggle('course--picked', c.dataset.course === chosenTrack));
   $('trackMsg').textContent = '';
   checkAge();
 });
@@ -422,6 +475,7 @@ $('form').addEventListener('submit', async (e) => {
 </script>
 <script src="assets/js/sky.js" defer></script>
 <script src="assets/js/theme.js" defer></script>
+<script src="assets/js/nav.js" defer></script>
 <script src="assets/js/i18n.js" defer></script>
 </body>
 </html>

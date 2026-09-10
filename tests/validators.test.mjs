@@ -82,29 +82,26 @@ refuses('no domain', () => validateEmail('parent@'));
 refuses('no @', () => validateEmail('parent.example.org'));
 
 console.log('\nenrolment is gated separately from validity');
-/* zema is a real track — an existing student is valid, and the whole §2
-   pricing for it is built and tested — but it is not on offer until its
-   placeholder lessons are replaced. Selling a $30 course whose lessons
-   are not recorded is the thing this flag exists to prevent. */
-accepts('zema is still a VALID track', () => validateTrack('zema'));
-refuses('zema is NOT enrollable', () => validateEnrollableTrack('zema'));
+/* Both tracks are open: Zema's recordings now exist, so the flag that
+   held it closed has been flipped. The gate itself still has to work in
+   BOTH directions, or closing a course again is a change nobody has
+   tested — hence the synthetic closed track below. */
+accepts('zema is a VALID track', () => validateTrack('zema'));
+accepts('zema is enrollable', () => validateEnrollableTrack('zema'));
 accepts('bible is enrollable', () => validateEnrollableTrack('bible'));
 refuses('unknown track is not enrollable', () => validateEnrollableTrack('history'));
-check('refusal explains it opens later',
-  validateEnrollableTrack('zema').message.includes('ገና አልተከፈተም'), true);
-check('only bible is offered', enrollableTracks().map(t => t.id), ['bible']);
-check('but both tracks still exist', Object.keys(TRACKS), ['bible', 'zema']);
-check('an existing zema student still passes the age gate',
-  validateAge(30, 'zema').ok, true);
+check('both tracks are offered', enrollableTracks().map(t => t.id), ['bible', 'zema']);
+check('both tracks exist', Object.keys(TRACKS), ['bible', 'zema']);
+check('an adult zema student passes the age gate', validateAge(30, 'zema').ok, true);
 
-/* The gate has to work in BOTH directions, or reopening Zema later is a
-   change nobody has tested. A synthetic open track asserts that flipping
-   the flag genuinely puts a course back on offer. */
-TRACKS.opened = { ...TRACKS.zema, id: 'opened', enrollable: true };
-accepts('a track with enrollable:true is offered', () => validateEnrollableTrack('opened'));
-check('and appears in the offer',
-  enrollableTracks().some(t => t.id === 'opened'), true);
-delete TRACKS.opened;
+/* Closing a course again must remain one edit away. */
+TRACKS.shut = { ...TRACKS.zema, id: 'shut', enrollable: false };
+refuses('a track with enrollable:false is refused', () => validateEnrollableTrack('shut'));
+check('and says it opens later',
+  validateEnrollableTrack('shut').message.includes('ገና አልተከፈተም'), true);
+check('a closed track is left out of the offer',
+  enrollableTracks().some(t => t.id === 'shut'), false);
+delete TRACKS.shut;
 
 console.log('\ntrack config sanity');
 check('bible max is 13', TRACKS.bible.max, 13);

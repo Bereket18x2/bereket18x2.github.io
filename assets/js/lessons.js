@@ -5,17 +5,32 @@
    and what the dashboard groups by. Lessons belong to a subject; the
    track is read from the subject rather than stored twice.
 
+   ---------------------------------------------------------------
+   THE LESSON LIST IS EMPTY ON PURPOSE, AND THAT IS A SUPPORTED STATE.
+
+   The subjects below are the real curriculum. The sub-topics under each
+   are being written and have not arrived yet, so LESSONS is `[]`.
+
+   Every page already handles this: a subject with no lessons says
+   "ትምህርቶቹ በቅርቡ ይጀምራሉ" rather than rendering an empty box that looks
+   broken. Adding a lesson later is a DATA EDIT IN THIS FILE ONLY —
+   append an object to LESSONS with a `subject` matching one of the ids
+   below, and it appears on the dashboard, counts toward that subject's
+   certificate, and becomes reachable in lesson.html. No page changes,
+   no test changes, no rules changes.
+
+   The one thing that used to need a second edit was the free preview,
+   and it no longer does — see FREE_PREVIEW_ID at the bottom.
+   ---------------------------------------------------------------
+
    Drop a YouTube ID into `youtube` and the lesson goes live. Use
    UNLISTED videos: playable by anyone with the link, not findable on
    YouTube, and free to stream. See README.
 
-   Teacher names and every Zema lesson below are placeholders — replace
-   them before students see them.
-
    ZEMA CARRIES NO QUESTIONS. It is listen-and-learn: attendance is the
-   whole of its progress. The questions are absent from the data, not
-   merely hidden, so no page can accidentally render a score for a Zema
-   student.
+   whole of its progress. A Zema lesson must simply omit `questions`;
+   the absence is the mechanism, so no page can accidentally render a
+   score for a Zema student.
    =========================================================== */
 
 /* A lesson should run 10-12 minutes. Anything outside 9-13 is either a
@@ -24,241 +39,78 @@
 export const LESSON_MIN_MINUTES = 9;
 export const LESSON_MAX_MINUTES = 13;
 
+/* ---------------- subjects ----------------
+
+   Order here is the order a student sees, and `num` is the Ge'ez numeral
+   shown beside it. Both tracks are numbered from ፩ within themselves.
+
+   `id` is a stable ASCII key. It is written onto a student's
+   `selectedSubjects` when they enrol and read back for years, so once a
+   family has been sold a subject its id must not be renamed — a rename
+   silently un-enrols them from a course they paid for.
+
+   `badge` is the title a certificate awards for finishing the subject —
+   printed as the thing the child is now called, and read aloud by their
+   family.
+
+   NONE OF THESE HAS BEEN APPROVED BY A መምህር. They need the same sign-off
+   as the signature lines on the certificate itself, and for the same
+   reason: naming what a child has become in a tradition is not a
+   developer's call. The four Zema titles below (ጾመ ድጓ, ምዕራፍ, ቅዳሴ,
+   ዝማሬ መዋሥዕት) were written here following the pattern of the others; the
+   rest predate them and were never reviewed either.
+
+   They are unusually easy to overlook because they already read
+   plausibly — nothing about them announces that nobody qualified chose
+   them. See docs/CHURCH-DECISIONS.md §5. Changing one is a data edit
+   here and nowhere else.
+
+   `descAm` is ONE SENTENCE of Amharic shown under the subject on the
+   registration form, so a parent choosing for their child can see what
+   the course actually covers. Every one is deliberately EMPTY: these
+   describe EOTC teaching and are the parish's words to write, not a
+   developer's to invent. The form renders the sentence when it is
+   present and renders nothing at all when it is not — a parent never
+   sees a placeholder. Filling them in is a data edit here and nowhere
+   else. */
 export const SUBJECTS = [
-  { id: 'amestu', track: 'bible', num: '፩', am: 'አምስቱ አዕማደ ምስጢራት', en: 'The Five Pillars of Mystery', badge: 'የምስጢራት ዐዋቂ' },
-  { id: 'sirate', track: 'bible', num: '፪', am: 'ሥርዓተ ቤተ ክርስቲያን', en: 'Order of the Church', badge: 'የሥርዓት ጠባቂ' },
-  { id: 'meshaftarik', track: 'bible', num: '፫', am: 'የመጽሐፍ ቅዱስ ታሪክ', en: 'Bible History', badge: 'የታሪክ አዋቂ' },
-  { id: 'betekrtarik', track: 'bible', num: '፬', am: 'የቤተ ክርስቲያን ታሪክ', en: 'Church History', badge: 'የአበው ታሪክ ዐዋቂ' },
-  { id: 'sinemigbar', track: 'bible', num: '፭', am: 'ክርስቲያናዊ ሥነ ምግባር', en: 'Christian Conduct', badge: 'የመልካም ምግባር ባለቤት' },
-  { id: 'wengele', track: 'zema', num: '፩', am: 'ወንጌለ ዮሐንስ', en: 'Gospel of John', badge: 'የወንጌል ዜማ ተማሪ' },
-  { id: 'wudase', track: 'zema', num: '፪', am: 'ውዳሴ ማርያም', en: 'Praise of Mary', badge: 'የውዳሴ ማርያም ዘማሪ' },
-  { id: 'mezmur', track: 'zema', num: '፫', am: 'መዝሙረ ዳዊት', en: 'Psalms of David', badge: 'የመዝሙር ባለቤት' },
-  { id: 'aquaquam', track: 'zema', num: '፬', am: 'አቋቋም', en: 'Aquaquam', badge: 'የአቋቋም ሰልጣኝ' },
-  { id: 'zemaadv', track: 'zema', num: '፭', am: 'ዜማ', en: 'Zema', badge: 'የያሬድ ዜማ ወራሽ' }
+  // ---- Bible study — ages 7 to 13 ----
+  { id: 'amestu',      track: 'bible', num: '፩', am: 'አምስቱ አዕማደ ምስጢራት', en: 'The Five Pillars of Mystery', badge: 'የምስጢራት ዐዋቂ', descAm: '' },
+  { id: 'sirate',      track: 'bible', num: '፪', am: 'ሥርዓተ ቤተ ክርስቲያን',   en: 'Order of the Church',        badge: 'የሥርዓት ጠባቂ', descAm: '' },
+  { id: 'meshaftarik', track: 'bible', num: '፫', am: 'የመጽሐፍ ቅዱስ ታሪክ',    en: 'Bible History',              badge: 'የታሪክ ዐዋቂ', descAm: '' },
+  { id: 'betekrtarik', track: 'bible', num: '፬', am: 'የቤተ ክርስቲያን ታሪክ',   en: 'Church History',             badge: 'የአበው ታሪክ ዐዋቂ', descAm: '' },
+  { id: 'sinemigbar',  track: 'bible', num: '፭', am: 'ክርስቲያናዊ ሥነ ምግባር',  en: 'Christian Conduct',          badge: 'የመልካም ምግባር ባለቤት', descAm: '' },
+
+  // ---- Zema — age 7 and up, no ceiling ----
+  { id: 'wudase',      track: 'zema',  num: '፩', am: 'ውዳሴ ማርያም',        en: 'Wudase Mariam',   badge: 'የውዳሴ ማርያም ዘማሪ', descAm: '' },
+  { id: 'mezmur',      track: 'zema',  num: '፪', am: 'መዝሙረ ዳዊት',        en: 'Mezmure Dawit',   badge: 'የመዝሙር ባለቤት', descAm: '' },
+  { id: 'aquaquam',    track: 'zema',  num: '፫', am: 'አቋቋም',            en: 'Aquaquam',        badge: 'የአቋቋም ሰልጣኝ', descAm: '' },
+  { id: 'tsomedigua',  track: 'zema',  num: '፬', am: 'ጾመ ድጓ',           en: 'Tsome Digua',     badge: 'የጾመ ድጓ ዘማሪ', descAm: '' },
+  { id: 'miraf',       track: 'zema',  num: '፭', am: 'ምዕራፍ',            en: 'Miraf',           badge: 'የምዕራፍ ዐዋቂ', descAm: '' },
+  { id: 'kidase',      track: 'zema',  num: '፮', am: 'ቅዳሴ',             en: 'Kidase',          badge: 'የቅዳሴ ዘማሪ', descAm: '' },
+  { id: 'zimare',      track: 'zema',  num: '፯', am: 'ዝማሬ መዋሥዕት',       en: 'Zimare Mewasit',  badge: 'የዝማሬ መዋሥዕት ዘማሪ', descAm: '' }
 ];
 
-export const LESSONS = [
-  {
-    id: 'l1', num: '፩', subject: 'amestu',
-    title: 'ሃይማኖተ አበው፡ መግቢያ',
-    teacher: 'መምህር ዳንኤል',
-    minutes: 16,
-    youtube: '',
-    summary: 'የተዋሕዶ እምነት መሠረት፣ ሦስቱ ጉባኤያት እና አበው ያስተላለፉልን አደራ።',
-    questions: [
-      {
-        q: 'የኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ ክርስቲያን የምትቀበላቸው ጉባኤያት ስንት ናቸው?',
-        options: ['ሁለት', 'ሦስት', 'አምስት', 'ሰባት'],
-        answer: 1,
-        why: 'ጉባኤ ኒቅያ፣ ጉባኤ ቁስጥንጥንያ እና ጉባኤ ኤፌሶን — ሦስቱ ጉባኤያት።'
-      },
-      {
-        q: 'ጉባኤ ኒቅያ የተደረገበት ዘመን?',
-        options: ['፫፻፳፭ ዓ.ም', '፬፻፴፩ ዓ.ም', '፫፻፹፩ ዓ.ም', '፭፻፵፩ ዓ.ም'],
-        answer: 0,
-        why: 'ጉባኤ ኒቅያ በ፫፻፳፭ ዓ.ም በ፫፻፲፰ቱ ሊቃውንት ተደረገ።'
-      },
-      {
-        q: '"ተዋሕዶ" የሚለው ቃል ትርጉሙ ምንድን ነው?',
-        options: ['መለያየት', 'መዋሐድ — አንድ መሆን', 'መመለስ', 'መጽናት'],
-        answer: 1,
-        why: 'መለኮትና ትስብእት ያለመለወጥና ያለመቀላቀል አንድ መሆናቸውን ያመለክታል።'
-      }
-    ]
-  },
-  {
-    id: 'l6', num: '፮', subject: 'amestu',
-    title: 'ቅዱሳን መላእክት',
-    teacher: 'መምህር ተስፋዬ',
-    minutes: 13,
-    youtube: '',
-    summary: 'ዐሥሩ ነገደ መላእክት፣ ሚካኤልና ገብርኤል፣ የጠባቂ መልአክ ትምህርት።',
-    questions: [
-      {
-        q: 'ነገደ መላእክት ስንት ናቸው?',
-        options: ['ሦስት', 'ሰባት', 'ዘጠኝ', 'ዐሥር'],
-        answer: 3,
-        why: 'ዐሥሩ ነገደ መላእክት ይባላሉ።'
-      },
-      {
-        q: 'ለቅድስት ድንግል ማርያም የምሥራች ያበሠረው መልአክ ማን ነው?',
-        options: ['ቅዱስ ሚካኤል', 'ቅዱስ ገብርኤል', 'ቅዱስ ሩፋኤል', 'ቅዱስ ኡራኤል'],
-        answer: 1,
-        why: 'ቅዱስ ገብርኤል በሉቃስ ወንጌል እንደተጻፈ አበሠረ።'
-      },
-      {
-        q: 'መላእክት ምን ዓይነት ፍጥረት ናቸው?',
-        options: ['ሥጋዊ', 'መንፈሳዊ', 'ምድራዊ', 'ጊዜያዊ'],
-        answer: 1,
-        why: 'መላእክት መንፈሳውያን ፍጥረታት ናቸው።'
-      }
-    ]
-  },
-  {
-    id: 'l3', num: '፫', subject: 'sirate',
-    title: 'ጾም እና ምጽዋት',
-    teacher: 'መምህር ተስፋዬ',
-    minutes: 18,
-    youtube: '',
-    summary: 'ሰባቱ አጽዋማት፣ የጾም ዓላማ እና ከምጽዋት ጋር ያለው ግንኙነት።',
-    questions: [
-      {
-        q: 'በዓመት ውስጥ ያሉት አጽዋማት ስንት ናቸው?',
-        options: ['አራት', 'አምስት', 'ሰባት', 'ዘጠኝ'],
-        answer: 2,
-        why: 'ሰባቱ አጽዋማት ይባላሉ።'
-      },
-      {
-        q: 'ዐቢይ ጾም ስንት ቀን ነው?',
-        options: ['፵ ቀን', '፶፭ ቀን', '፵፫ ቀን', '፲፬ ቀን'],
-        answer: 1,
-        why: 'ዐቢይ ጾም ፶፭ ቀናት ነው።'
-      },
-      {
-        q: 'የጾም ዋና ዓላማ ምንድን ነው?',
-        options: ['ክብደት መቀነስ', 'ሥጋን ገዝቶ ነፍስን ማጽናት', 'ገንዘብ መቆጠብ', 'ልማድ መከተል'],
-        answer: 1,
-        why: 'ጾም ከምጽዋትና ከጸሎት ጋር ተያይዞ ነፍስን የሚያንጽ ነው።'
-      }
-    ]
-  },
-  {
-    id: 'l4', num: '፬', subject: 'sirate',
-    title: 'ሥርዓተ ቅዳሴ',
-    teacher: 'መምህር ዳንኤል',
-    minutes: 20,
-    youtube: '',
-    summary: 'ቅዳሴ ምንድን ነው፣ ዐሥራ አራቱ ቅዳሴያት እና በቅዳሴ ጊዜ ያለን ሥርዓት።',
-    questions: [
-      {
-        q: 'በኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ ክርስቲያን ያሉት ቅዳሴያት ስንት ናቸው?',
-        options: ['፯', '፲', '፲፬', '፳'],
-        answer: 2,
-        why: 'ዐሥራ አራቱ ቅዳሴያት ይባላሉ።'
-      },
-      {
-        q: 'ቅዳሴ የሚከናወነው የት ነው?',
-        options: ['በቅኔ ማኅሌት', 'በመቅደስ', 'በቅጽረ ቤተ ክርስቲያን', 'በደጀ ሰላም'],
-        answer: 1,
-        why: 'ቅዱስ ቁርባን የሚፈጸመው በመቅደስ ነው።'
-      },
-      {
-        q: 'ወደ ቅዳሴ ስንሄድ ማድረግ የሚገባን?',
-        options: ['ዘግይቶ መግባት', 'ተዘጋጅቶ ቀድሞ መገኘት', 'እየተነጋገሩ መቆም', 'ስልክ መጠቀም'],
-        answer: 1,
-        why: 'በንጽሕናና በተዘጋጀ ልብ ቀድሞ መገኘት ይገባል።'
-      }
-    ]
-  },
-  {
-    id: 'l5', num: '፭', subject: 'sirate',
-    title: 'ንስሐ',
-    teacher: 'መምህር ሰላም',
-    minutes: 15,
-    youtube: '',
-    summary: 'የንስሐ ክፍሎች፣ የነፍስ አባት ሚና እና ኑዛዜ።',
-    questions: [
-      {
-        q: 'የንስሐ ሦስቱ ክፍሎች የትኞቹ ናቸው?',
-        options: ['ጸሎት፣ ጾም፣ ስግደት', 'ጸጸት፣ ኑዛዜ፣ ቀኖና', 'እምነት፣ ተስፋ፣ ፍቅር', 'ስማ፣ እወቅ፣ አድርግ'],
-        answer: 1,
-        why: 'ጸጸት፣ ኑዛዜ እና ቀኖና የንስሐ ክፍሎች ናቸው።'
-      },
-      {
-        q: 'ኑዛዜ የሚደረገው ለማን ነው?',
-        options: ['ለጓደኛ', 'ለወላጅ', 'ለነፍስ አባት', 'በራስ ብቻ'],
-        answer: 2,
-        why: 'ኑዛዜ ለተመረጠው የነፍስ አባት ይደረጋል።'
-      },
-      {
-        q: 'ቀኖና ማለት ምን ማለት ነው?',
-        options: ['ቅጣት ብቻ', 'የነፍስ አባት የሚሰጠው መንፈሳዊ መድኃኒት', 'ክፍያ', 'መዝሙር'],
-        answer: 1,
-        why: 'ቀኖና ነፍስን ለማዳን የሚሰጥ መንፈሳዊ ሥርዓት ነው።'
-      }
-    ]
-  },
-  {
-    id: 'l2', num: '፪', subject: 'sinemigbar',
-    title: 'ጸሎት እና ክርስቲያናዊ አኗኗር',
-    teacher: 'መምህር ሰላም',
-    minutes: 14,
-    youtube: '',
-    summary: 'ሰባቱ ጊዜያተ ጸሎት፣ አቡነ ዘበሰማያት እና ጸሎት በዕለት ተዕለት ሕይወት።',
-    questions: [
-      {
-        q: 'በሥርዓተ ቤተ ክርስቲያን በቀን ስንት ጊዜ ጸሎት ይደረጋል?',
-        options: ['ሦስት ጊዜ', 'አምስት ጊዜ', 'ሰባት ጊዜ', 'ዐሥር ጊዜ'],
-        answer: 2,
-        why: 'ሰባቱ ጊዜያተ ጸሎት ይባላሉ።'
-      },
-      {
-        q: 'ጌታችን ኢየሱስ ክርስቶስ ያስተማረን ጸሎት ማን ይባላል?',
-        options: ['አቡነ ዘበሰማያት', 'መዝሙረ ዳዊት', 'ውዳሴ ማርያም', 'አንቀጸ ብርሃን'],
-        answer: 0,
-        why: 'በማቴዎስ ወንጌል ምዕራፍ ፮ ላይ ተጽፎ ይገኛል።'
-      },
-      {
-        q: 'ጸሎት ከሚያስፈልጋቸው ነገሮች አንዱ ያልሆነው የትኛው ነው?',
-        options: ['እምነት', 'ትሕትና', 'ትዕግሥት', 'ችኩልነት'],
-        answer: 3,
-        why: 'ጸሎት በእምነት፣ በትሕትናና በትዕግሥት የሚደረግ ነው።'
-      }
-    ]
-  },
-  {
-    id: 'z1', num: '፩', subject: 'wengele',
-    title: 'ወንጌለ ዮሐንስ — መግቢያ',
-    teacher: 'መምህር (ይተካ)',
-    minutes: 18,
-    youtube: '',
-    summary: 'የዜማ ትምህርት መነሻ፣ ቅዱስ ያሬድና ሦስቱ ዜማዎች።'
-  },
-  {
-    id: 'z2', num: '፪', subject: 'zemaadv',
-    title: 'ድጓ',
-    teacher: 'መምህር (ይተካ)',
-    minutes: 20,
-    youtube: '',
-    summary: 'የዓመቱን በዓላት የሚሸፍነው የቅዱስ ያሬድ ዋና የዜማ መጽሐፍ።'
-  },
-  {
-    id: 'z3', num: '፫', subject: 'zemaadv',
-    title: 'ጾመ ድጓ',
-    teacher: 'መምህር (ይተካ)',
-    minutes: 19,
-    youtube: '',
-    summary: 'የዐቢይ ጾም ዜማ፣ እና ዕዝል ለምን እንደሚያገለግል።'
-  },
-  {
-    id: 'z4', num: '፬', subject: 'zemaadv',
-    title: 'ምዕራፍ',
-    teacher: 'መምህር (ይተካ)',
-    minutes: 16,
-    youtube: '',
-    summary: 'የምዕራፍ አከፋፈልና በዜማ ውስጥ ያለው ቦታ።'
-  },
-  {
-    id: 'z5', num: '፭', subject: 'zemaadv',
-    title: 'ዝማሬ ወመዋሥዕት',
-    teacher: 'መምህር (ይተካ)',
-    minutes: 17,
-    youtube: '',
-    summary: 'ዝማሬ ከቁርባን በኋላ፣ መዋሥዕት በምላሽ ሥርዓት።'
-  },
-  {
-    id: 'z6', num: '፮', subject: 'zemaadv',
-    title: 'ቅዳሴ በዜማ',
-    teacher: 'መምህር (ይተካ)',
-    minutes: 20,
-    youtube: '',
-    summary: 'የቅዳሴ ዜማና ተማሪው የሚደርስበት የመጨረሻ ደረጃ።'
-  }
-];
+/* ---------------- lessons ----------------
 
-/* Lesson l1 is the free preview: a parent can watch one whole lesson
-   before being asked to pay. Everything else needs a paid account. */
-export const FREE_PREVIEW_ID = 'l1';
+   Empty until the sub-topics are written. See the header: this is a
+   supported state, not a gap to patch around.
+
+   The shape, for whoever fills it in:
+
+     {
+       id: 'am1',            // unique across ALL lessons, never reused
+       num: '፩',             // position within its subject
+       subject: 'amestu',    // must match a SUBJECTS id above
+       title: 'የትምህርቱ ርዕስ',
+       teacher: 'መምህር ...',
+       minutes: 11,          // 9-13, or it warns in the console
+       youtube: 'VIDEO_ID',  // unlisted
+       summary: 'አንድ ዓረፍተ ነገር።',
+       questions: [ ... ]    // BIBLE ONLY — omit entirely for Zema
+     }
+*/
+export const LESSONS = [];
 
 /* ---------------- lookups ---------------- */
 
@@ -273,7 +125,34 @@ export const trackOfLesson = (lesson) => subjectById(lesson && lesson.subject)?.
 export const lessonsFor = (track) =>
   LESSONS.filter(l => trackOfLesson(l) === track);
 
-export const isFree = (id) => id === FREE_PREVIEW_ID;
+/* ---------------- the free preview ----------------
+
+   DERIVED, not a hardcoded id. terms.html promises parents that the
+   first lesson is free to watch before they pay, and that promise has to
+   survive the curriculum being rewritten — a constant pointing at a
+   lesson that no longer exists would silently withdraw the free preview
+   while the terms still advertised it.
+
+   So it is whatever the first Bible lesson turns out to be, in the order
+   a student meets them: the first subject that has any lessons, and its
+   first lesson. Append a lesson to `amestu` and it becomes the preview
+   automatically, with no second edit anywhere.
+
+   null while there are no lessons at all, which is honest — there is
+   nothing to preview yet, and nothing claims otherwise. */
+function firstLessonOfTrack(track) {
+  for (const subject of subjectsFor(track)) {
+    const first = LESSONS.find(l => l.subject === subject.id);
+    if (first) return first.id;
+  }
+  return null;
+}
+
+export const FREE_PREVIEW_ID = firstLessonOfTrack('bible');
+
+// Guards against null: with no curriculum, no id is "the free one", and
+// isFree(undefined) must not accidentally become true.
+export const isFree = (id) => FREE_PREVIEW_ID !== null && id === FREE_PREVIEW_ID;
 
 /* ---------------- duration sanity ----------------
    Returns the lessons whose DECLARED minutes fall outside the range.

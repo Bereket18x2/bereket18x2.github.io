@@ -33,7 +33,7 @@
 <div class="harag"></div>
 <div class="shell">
   <nav class="nav">
-    <a class="brand" href="index.html">
+    <a class="brand" href="index.html#home">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
         <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
       </svg>
@@ -204,13 +204,15 @@
 {
   "imports": {
     "@config":     "./assets/js/config.js?v=9",
-    "@validators": "./assets/js/validators.js?v=9"
+    "@validators": "./assets/js/validators.js?v=9",
+    "@lessons":    "./assets/js/lessons.js?v=9"
   }
 }
 </script>
 <script type="module">
 import { CONSENT_VERSION, PRICING, CHURCH_CONTACT } from '@config';
 import { TRACKS } from '@validators';
+import { subjectsFor } from '@lessons';
 document.querySelectorAll('.consent-version').forEach(el => { el.textContent = CONSENT_VERSION; });
 
 /* The price table is generated from PRICING so the terms can never quote
@@ -218,6 +220,13 @@ document.querySelectorAll('.consent-version').forEach(el => { el.textContent = C
    together with the saving stated, because a discount a parent has to
    compute themselves is not really being offered to them. */
 const B = PRICING.bible, Z = PRICING.zema;
+
+/* Counted from the curriculum, never written as a word. This row said
+   "one subject or all five" for a while after Zema grew to seven — the
+   terms are a document a parent is asked to agree to, so a number in
+   them has to come from the same place the form reads. */
+const zemaCount = subjectsFor('zema').length;
+const bibleCount = subjectsFor('bible').length;
 
 /* A price for a course nobody can enrol in is an offer we are not making.
    The Zema figure stays listed — it is the price when the course opens —
@@ -230,15 +239,15 @@ const zemaShut = {
 
 const ROWS = {
   am: [
-    `<b>የቅዱሳት መጻሕፍት ትምህርት</b> — <b>$${B.monthlyUSD} በወር</b>፤ ${B.termMonths} ወር ኮርስ ስለሆነ በጠቅላላ $${B.termFullUSD}።`,
+    `<b>የቅዱሳት መጻሕፍት ትምህርት</b> — <b>$${B.monthlyUSD} በወር</b>፤ ${bibleCount}ቱንም ትምህርቶች ያካትታል፤ ${B.termMonths} ወር ኮርስ ስለሆነ በጠቅላላ $${B.termFullUSD}።`,
     `<b>የቅዱሳት መጻሕፍት ትምህርት — ሦስቱን ወር በአንድ ጊዜ</b> — <b>$${B.termPrepaidUSD}</b>፤ ከ$${B.termFullUSD} ይልቅ ስለሆነ $${B.termSavingUSD} ይቆጥባሉ።`,
-    `<b>የዜማ ትምህርት ቤት</b> — <b>$${Z.flatUSD}</b>፤ የመረጡት ትምህርት ብዛት ምንም ይሁን ዋጋው አንድ ነው። ከተመዘገቡ በኋላ ትምህርት መጨመር በአንዳንዱ $${Z.addSubjectUSD} ነው።${zemaShut.am}`,
+    `<b>የዜማ ትምህርት ቤት</b> — <b>$${Z.flatUSD}</b>፤ አንዱንም ይምረጡ ${zemaCount}ቱንም ዋጋው አንድ ነው። ከተመዘገቡ በኋላ ትምህርት መጨመር በአንዳንዱ $${Z.addSubjectUSD} ነው።${zemaShut.am}`,
     'ኮርሱ ሲጠናቀቅ በራሱ አይታደስም። እንደገና መቀጠል ከፈለጉ እርስዎ ይመርጣሉ።'
   ],
   en: [
-    `<b>Bible study</b> — <b>$${B.monthlyUSD} per month</b>; the course runs ${B.termMonths} months, so $${B.termFullUSD} in total.`,
+    `<b>Bible study</b> — <b>$${B.monthlyUSD} per month</b>; all ${bibleCount} subjects, over a ${B.termMonths}-month course, so $${B.termFullUSD} in total.`,
     `<b>Bible study — three months prepaid</b> — <b>$${B.termPrepaidUSD}</b> instead of $${B.termFullUSD}, saving $${B.termSavingUSD}.`,
-    `<b>Zema school</b> — <b>$${Z.flatUSD}</b> whichever subjects are chosen; the price is the same for one subject or all five. Adding a subject after enrolment is $${Z.addSubjectUSD} each.${zemaShut.en}`,
+    `<b>Zema school</b> — <b>$${Z.flatUSD}</b> whichever subjects are chosen; the price is the same for one subject or all ${zemaCount}. Adding a subject after enrolment is $${Z.addSubjectUSD} each.${zemaShut.en}`,
     'Nothing renews automatically. When the term ends you choose again.'
   ]
 };
@@ -252,6 +261,7 @@ document.querySelectorAll('.contact-email').forEach(el => {
 </script>
 <script src="assets/js/sky.js" defer></script>
 <script src="assets/js/theme.js" defer></script>
+<script src="assets/js/nav.js" defer></script>
 <script src="assets/js/i18n.js" defer></script>
 </body>
 </html>

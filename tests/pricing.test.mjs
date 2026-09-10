@@ -48,25 +48,23 @@ check('priceFor bible prepaid term', priceFor('bible', { prepaidTerm: true }), 1
 console.log('\nacceptance 2 + 3: Zema is flat, whatever is ticked');
 check('zema is $30', PRICING.zema.flatUSD, 30);
 check('priceFor zema', priceFor('zema'), 30);
-check('there are five zema subjects to tick', subjectsFor('zema').length, 5);
+check('there are seven zema subjects to tick', subjectsFor('zema').length, 7);
 
-/* Acceptance 2 says Zema registration opens with all five subjects
-   ticked. The FORM does exactly that — register.html renders the five
-   checkboxes checked and shows the unticking note — but the track is
-   closed to new enrolment because every Zema lesson in lessons.js is
-   still a placeholder, and $30 for unrecorded lessons is not shippable.
+/* Acceptance 2: Zema registration opens with every subject ticked.
 
-   This is not a pricing failure and the pricing is not what changed.
-   Flip TRACKS.zema.enrollable to true when the recordings exist and
-   these two assertions turn back on unmodified. */
+   These two were SKIPPED while the recordings did not exist, and they
+   now run unmodified — which was the point of skipping them rather than
+   deleting them. The branch stays: if Zema is ever closed again the
+   assertions turn themselves off with a printed reason, instead of
+   failing and tempting someone to delete them. */
 if (TRACKS.zema.enrollable) {
-  check('zema is enrollable, so the form can open with all five ticked',
+  check('zema is enrollable, so the form can open with all seven ticked',
     TRACKS.zema.enrollable, true);
   check('and the form offers it', enrollableTracks().map(t => t.id).includes('zema'), true);
 } else {
-  skip('acceptance 2: zema registration opens with all five ticked',
-    'TRACKS.zema.enrollable is false — the Zema lessons are still placeholders. ' +
-    'Turns back on with the recordings; the form and pricing are already built.');
+  skip('acceptance 2: zema registration opens with all subjects ticked',
+    'TRACKS.zema.enrollable is false — the course is closed to new enrolment. ' +
+    'Turns back on with the flag; the form and pricing are already built.');
   skip('acceptance 4 in situ: adding a subject after enrolment',
     'same reason — no Zema enrolment exists to add a subject to. The $10 ' +
     'arithmetic below is still asserted.');
@@ -76,7 +74,7 @@ if (TRACKS.zema.enrollable) {
     validateTrack('zema').ok, true);
 }
 // the whole justification for defaulting every box to ticked
-check('one subject costs the same as five',
+check('one subject costs the same as seven',
   priceFor('zema', { prepaidTerm: false }), priceFor('zema', { prepaidTerm: true }));
 
 console.log('\nacceptance 4: adding a subject afterwards is $10 each');
@@ -85,8 +83,8 @@ check('one subject', priceToAddSubjects(1), 10);
 check('three subjects', priceToAddSubjects(3), 30);
 check('none', priceToAddSubjects(0), 0);
 check('nonsense is not free money', priceToAddSubjects(-4), 0);
-check('unticking all five then re-adding them costs more than the course',
-  priceToAddSubjects(5) > PRICING.zema.flatUSD, true);
+check('unticking all seven then re-adding them costs more than the course',
+  priceToAddSubjects(7) > PRICING.zema.flatUSD, true);
 
 console.log('\nacceptance 6: a Zema student has nothing score-shaped');
 check('zema has no scores', TRACKS.zema.hasScores, false);

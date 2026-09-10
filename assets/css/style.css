@@ -263,6 +263,61 @@ a  { color: var(--accent-text); }
 .tier--closed { opacity: .6; cursor: not-allowed; }
 .tier--closed:hover { border-color: var(--line); }
 
+/* ---------- course chooser (registration) ----------
+   A parent choosing for their child is not picking a plan, they are
+   deciding what their child will study. So each course shows its
+   subjects by name, numbered in Ge'ez the way a manuscript numbers its
+   sections, with the price and the age range stated plainly beside the
+   name rather than buried underneath.
+
+   .course is a <div>, not a <label>: the Zema panel contains its own
+   checkboxes, and a label nested inside a label breaks both of them. */
+.courses { display: grid; gap: 16px; }
+.course {
+  display: grid; grid-template-columns: auto 1fr; gap: 14px;
+  align-items: start;
+  border: 1px solid var(--line); border-radius: var(--r);
+  padding: 18px; background: var(--surface);
+  transition: border-color .15s ease, background .15s ease;
+}
+.course:hover { border-color: var(--accent); }
+.course--picked { border-color: var(--accent); background: var(--surface-2); }
+.course > input[type="radio"] { width: 18px; height: 18px; margin-top: 5px; accent-color: var(--accent); }
+.course__body { display: grid; gap: 10px; min-width: 0; }
+.course__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.course__name { font-family: var(--f-display); font-size: 1.2rem; cursor: pointer; }
+.course__price { font-family: var(--f-util); font-size: 1.2rem; color: var(--accent-text); white-space: nowrap; }
+.course__price small { font-family: var(--f-body); font-size: .8rem; color: var(--text-dim); font-weight: 400; }
+.course__alt { font-size: .9rem; color: var(--text-dim); }
+.course__alt b { color: var(--accent-text); }
+
+/* the age line reads as a rubric note, not a form field */
+.course__age {
+  justify-self: start;
+  font-size: .84rem; color: var(--accent-text);
+  border: 1px solid rgb(var(--accent-rgb) / .35);
+  border-radius: 999px; padding: 2px 12px;
+}
+
+/* a hairline of the harag palette, separating the offer from the
+   curriculum it buys */
+.course__rule { height: 1px; background: linear-gradient(90deg,
+  rgb(var(--accent-rgb) / .5), rgb(var(--danger-rgb) / .35), transparent); }
+
+.course__lead { font-size: .88rem; color: var(--text-dim); }
+.course__subjects { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.course__subject { display: grid; grid-template-columns: 1.7em 1fr; gap: 8px; align-items: baseline; }
+.course__geez { font-family: var(--f-display); color: var(--accent-text); font-size: 1rem; }
+.course__subject b { font-weight: 600; }
+/* the one-sentence description from lessons.js; absent until written */
+.course__desc { display: block; margin-top: 3px; font-size: .86rem; color: var(--text-dim); }
+/* Zema subjects are chosen, so each carries its own tick */
+.course__tick { display: flex; align-items: baseline; gap: 8px; cursor: pointer; }
+.course__tick input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
+
+.course--closed { opacity: .6; }
+.course--closed:hover { border-color: var(--line); }
+
 /* ---------- modal ----------
    Used by the "still watching?" prompt. Deliberately has no dismiss
    control other than the confirm button: ignoring it is the case it
@@ -371,7 +426,15 @@ a  { color: var(--accent-text); }
 }
 .input:focus { border-color: var(--accent-text); outline: none; }
 .input:disabled { opacity: .6; cursor: not-allowed; }
-.input:invalid:not(:placeholder-shown) { border-color: var(--danger-text); }
+/* :user-invalid, not :invalid — a field only turns red once the parent
+   has actually interacted with it.
+
+   The previous guard was `:invalid:not(:placeholder-shown)`, which only
+   works on inputs that carry a placeholder attribute. The registration
+   form's required fields have none, so `:placeholder-shown` was false
+   from the start and every one of them painted red on a form nobody had
+   typed into yet — three errors before a word was entered. */
+.input:user-invalid { border-color: var(--danger-text); }
 
 .field-row { display: flex; gap: 8px; align-items: flex-start; }
 .field-row .input { flex: 1; }
