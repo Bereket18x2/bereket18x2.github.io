@@ -6,21 +6,22 @@
    track is read from the subject rather than stored twice.
 
    ---------------------------------------------------------------
-   THE LESSON LIST IS EMPTY ON PURPOSE, AND THAT IS A SUPPORTED STATE.
+   MOST SUBJECTS HAVE NO LESSONS YET, AND THAT IS A SUPPORTED STATE.
 
-   The subjects below are the real curriculum. The sub-topics under each
-   are being written and have not arrived yet, so LESSONS is `[]`.
+   One subject — አምስቱ አዕማደ ምስጢራት — now has a single real lesson. The
+   other ELEVEN have none, and each says "ትምህርቶቹ በቅርቡ ይጀምራሉ።" rather
+   than rendering an empty box that looks broken. Do not remove that
+   handling to tidy up: it is what eleven of the twelve subjects
+   currently render.
 
-   Every page already handles this: a subject with no lessons says
-   "ትምህርቶቹ በቅርቡ ይጀምራሉ" rather than rendering an empty box that looks
-   broken. Adding a lesson later is a DATA EDIT IN THIS FILE ONLY —
-   append an object to LESSONS with a `subject` matching one of the ids
-   below, and it appears on the dashboard, counts toward that subject's
-   certificate, and becomes reachable in lesson.html. No page changes,
-   no test changes, no rules changes.
+   Adding a lesson is a DATA EDIT IN THIS FILE ONLY — append an object
+   to LESSONS with a `subject` matching one of the ids below, and it
+   appears on the dashboard, counts toward that subject's certificate,
+   and becomes reachable in lesson.html. No page changes, no rules
+   changes.
 
-   The one thing that used to need a second edit was the free preview,
-   and it no longer does — see FREE_PREVIEW_ID at the bottom.
+   The free preview needs no second edit either — it is derived, so the
+   first Bible lesson to exist becomes it. See FREE_PREVIEW_ID below.
    ---------------------------------------------------------------
 
    Drop a YouTube ID into `youtube` and the lesson goes live. Use
@@ -93,10 +94,10 @@ export const SUBJECTS = [
 
 /* ---------------- lessons ----------------
 
-   Empty until the sub-topics are written. See the header: this is a
-   supported state, not a gap to patch around.
+   One so far. The other eleven subjects are still empty, which the
+   pages handle — see the header.
 
-   The shape, for whoever fills it in:
+   The shape, for whoever fills the rest in:
 
      {
        id: 'am1',            // unique across ALL lessons, never reused
@@ -110,7 +111,88 @@ export const SUBJECTS = [
        questions: [ ... ]    // BIBLE ONLY — omit entirely for Zema
      }
 */
-export const LESSONS = [];
+export const LESSONS = [
+  /* ---------------------------------------------------------------
+     THE FIRST REAL LESSON. Added to test the attendance system against
+     an actual video; everything about it that a person must write is
+     still waiting on a መምህር, and is marked below.
+
+     `draft: true` says so in the data, so `grep draft assets/js` finds
+     everything unreviewed. Nothing reads the flag — it is a marker for
+     people, not a switch.
+
+     WHAT IS REAL:   the YouTube id, the subject, the position.
+     WHAT IS NOT:    the teacher's name, the summary, the three
+                     questions. See the notes on each.
+
+     The declared 28 minutes is VERIFIED, not assumed. Measured through
+     the IFrame API's getDuration(), the same source lesson.html uses:
+     1685 seconds, or 28.08 minutes. So the figure is right to within
+     five seconds, and lesson.html's onReady check — which warns when
+     declared and actual differ by more than 1.5 minutes — will stay
+     quiet for this lesson.
+
+     The load-time 9-13 warning DOES fire, and is meant to. The rule is
+     not widened to accommodate one long video, because the rule is what
+     catches the next mistyped upload — a 22-minute file labelled 11.
+
+     At 1685s the video is 337 five-second buckets, so the 90% threshold
+     needs 304 of them: about 25.3 minutes of real playback. See the
+     note on coverage persistence in docs/PAYMENTS.md — that is a long
+     time for a child to hold in one sitting.
+     --------------------------------------------------------------- */
+  {
+    id: 'am1',
+    num: '፩',
+    subject: 'amestu',
+    draft: true,
+
+    /* Names the subject and the position, and claims nothing about the
+       video's specific content, which no one here has watched. Replace
+       with the actual topic. */
+    title: 'አምስቱ አዕማደ ምስጢራት — ትምህርት ፩',
+
+    // NOT a real person. A መምህር's name goes on work they taught, and
+    // inventing one would put a teacher's name against a lesson they
+    // never gave. Replace before a family sees this.
+    teacher: 'መምህር (ስም ይተካ)',
+
+    minutes: 28,
+    youtube: 'nHDmjS-wUX4',
+
+    // The summary describes what the video covers; nobody here has
+    // watched it, so it says who fills it in rather than guessing.
+    summary: 'የትምህርቱ ማጠቃለያ በመምህሩ ይሞላል።',
+
+    /* PLACEHOLDER QUESTIONS — for a መምህር to replace.
+
+       These stick to the naming and counting of the five pillars, which
+       is standard catechesis and not a matter of interpretation. They
+       are deliberately shallow: a real question set should follow what
+       this particular video actually teaches, and should be written by
+       whoever teaches it. Do not treat these as a model for depth. */
+    questions: [
+      {
+        q: 'አምስቱ አዕማደ ምስጢራት ስንት ናቸው?',
+        options: ['ሦስት', 'አራት', 'አምስት', 'ሰባት'],
+        answer: 2,
+        why: 'ስማቸው እንደሚያመለክተው አምስት ናቸው።'
+      },
+      {
+        q: 'ከአምስቱ አዕማደ ምስጢራት አንዱ ያልሆነው የትኛው ነው?',
+        options: ['ምስጢረ ሥላሴ', 'ምስጢረ ሥጋዌ', 'ምስጢረ ጥምቀት', 'ምስጢረ ጾም'],
+        answer: 3,
+        why: 'አምስቱ፦ ምስጢረ ሥላሴ፣ ምስጢረ ሥጋዌ፣ ምስጢረ ጥምቀት፣ ምስጢረ ቁርባን እና ምስጢረ ትንሣኤ ሙታን ናቸው። ጾም ከአጽዋማት እንጂ ከአዕማደ ምስጢራት አይደለም።'
+      },
+      {
+        q: 'የመጀመሪያው አምደ ምስጢር የትኛው ነው?',
+        options: ['ምስጢረ ቁርባን', 'ምስጢረ ሥላሴ', 'ምስጢረ ትንሣኤ ሙታን', 'ምስጢረ ጥምቀት'],
+        answer: 1,
+        why: 'ምስጢረ ሥላሴ የመጀመሪያው ነው።'
+      }
+    ]
+  }
+];
 
 /* ---------------- lookups ---------------- */
 

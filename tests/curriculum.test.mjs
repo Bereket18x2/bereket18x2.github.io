@@ -152,19 +152,59 @@ console.log('\nthe badge titles awaiting a መምህር are listed accurately');
     (doc.match(/^\| [^|]*\| የ[^|]*\|$/gm) || []).length, SUBJECTS.length);
 }
 
-console.log('\nacceptance 3: an empty curriculum is a supported state');
-/* The sub-topics have not been written yet, so LESSONS is empty. That is
-   deliberate, and every one of these must hold in that state — a page
-   that divided by lesson count or assumed a first lesson would break the
-   moment a real family signed in. */
-check('there are no lessons yet', LESSONS.length, 0);
-check('every subject reports zero lessons rather than throwing',
-  SUBJECTS.every(s => lessonsForSubject(s.id).length === 0), true);
-check('a track with no lessons returns an empty list, not undefined',
-  [Array.isArray(lessonsFor('bible')), Array.isArray(lessonsFor('zema'))], [true, true]);
-check('an empty subject is 0 of 0 and not complete',
-  (() => { const sp = subjectProgress({}, lessonsForSubject('amestu'), { scored: true });
-           return [sp.done, sp.total, sp.complete]; })(), [0, 0, false]);
+console.log('\nacceptance 3: subjects with no lessons stay a supported state');
+/* Eleven of the twelve subjects have no lessons and must keep saying
+   "ትምህርቶቹ በቅርቡ ይጀምራሉ።" rather than rendering an empty box. Written
+   against whatever the curriculum currently holds, so it keeps meaning
+   something as lessons are added one at a time — and only stops
+   applying when every subject is populated, which is the day the
+   handling could honestly be removed. */
+{
+  const populated = SUBJECTS.filter(s => lessonsForSubject(s.id).length > 0);
+  const empty = SUBJECTS.filter(s => lessonsForSubject(s.id).length === 0);
+  check('some subjects are still empty, so the coming-soon line is live',
+    empty.length > 0, true);
+  check('every subject is either populated or empty, none broken',
+    populated.length + empty.length, SUBJECTS.length);
+  check('an empty subject reports zero rather than throwing',
+    empty.every(s => lessonsForSubject(s.id).length === 0), true);
+  check('a track always returns a list, never undefined',
+    [Array.isArray(lessonsFor('bible')), Array.isArray(lessonsFor('zema'))], [true, true]);
+  // 0 of 0 must not read as "finished", or an empty subject would award
+  // a certificate for nothing
+  check('an empty subject is 0 of 0 and NOT complete',
+    (() => { const sp = subjectProgress({}, lessonsForSubject(empty[0].id), { scored: true });
+             return [sp.done, sp.total, sp.complete]; })(), [0, 0, false]);
+
+  // the shipped state today, stated plainly so a change to it is visible
+  check('exactly one subject has content so far', populated.length, 1);
+  check('and it is አምስቱ አዕማደ ምስጢራት', populated[0].id, 'amestu');
+  check('leaving eleven empty', empty.length, 11);
+}
+
+console.log('\nthe duration rule is NOT widened to fit a long video');
+/* am1 runs 28 minutes, well outside 9-13, and warns at load. The rule
+   exists to catch the next mistyped upload, so a real video that breaks
+   it must not be an argument for relaxing it. */
+{
+  const flagged = outOfRangeLessons();
+  check('the long lesson is flagged', flagged.map(l => l.id), ['am1']);
+  check('the bounds are still 9 and 13',
+    [LESSON_MIN_MINUTES, LESSON_MAX_MINUTES], [9, 13]);
+  check('a compliant lesson would not be flagged',
+    outOfRangeLessons([{ id: 'ok', minutes: 11 }]).length, 0);
+}
+
+console.log('\nthe draft lesson is marked as unreviewed');
+/* The teacher name, summary and questions on am1 were not written by a
+   መምህር. `draft: true` is how that is findable in the data rather than
+   only in a comment. */
+{
+  const draft = LESSONS.filter(l => l.draft);
+  check('am1 is flagged draft', draft.map(l => l.id), ['am1']);
+  check('its teacher is a visible placeholder, not an invented name',
+    /ይተካ/.test(LESSONS.find(l => l.id === 'am1').teacher), true);
+}
 
 console.log('\nfree preview is DERIVED, so it survives a curriculum rewrite');
 /* terms.html promises parents the first lesson is free. A hardcoded id
