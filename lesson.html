@@ -367,11 +367,60 @@ if (u && !L) {
     flush();
   };
 
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+  /* ---------- leaving and coming back ----------
+
+     stop() used to be ONE-WAY: four listeners called it and nothing but a
+     fresh PLAYING transition ever called start() again. Two everyday
+     actions therefore froze coverage and study time for the remainder of
+     a video, silently:
+
+       - clicking the volume, captions or fullscreen button, because
+         focus moving into a cross-origin iframe fires `blur` on this
+         window and none of those emit a player state change;
+       - switching tabs and coming back, because returning fires no
+         state change either — the state never changed.
+
+     A child who sat through the whole lesson was then told they had
+     watched 7% of it and the quiz stayed locked. That is a worse failure
+     than the scrubbing this all exists to catch, so both directions are
+     handled now. */
+
+  const playerIsPlaying = () => !!(
+    ytPlayer && ytPlayer.getPlayerState && window.YT &&
+    ytPlayer.getPlayerState() === YT.PlayerState.PLAYING
+  );
+
+  /* Focus moving INTO our own player is not the student leaving.
+
+     document.hasFocus() is the discriminator rather than
+     document.activeElement: hasFocus() stays true while focus sits in a
+     child iframe and goes false when the window itself is backgrounded,
+     which is exactly the distinction wanted. activeElement does identify
+     the iframe, but it keeps pointing at it after an alt-tab, so on its
+     own it cannot tell "clicked the volume" from "left for another
+     application" — and would have kept banking time for a window nobody
+     was watching. */
+  const leave = () => {
+    if (document.hasFocus && document.hasFocus()) return;
+    stop();
+  };
+
+  /* The counterpart stop() never had. start() resets lastTickAt, so the
+     time spent away is not banked — only the fact that watching resumed
+     is. Guarded on the player genuinely reporting PLAYING, so returning
+     to a paused lesson starts nothing. */
+  const resume = () => {
+    if (!document.hidden && playerIsPlaying()) start();
+  };
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stop(); else resume();
+  });
   /* Blur as well as visibilitychange: a tab can stay "visible" while the
      window sits behind another one, or on a second monitor nobody is
      looking at. Neither event alone covers the other's case. */
-  window.addEventListener('blur', stop);
+  window.addEventListener('blur', leave);
+  window.addEventListener('focus', resume);
   window.addEventListener('pagehide', stop);
   window.addEventListener('beforeunload', stop);
 

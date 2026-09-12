@@ -53,6 +53,23 @@ defeats *seeking to the end*, which is the common case, but a student who
 deliberately scrubs bucket by bucket can still register coverage. It is an
 attendance measure, not an anti-cheat system.
 
+### Coverage is single-session, and that is a real limit
+
+`seen` is an in-memory `Set` rebuilt on every page load, and
+`saveVideoCompletion` only writes when a lesson *completes*. Partial coverage
+is never stored, so **90% has to be reached in one unbroken sitting.**
+
+That was tolerable while the rule assumed 10–12 minute lessons. The first real
+lesson, `am1`, runs 1685 seconds — 337 buckets, of which 304 are needed. About
+25 minutes, held in one go, by a child who may well be on a phone. Watch it in
+two halves and neither half completes; reload and it starts from zero.
+
+The failure mode is not a cheat getting through, it is an honest student giving
+up. That makes it worth fixing rather than merely documenting, and the fix is a
+schema and write-cost decision — the same write-frequency question as
+`studySeconds` — not a patch. Until it is made, this is the honest record of
+where the mechanism stands.
+
 ## What is enforced
 
 | Thing | Enforced by | Real? |
