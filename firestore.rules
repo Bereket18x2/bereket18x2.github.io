@@ -338,8 +338,55 @@ service cloud.firestore {
         // videoCompleted/coverage when the video ends, then score/of when
         // the quiz is submitted — so each field is validated only if
         // present rather than demanding the full set on every write.
+        /* hasOnly, at last. This was the ONE create rule in the file
+           without a key whitelist, which meant a student could write
+           arbitrary fields into their own progress documents — junk
+           keys, unbounded content, up to a megabyte per document, on an
+           account they control and can create one of per lesson. It
+           granted no privilege, but it was free storage in somebody
+           else's database and it contradicted the rule in CLAUDE.md
+           that every create rule pins its keys.
+
+           Adding seenBuckets is what surfaced it: the array needed a
+           size cap anyway, and a cap on one field is worth little while
+           every other field is unbounded.
+
+           With merge:true the client sends a partial document but
+           `request.resource.data` is the FULL merged result, so this
+           list must name every field that can legitimately coexist —
+           the video half, the quiz half, and the coverage half. */
         allow create, update: if isOwner(uid)
           && verified()
+          && request.resource.data.keys().hasOnly([
+               'videoCompleted', 'coverage', 'sessionSeconds', 'suspicious', 'completedAt',
+               'done', 'score', 'of', 'at',
+               'seenBuckets', 'bucketSeconds', 'videoSeconds'
+             ])
+          /* Which parts of the video were actually watched, so a lesson
+             survives being watched in two sittings. Client-written and
+             forgeable exactly as `coverage` already is — persisting it
+             adds no exposure that writing coverage: 1 did not already
+             have. The cap is what matters here: 2000 buckets is a
+             2h46m video at five seconds each, beyond anything this
+             school will publish, and small enough that the field cannot
+             become a filing cabinet. */
+          && (
+            !('seenBuckets' in request.resource.data)
+            || (
+              request.resource.data.seenBuckets is list
+              && request.resource.data.seenBuckets.size() <= 2000
+            )
+          )
+          && (
+            !('bucketSeconds' in request.resource.data)
+            || (request.resource.data.bucketSeconds is int
+                && request.resource.data.bucketSeconds > 0)
+          )
+          && (
+            !('videoSeconds' in request.resource.data)
+            || (request.resource.data.videoSeconds is number
+                && request.resource.data.videoSeconds >= 0)
+          )
           && (
             !('score' in request.resource.data)
             || (

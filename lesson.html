@@ -147,7 +147,8 @@
 import { Store, requireAuth } from '@store';
 import { findLesson, isFree, trackOfLesson, subjectById, FREE_PREVIEW_ID } from '@lessons';
 import { hasQuizzes } from '@validators';
-import { markBucket, coverageOf, isComplete, shortfallMessage, isSuspicious } from '@coverage';
+import { markBucket, coverageOf, isComplete, shortfallMessage, isSuspicious,
+         restoreSeen, serializeSeen, tooManyBuckets, BUCKET_SECONDS } from '@coverage';
 
 const $ = id => document.getElementById(id);
 /* Falls back to whatever the free preview currently is, rather than to a
@@ -255,7 +256,7 @@ if (u && !L) {
   /* ---------- coverage ----------
      Buckets, not elapsed time: skipping ahead leaves holes that can only
      be filled by going back and watching. See assets/js/coverage.js. */
-  const seen = new Set();
+  let seen = new Set();
   let duration = 0;
   let completed = false;
   let ytPlayer = null;        // set once the iframe API is ready
@@ -265,6 +266,59 @@ if (u && !L) {
     $('coveragePill').textContent = pct + '%';
     $('coverageBar').style.width = pct + '%';
   };
+
+  /* ---------- coverage that survives leaving ----------
+
+     `seen` used to live only in memory, so 90% had to be reached in one
+     unbroken sitting — 25 minutes for this lesson, from a child who may
+     be on a phone. A reload started them at zero, and the likely result
+     was giving up rather than trying again.
+
+     Seeding costs NOTHING extra to read: requireAuth already handed us
+     the whole progress map. Writing is on stop() plus a safety timer —
+     never on the 30s study-time flush, because studySeconds lands on
+     the user document and coverage lands on the progress document, so
+     sharing that cadence would double the writes rather than reuse one. */
+  const COVERAGE_SAFETY_MS = 120000;   // bounds what a crash can cost
+  let coverageTimer = null;
+  let seeded = false;
+  let writtenBuckets = 0;              // what the last successful write held
+
+  const storedProgress = (u.progress && u.progress[L.id]) || null;
+
+  /* Runs once, as soon as the player reports a real duration — bucket
+     indices are meaningless without one. restoreSeen refuses a record
+     measured against a different video, so a re-upload costs a rewatch
+     instead of crediting buckets that no longer exist. */
+  function seedFromStored() {
+    if (seeded || !duration) return;
+    seeded = true;
+    if (tooManyBuckets(duration)) return;   // longer than we agreed to store
+    const restored = restoreSeen(storedProgress, duration);
+    if (restored.size) {
+      for (const i of restored) seen.add(i);
+      writtenBuckets = seen.size;
+      paintCoverage();
+    }
+  }
+
+  /* Only writes when the set actually grew, so the many stop() calls a
+     student generates by clicking around cost nothing. */
+  async function persistCoverage() {
+    if (!duration || !seeded) return;
+    if (seen.size <= writtenBuckets) return;
+    if (tooManyBuckets(duration)) return;
+    const size = seen.size;
+    try {
+      await Store.saveCoverage(L.id, {
+        seenBuckets: serializeSeen(seen),
+        bucketSeconds: BUCKET_SECONDS,
+        videoSeconds: duration,
+        coverage: coverageOf(seen, duration)
+      });
+      writtenBuckets = size;
+    } catch (e) { /* keep the in-memory set; the next stop() retries */ }
+  }
 
   function unlockQuiz() {
     if (!quizzed) return;      // nothing to unlock on a Zema lesson
@@ -352,19 +406,35 @@ if (u && !L) {
       if (ytPlayer) {
         const t = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
         if (!duration && ytPlayer.getDuration) duration = ytPlayer.getDuration() || 0;
+        seedFromStored();
         markBucket(seen, t, duration);
         paintCoverage();
       }
 
       if (sincePrompt >= STILL_WATCHING_AFTER) askStillWatching();
     }, TICK_MS);
+    /* Two independent cadences, and they are not the same question.
+       FLUSH_MS (30s) writes studySeconds to the USER document and is
+       97% of this lesson's entire write cost — roughly 56 of the ~58
+       writes a full watch of a 28-minute video makes. Anyone hunting
+       for write savings should come here first and leave coverage
+       alone; CLAUDE.md forbids making this one more frequent.
+       COVERAGE_SAFETY_MS (120s) writes buckets to the PROGRESS
+       document, a different doc, so it cannot share the flush. */
     flushTimer = setInterval(flush, FLUSH_MS);
+    coverageTimer = setInterval(persistCoverage, COVERAGE_SAFETY_MS);
   };
 
   const stop = () => {
     clearInterval(tick); tick = null;
     clearInterval(flushTimer); flushTimer = null;
+    clearInterval(coverageTimer); coverageTimer = null;
     flush();
+    /* stop() fires at exactly the moments a sitting might be ending —
+       pause, tab hidden, window gone, page unloading, video finished —
+       which is why coverage is written here rather than on a timer of
+       its own. persistCoverage() is a no-op unless the set grew. */
+    persistCoverage();
   };
 
   /* ---------- leaving and coming back ----------
@@ -446,6 +516,7 @@ if (u && !L) {
         events: {
           onReady: () => {
             duration = ytPlayer.getDuration() || 0;
+            seedFromStored();
             paintCoverage();
             /* The real check. The declared `minutes` is hand-typed, so a
                load-time check on it only ever catches a typo — this catches

@@ -80,3 +80,4 @@ tools/serviceAccountKey.json
 
 # local operator tooling — npm exception per CLAUDE.md
 tools/node_modules/
+.claude/

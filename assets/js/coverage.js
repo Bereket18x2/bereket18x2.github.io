@@ -54,6 +54,79 @@ export function isComplete(seen, duration, required = REQUIRED_COVERAGE) {
   return coverageOf(seen, duration) >= required;
 }
 
+/* ---------------- persisting coverage across sessions ----------------
+
+   `seen` used to live only in memory, so 90% had to be reached in one
+   unbroken sitting. At am1's 28 minutes that is ~25 minutes held in one
+   go by a child who may be on a phone — and a reload started them at
+   zero. The failure mode was not a cheat getting through, it was an
+   honest student giving up.
+
+   So the set is stored on the progress document and reloaded. The
+   functions below are the whole of the rule, kept pure so the merge and
+   the invalidation can be tested without a browser or a database.
+
+   WHAT IS STORED (users/{uid}/progress/{lessonId}):
+     seenBuckets    the indices themselves — a COUNT cannot be merged
+                    across sessions without double-counting a stretch
+                    that was watched twice
+     bucketSeconds  what an index means
+     videoSeconds   what the indices were measured against
+     coverage       derived, so existing readers need no change
+
+   The last two exist for one reason: bucket indices are relative to a
+   duration. Re-upload the video at a different length and every stored
+   index silently points somewhere else. Better to discard the record
+   and make the student rewatch than to credit them for buckets of a
+   video that no longer exists. */
+
+/* A stored set is only worth anything if it was measured against the
+   same video. Durations wobble by a fraction of a second between
+   reports, so one bucket of tolerance; a real re-upload moves them by
+   far more than that. */
+export function sameVideoLength(storedSeconds, actualSeconds, tolerance = BUCKET_SECONDS) {
+  const a = Number(storedSeconds), b = Number(actualSeconds);
+  if (!isFinite(a) || !isFinite(b) || a <= 0 || b <= 0) return false;
+  return Math.abs(a - b) <= tolerance;
+}
+
+/* Set -> storable array. Sorted so two writes of the same coverage are
+   byte-identical, which makes a diff in the console mean something. */
+export function serializeSeen(seen) {
+  return [...seen].filter(Number.isInteger).sort((a, b) => a - b);
+}
+
+/* Storable record -> Set, refusing anything that does not match the
+   video in front of us. Fails CLOSED: every rejection path returns an
+   empty set, so a corrupt or stale record costs a rewatch rather than
+   granting coverage that was never earned.
+
+   Out-of-range indices are dropped individually rather than voiding the
+   whole record — a shortened video should keep the buckets that still
+   exist. */
+export function restoreSeen(record, duration, bucketSeconds = BUCKET_SECONDS) {
+  const out = new Set();
+  if (!record || !Array.isArray(record.seenBuckets)) return out;
+  if (Number(record.bucketSeconds) !== bucketSeconds) return out;
+  if (!sameVideoLength(record.videoSeconds, duration)) return out;
+
+  const total = bucketCount(duration);
+  for (const i of record.seenBuckets) {
+    if (Number.isInteger(i) && i >= 0 && i < total) out.add(i);
+  }
+  return out;
+}
+
+/* The rules cap seenBuckets at this length, so the client must not try
+   to write more. 2000 buckets is a 2h46m video at 5s each — far beyond
+   anything this school will publish, and short enough that a student
+   cannot use their own progress document as free storage. */
+export const MAX_STORED_BUCKETS = 2000;
+
+export function tooManyBuckets(duration) {
+  return bucketCount(duration) > MAX_STORED_BUCKETS;
+}
+
 /* ---------------- session sanity ----------------
 
    Coverage says which parts of the video were observed. It cannot say how

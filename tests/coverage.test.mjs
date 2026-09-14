@@ -6,7 +6,8 @@
 
 import {
   bucketCount, bucketAt, markBucket, coverageOf, isComplete,
-  shortfallMessage, isSuspicious, BUCKET_SECONDS, REQUIRED_COVERAGE, SESSION_RATIO_FLOOR
+  shortfallMessage, isSuspicious, BUCKET_SECONDS, REQUIRED_COVERAGE, SESSION_RATIO_FLOOR,
+  sameVideoLength, serializeSeen, restoreSeen, tooManyBuckets, MAX_STORED_BUCKETS
 } from '../assets/js/coverage.js';
 
 let pass = 0, fail = 0;
@@ -130,6 +131,83 @@ console.log('\nsession sanity — high coverage earned too fast');
 console.log('\nconstants');
 check('buckets are 5 seconds', BUCKET_SECONDS, 5);
 check('threshold is 90%', REQUIRED_COVERAGE, 0.9);
+
+console.log('\npersisting coverage: a lesson survives two sittings');
+/* am1's real numbers, so these mean something concrete: 1685 seconds,
+   337 buckets, 304 needed for 90%. */
+const AM1 = 1685;
+check('am1 is 337 buckets', bucketCount(AM1), 337);
+check('90% of it is 304 buckets', Math.ceil(337 * REQUIRED_COVERAGE), 304);
+
+{
+  // first sitting: fifteen minutes, then the child closes the tab
+  const first = new Set();
+  for (let t = 0; t < 900; t += 1) markBucket(first, t, AM1);
+  const stored = {
+    seenBuckets: serializeSeen(first),
+    bucketSeconds: BUCKET_SECONDS,
+    videoSeconds: AM1
+  };
+  check('the first sitting alone does not complete', isComplete(first, AM1), false);
+  check('it is stored sorted', stored.seenBuckets[0] < stored.seenBuckets[1], true);
+
+  // second sitting: reopened, seeded, watched to the end
+  const second = restoreSeen(stored, AM1);
+  check('the second sitting starts where the first stopped', second.size, first.size);
+  for (let t = 900; t < AM1; t += 1) markBucket(second, t, AM1);
+  check('and NOW it completes', isComplete(second, AM1), true);
+  // the whole point: without persistence the second sitting alone falls short
+  const withoutPersistence = new Set();
+  for (let t = 900; t < AM1; t += 1) markBucket(withoutPersistence, t, AM1);
+  check('whereas the second sitting on its own would not',
+    isComplete(withoutPersistence, AM1), false);
+}
+
+console.log('\na stored set is refused unless it matches THIS video');
+/* Bucket indices are relative to a duration. A re-upload at a different
+   length makes every stored index point somewhere else, so the record is
+   discarded rather than silently mismapped. Every rejection returns an
+   empty set — it fails closed, costing a rewatch, never granting
+   coverage that was not earned. */
+const good = { seenBuckets: [0, 1, 2], bucketSeconds: 5, videoSeconds: AM1 };
+check('a matching record restores', restoreSeen(good, AM1).size, 3);
+check('a video re-uploaded 3 minutes longer is refused',
+  restoreSeen(good, AM1 + 180).size, 0);
+check('a different bucket size is refused',
+  restoreSeen({ ...good, bucketSeconds: 10 }, AM1).size, 0);
+check('a missing record is empty, not a crash', restoreSeen(null, AM1).size, 0);
+check('a record with no array is empty', restoreSeen({ videoSeconds: AM1 }, AM1).size, 0);
+check('junk indices are dropped',
+  restoreSeen({ ...good, seenBuckets: [0, 'x', -1, 1.5, null, 2] }, AM1).size, 2);
+check('indices past the end of a SHORTENED video are dropped, the rest kept',
+  restoreSeen({ seenBuckets: [0, 1, 5000], bucketSeconds: 5, videoSeconds: 100 }, 100).size, 2);
+// a fraction of a second of wobble between reports is not a re-upload
+check('a half-second difference still matches', sameVideoLength(AM1, AM1 + 0.5), true);
+check('a five-second difference still matches', sameVideoLength(AM1, AM1 + 5), true);
+check('a six-second difference does not', sameVideoLength(AM1, AM1 + 6), false);
+check('zero or missing durations never match',
+  [sameVideoLength(0, AM1), sameVideoLength(AM1, 0), sameVideoLength(undefined, AM1)],
+  [false, false, false]);
+
+console.log('\nthe stored array is capped, so a progress doc is not free storage');
+check('the cap is 2000 buckets', MAX_STORED_BUCKETS, 2000);
+check('am1 is comfortably under it', tooManyBuckets(AM1), false);
+// 2000 buckets is 2h46m; the rules refuse a longer array, so the client
+// must not offer one
+check('a 3-hour video would exceed it', tooManyBuckets(3 * 60 * 60), true);
+check('exactly at the cap is allowed', tooManyBuckets(MAX_STORED_BUCKETS * BUCKET_SECONDS), false);
+check('one bucket over is not',
+  tooManyBuckets(MAX_STORED_BUCKETS * BUCKET_SECONDS + 1), true);
+
+console.log('\nserializing is stable, so an unchanged set writes identically');
+{
+  const a = new Set([5, 1, 3]);
+  const b = new Set([3, 5, 1]);
+  check('order does not matter', serializeSeen(a), serializeSeen(b));
+  check('it sorts numerically, not as strings',
+    serializeSeen(new Set([10, 9, 100])), [9, 10, 100]);
+  check('an empty set is an empty array', serializeSeen(new Set()), []);
+}
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

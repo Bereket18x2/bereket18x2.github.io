@@ -384,6 +384,34 @@ export const Store = {
     return record;
   },
 
+  /* Partial coverage, so a lesson survives being watched in two sittings.
+
+     Deliberately does NOT write videoCompleted — completing is
+     saveVideoCompletion's job and happens only when the video actually
+     ends with enough coverage. This just remembers which parts have
+     been seen so the next sitting continues instead of restarting.
+
+     Called from lesson.html on stop() and on a 120s safety timer, not
+     on the 30s study-time flush: coverage lands on the progress
+     document while studySeconds lands on the user document, so sharing
+     that cadence would double the write count rather than reuse it. */
+  async saveCoverage(lessonId, { seenBuckets, bucketSeconds, videoSeconds, coverage }) {
+    await ready();
+    const u = auth.currentUser;
+    if (!u) return null;
+
+    const record = {
+      seenBuckets: Array.isArray(seenBuckets) ? seenBuckets : [],
+      bucketSeconds: Math.trunc(Number(bucketSeconds) || 0),
+      videoSeconds: Math.max(0, Number(videoSeconds) || 0),
+      coverage: Math.min(1, Math.max(0, Number(coverage) || 0))
+    };
+    try {
+      await setDoc(doc(db, 'users', u.uid, 'progress', lessonId), record, { merge: true });
+    } catch (e) { /* best effort: the in-memory set carries on regardless */ }
+    return record;
+  },
+
   /* Best score wins — a retake can raise a mark but never lower it. */
   async saveQuiz(lessonId, score, of) {
     await ready();
