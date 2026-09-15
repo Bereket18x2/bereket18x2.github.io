@@ -191,24 +191,6 @@
     </div>
   </section>
 
-  <section class="section">
-    <div class="panel">
-      <div class="between">
-        <div>
-          <p class="eyebrow" data-am="ወርኃዊ ክፍያ" data-en="Monthly plan">ወርኃዊ ክፍያ</p>
-          <h2 style="margin:0">$25 <span class="muted" style="font-size:1rem;font-weight:400" data-am="በወር · ለአንድ ተማሪ" data-en="/ month · per student">በወር · ለአንድ ተማሪ</span></h2>
-          <p class="muted small" style="margin:8px 0 0" data-am="ሁሉንም ትምህርቶች ያካትታል። በማንኛውም ጊዜ ማቋረጥ ይችላሉ።" data-en="Includes every lesson. Cancel anytime.">ሁሉንም ትምህርቶች ያካትታል። በማንኛውም ጊዜ ማቋረጥ ይችላሉ።</p>
-          <div class="cards" style="margin-top:12px">
-            <span class="card-chip card-chip--visa"><i></i>VISA</span>
-            <span class="card-chip card-chip--mc"><i></i>Mastercard</span>
-            <span class="card-chip card-chip--amex"><i></i>Amex</span>
-          </div>
-        </div>
-        <a class="btn btn--red" href="register.html" data-am="ይጀምሩ" data-en="Get started">ይጀምሩ</a>
-      </div>
-    </div>
-  </section>
-
   <section class="section" style="padding-top:0">
     <div class="purpose">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
@@ -216,34 +198,106 @@
       </svg>
       <div>
         <h3 style="margin:0 0 6px;font-size:1rem" data-am="ስለ ትምህርት ቤቱ" data-en="About the school">ስለ ትምህርት ቤቱ</h3>
+        <!-- No curriculum list here on purpose. This used to name lesson
+             topics — ሃይማኖተ አበው, ጸሎት, ጾም, ሥርዓተ ቅዳሴ, ንስሐ, ቅዱሳን መላእክት —
+             that were later deleted, and it went on advertising them.
+             The subjects now have one home: SUBJECTS in lessons.js,
+             rendered above. -->
         <p class="muted small" style="margin:0"
-          data-am="ትምህርታችን በኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ ክርስቲያን ሥርዓት ላይ የተመሠረተ ነው፡ ሃይማኖተ አበው፣ ጸሎት፣ ጾምና ምጽዋት፣ ሥርዓተ ቅዳሴ፣ ንስሐ እና ስለ ቅዱሳን መላእክት። ይህ ትርፍ ለማግኘት የተከፈተ ንግድ ሳይሆን በስደት ያሉ ልጆቻችንን በአባቶቻቸው ቋንቋና እምነት ለማነጽ የቆመ አገልግሎት ነው።"
-          data-en="Our curriculum is grounded in the teaching of the Ethiopian Orthodox Tewahedo Church: the Faith of the Fathers, prayer, fasting and almsgiving, the Divine Liturgy, repentance, and the holy angels. This isn't a business built for profit &mdash; it's a service standing to build up our children in the diaspora in their fathers' language and faith.">
-          ትምህርታችን በኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ ክርስቲያን ሥርዓት ላይ የተመሠረተ ነው፡ ሃይማኖተ አበው፣ ጸሎት፣ ጾምና ምጽዋት፣
-          ሥርዓተ ቅዳሴ፣ ንስሐ እና ስለ ቅዱሳን መላእክት። ይህ ትርፍ ለማግኘት የተከፈተ ንግድ ሳይሆን በስደት ያሉ ልጆቻችንን
-          በአባቶቻቸው ቋንቋና እምነት ለማነጽ የቆመ አገልግሎት ነው።
+          data-am="ትምህርታችን በኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ ክርስቲያን ትምህርት ላይ የተመሠረተ ሲሆን በደብሩ መምህራን ይዘጋጃል። ይህ ትርፍ ለማግኘት የተከፈተ ንግድ ሳይሆን በስደት ያሉ ልጆቻችንን በአባቶቻቸው ቋንቋና እምነት ለማነጽ የቆመ አገልግሎት ነው።"
+          data-en="Our teaching is grounded in that of the Ethiopian Orthodox Tewahedo Church and is prepared by the parish's own teachers. This isn't a business built for profit &mdash; it's a service standing to build up our children in the diaspora in their fathers' language and faith.">
+          ትምህርታችን በኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ ክርስቲያን ትምህርት ላይ የተመሠረተ ሲሆን በደብሩ መምህራን
+          ይዘጋጃል። ይህ ትርፍ ለማግኘት የተከፈተ ንግድ ሳይሆን በስደት ያሉ ልጆቻችንን በአባቶቻቸው ቋንቋና
+          እምነት ለማነጽ የቆመ አገልግሎት ነው።
         </p>
-        <p class="blessing">✚ እግዚአብሔር ይባርክ ✚</p>
       </div>
     </div>
   </section>
 
+  <!-- ============ what a child actually learns ============
+       Rendered from SUBJECTS in lessons.js, so this can never advertise
+       a course the school does not teach — which is exactly what the
+       old copy did, listing lesson topics that had been deleted. -->
+  <section class="section">
+    <p class="eyebrow" data-am="የትምህርት ክፍሎች" data-en="The subjects">የትምህርት ክፍሎች</p>
+    <h2 style="margin:0 0 6px" data-am="ልጅዎ የሚማረው" data-en="What your child learns">ልጅዎ የሚማረው</h2>
+    <p class="muted small" style="max-width:56ch;margin:0 0 20px"
+       data-am="ሁሉም ትምህርት በአማርኛ ነው። አንዱን ክፍል ወይም ሁለቱንም መከታተል ይችላሉ።"
+       data-en="Every lesson is in Amharic. Your child can follow one track or both.">
+      ሁሉም ትምህርት በአማርኛ ነው። አንዱን ክፍል ወይም ሁለቱንም መከታተል ይችላሉ።
+    </p>
+    <div class="grid-2" id="homeSubjects"></div>
+  </section>
+
+  <!-- ============ the certificate, actually rendered ============
+       Built by the same function that issues a real one, so a parent
+       sees the object itself rather than a description of it. -->
   <section class="section" style="padding-top:0">
-    <div class="panel" style="text-align:center">
-      <p class="eyebrow" style="justify-content:center" data-am="የሞባይል መተግበሪያ" data-en="Mobile app">የሞባይል መተግበሪያ</p>
-      <h3 style="margin:0 0 14px" data-am="በቅርቡ ለApp Store እና Google Play" data-en="Coming soon to the App Store and Google Play">በቅርቡ ለApp Store እና Google Play</h3>
-      <div class="row" style="justify-content:center">
-        <span class="btn btn--ghost" style="cursor:default;opacity:.85">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="margin-inline-end:8px"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
-          App Store — <span data-am="በቅርቡ" data-en="coming soon">በቅርቡ</span>
-        </span>
-        <span class="btn btn--ghost" style="cursor:default;opacity:.85">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="margin-inline-end:8px"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2"/></svg>
-          Google Play — <span data-am="በቅርቡ" data-en="coming soon">በቅርቡ</span>
-        </span>
-      </div>
+    <div class="panel">
+      <p class="eyebrow" data-am="የምስክር ወረቀት" data-en="Certificate">የምስክር ወረቀት</p>
+      <h2 style="margin:0 0 6px" data-am="ልጅዎ የሚያገኘው" data-en="What your child earns">ልጅዎ የሚያገኘው</h2>
+      <p class="muted small" style="max-width:60ch;margin:0 0 18px"
+         data-am="ልጅዎ አንዱን የትምህርት ክፍል ሲያጠናቅቅ የምስክር ወረቀት ያገኛል — ማውረድና ማተም ይችላሉ። የትምህርት ጊዜው ቢያልቅም ያገኙት ወረቀት አይጠፋም።"
+         data-en="When your child finishes a subject they receive a certificate to download and print. It stays theirs even after the term ends.">
+        ልጅዎ አንዱን የትምህርት ክፍል ሲያጠናቅቅ የምስክር ወረቀት ያገኛል — ማውረድና ማተም ይችላሉ።
+        የትምህርት ጊዜው ቢያልቅም ያገኙት ወረቀት አይጠፋም።
+      </p>
+      <div id="certPreview" class="cert-preview"></div>
+      <p class="muted small" style="margin:12px 0 0"
+         data-am="ናሙና ነው — የተማሪው ስም በእውነተኛው ወረቀት ላይ ይጻፋል።"
+         data-en="A sample — the student's own name appears on the real one.">
+        ናሙና ነው — የተማሪው ስም በእውነተኛው ወረቀት ላይ ይጻፋል።
+      </p>
     </div>
   </section>
+
+  <!-- ============ payment, honestly ============
+       Every figure comes from PRICING in config.js. Card payment does
+       not exist: there is no Stripe account and it is blocked on the
+       parish (docs/CHURCH-DECISIONS.md §1). Showing card logos here
+       would walk a parent into a dead end, so this says plainly how
+       payment actually happens. -->
+  <section class="section" style="padding-top:0">
+    <div class="panel">
+      <p class="eyebrow" data-am="ክፍያ" data-en="Payment">ክፍያ</p>
+      <h2 style="margin:0 0 14px" data-am="ክፍያ በቤተ ክርስቲያኑ በኩል ይፈጸማል" data-en="Payment is arranged through the church">ክፍያ በቤተ ክርስቲያኑ በኩል ይፈጸማል</h2>
+
+      <div class="grid-2" style="gap:14px;margin-bottom:16px">
+        <div class="price-card">
+          <p class="eyebrow" style="margin:0 0 4px" data-am="የቅዱሳት መጻሕፍት ትምህርት" data-en="Bible study">የቅዱሳት መጻሕፍት ትምህርት</p>
+          <p class="price-card__figure" id="homeBiblePrice">…</p>
+          <p class="muted small" style="margin:6px 0 0" id="homeBibleTerm">…</p>
+        </div>
+        <div class="price-card">
+          <p class="eyebrow" style="margin:0 0 4px" data-am="የዜማ ትምህርት ቤት" data-en="Zema school">የዜማ ትምህርት ቤት</p>
+          <p class="price-card__figure" id="homeZemaPrice">…</p>
+          <p class="muted small" style="margin:6px 0 0" id="homeZemaNote">…</p>
+        </div>
+      </div>
+
+      <p class="muted small" style="max-width:64ch;margin:0 0 18px"
+         data-am="በካርድ የመክፈል አገልግሎት ገና የለም። ክፍያውን በቀጥታ ከትምህርት ቤቱ ጋር ያመቻቻሉ፤ ከዚያም መምህር መለያዎን አረጋግጦ ትምህርቶቹ ይከፈታሉ። የካርድ ቁጥር በዚህ ድረ-ገጽ ላይ በጭራሽ አይሰበሰብም።"
+         data-en="Card payment is not available. You arrange payment directly with the school, and a teacher then confirms your account and opens the lessons. Card numbers are never collected on this site.">
+        በካርድ የመክፈል አገልግሎት ገና የለም። ክፍያውን በቀጥታ ከትምህርት ቤቱ ጋር ያመቻቻሉ፤ ከዚያም
+        መምህር መለያዎን አረጋግጦ ትምህርቶቹ ይከፈታሉ። የካርድ ቁጥር በዚህ ድረ-ገጽ ላይ በጭራሽ አይሰበሰብም።
+      </p>
+
+      <div class="row">
+        <a class="btn btn--gold" href="register.html" data-am="ይጀምሩ — መለያ ይክፈቱ" data-en="Get started — create an account">ይጀምሩ — መለያ ይክፈቱ</a>
+        <a class="btn btn--ghost" href="terms.html" data-am="ስለ ክፍያው ዝርዝር" data-en="Payment details">ስለ ክፍያው ዝርዝር</a>
+      </div>
+      <p class="muted small" style="margin:12px 0 0"
+         data-am="መመዝገብ ወዲያውኑ ክፍያ አይጠይቅም። መጀመሪያ መለያ ይክፈቱ፤ ክፍያውን ቀጥሎ ከትምህርት ቤቱ ጋር ያመቻቻሉ።"
+         data-en="Registering asks for no payment. Create the account first; payment is arranged with the school afterwards.">
+        መመዝገብ ወዲያውኑ ክፍያ አይጠይቅም። መጀመሪያ መለያ ይክፈቱ፤ ክፍያውን ቀጥሎ ከትምህርት ቤቱ ጋር ያመቻቻሉ።
+      </p>
+    </div>
+  </section>
+
+
+  <!-- The "coming soon to the App Store and Google Play" panel was here.
+       There is no app and no plan for one, so it promised a family
+       something nobody intends to build. -->
 
 </main>
 
@@ -261,6 +315,123 @@
 
 <script type="module">
 import { Store, ready, homeFor } from '@store';
+import { SUBJECTS, subjectsFor, lessonsForSubject } from '@lessons';
+import { TRACKS } from '@validators';
+import { PRICING } from '@config';
+import { toGeez } from '@stats';
+import { certificateSVG } from '@certificate';
+
+/* ---------- below the fold: subjects, certificate, prices ----------
+
+   All three render from the same constants the rest of the site reads,
+   because every one of them was previously hardcoded here and every one
+   had drifted: the page listed deleted lesson topics, quoted $25 for a
+   course that costs $40, and advertised card logos for a payment method
+   that does not exist.
+
+   i18n.js runs after this module (document order, both deferred) and
+   re-queries the DOM on every toggle, so injected nodes carrying
+   data-am/data-en translate on load and on switch like any other. */
+const el = (tag, cls, text) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+};
+
+/* Both languages on the node, so the toggle owns the switching rather
+   than this code re-rendering on every change. */
+const bi = (node, am, en) => {
+  node.setAttribute('data-am', am);
+  node.setAttribute('data-en', en);
+  node.textContent = am;
+  return node;
+};
+
+function renderSubjects() {
+  const host = document.getElementById('homeSubjects');
+  if (!host) return;
+
+  for (const track of ['bible', 'zema']) {
+    const t = TRACKS[track];
+    const subjects = subjectsFor(track);
+
+    const panel = el('div', 'panel');
+    panel.appendChild(bi(el('p', 'eyebrow'), t.am, t.en));
+
+    /* Ge'ez for the Amharic count, sitting as it does directly above a
+       list numbered ፩፪፫. An Arabic numeral there reads as a different
+       alphabet mid-sentence. English keeps Arabic digits. */
+    const count = subjects.length;
+    panel.appendChild(bi(
+      el('h3'),
+      `${toGeez(count)} ትምህርት ክፍሎች`,
+      `${count} subjects`
+    ));
+
+    // the age line comes from the track, which is also what the
+    // registration form and the age validator read
+    const ages = t.max === null
+      ? { am: `ዕድሜ ከ${t.min === 7 ? '፯' : t.min} ዓመት ጀምሮ`, en: `Age ${t.min} and up` }
+      : { am: 'ዕድሜ ከ፯ እስከ ፲፫', en: `Ages ${t.min} to ${t.max}` };
+    panel.appendChild(bi(el('span', 'course__age'), ages.am, ages.en));
+
+    const list = el('ul', 'course__subjects');
+    list.style.marginTop = '14px';
+    for (const s of subjects) {
+      const li = el('li', 'course__subject');
+      li.appendChild(el('span', 'course__geez', s.num));
+      const body = el('span');
+      body.appendChild(bi(el('b'), s.am, s.en));
+      /* The one-sentence description, when the parish has written one.
+         Empty renders nothing rather than a placeholder — a parent
+         should never see the seams. */
+      if (s.descAm) body.appendChild(el('span', 'course__desc', s.descAm));
+      li.appendChild(body);
+      list.appendChild(li);
+    }
+    panel.appendChild(list);
+    host.appendChild(panel);
+  }
+}
+
+function renderPrices() {
+  const B = PRICING.bible, Z = PRICING.zema;
+  const set = (id, am, en) => {
+    const n = document.getElementById(id);
+    if (n) bi(n, am, en);
+  };
+  set('homeBiblePrice', `$${B.monthlyUSD} በወር`, `$${B.monthlyUSD} / month`);
+  set('homeBibleTerm',
+    `${B.termMonths} ወር ኮርስ — በጠቅላላ $${B.termFullUSD}። በአንድ ጊዜ ከከፈሉ $${B.termPrepaidUSD} ብቻ፤ $${B.termSavingUSD} ይቆጥባሉ።`,
+    `A ${B.termMonths}-month course, $${B.termFullUSD} in total. Prepaid it is $${B.termPrepaidUSD}, saving $${B.termSavingUSD}.`);
+  set('homeZemaPrice', `$${Z.flatUSD}`, `$${Z.flatUSD}`);
+  set('homeZemaNote',
+    `የመረጡት ትምህርት ብዛት ምንም ይሁን ዋጋው አንድ ነው። ከተመዘገቡ በኋላ ትምህርት መጨመር በአንዳንዱ $${Z.addSubjectUSD} ነው።`,
+    `The same price whichever subjects are chosen. Adding one after enrolment is $${Z.addSubjectUSD} each.`);
+}
+
+/* The certificate a child actually receives, built by the same function
+   that issues the real one — a picture of the object rather than a
+   description of it. The name is a visible placeholder: putting a
+   plausible child's name on a public marketing page would be inventing
+   a student. */
+function renderCertificate() {
+  const host = document.getElementById('certPreview');
+  if (!host) return;
+  const subject = subjectsFor('bible')[0];
+  if (!subject) return;
+  host.innerHTML = certificateSVG({
+    studentName: 'የተማሪው ስም',
+    subject,
+    lessonCount: lessonsForSubject(subject.id).length,
+    date: new Date()
+  });
+}
+
+renderSubjects();
+renderPrices();
+renderCertificate();
 
 const $ = (id) => document.getElementById(id);
 const err = $('loginErr');
