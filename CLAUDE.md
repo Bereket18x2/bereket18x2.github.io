@@ -150,6 +150,15 @@ rules, not the key. Do not "fix" it by hiding it.
 - Design tokens only, no hardcoded hex. Palette is Ge'ez manuscript: sanctuary blue
   ground, gold leaf, rubric crimson, parchment. Keep the harag interlace band and the
   Ge'ez numerals — both carry real meaning, not decoration.
+- `[hidden]` must be declared in the stylesheet. It is a UA default only, and any
+  class with a display rule silently beats it. This has caused at least two
+  production bugs and one call-site workaround.
+- **Numerals are mixed on purpose, and the mix is not an inconsistency to fix.**
+  Ge'ez for counts and ordinals in Amharic prose (`፭ ትምህርት ክፍሎች`, `ዕድሜ ከ፯ እስከ ፲፫`),
+  and beside Ge'ez-numbered lists. Arabic for money and for anything sharing a
+  sentence with a dollar figure (`$105`, `3 ወር ኮርስ — በጠቅላላ $120`), because swapping
+  numeral systems mid-sentence reads worse than the mix does. English strings keep
+  Arabic throughout.
 
 ## How to deliver changes
 
