@@ -60,6 +60,33 @@ check('it does not claim a diocesan endorsement',
   svg.includes('የሀገረ ስብከት እውቅና አይደለም'), true);
 check('and says what it IS', svg.includes('የተሳትፎና የማጠናቀቅ ማረጋገጫ'), true);
 
+console.log('\na specimen is blank-signed; an issued one still shows the placeholders');
+/* The landing page shows a certificate to every prospective parent. On
+   that page TEACHER_NAME reads as a broken site; on a certificate handed
+   to one family it is the safety catch that stops an unsigned document
+   going out. Both must hold at once, which is what `sample` separates.
+   Neither half may drift into the other. */
+{
+  const spec = certificateSVG({ studentName: 'የተማሪው ስም', subject: amestu, date: DAY, sample: true });
+  check('a specimen prints no placeholder names',
+    /TEACHER_NAME|PRIEST_NAME|PARISH_NAME/.test(spec), false);
+  // ruled but blank: the lines are still drawn, so it looks like a
+  // specimen rather than like a certificate missing its footer
+  check('but the signature lines are still ruled',
+    (spec.match(/<line /g) || []).length, 2);
+  check('and the roles are still named',
+    spec.includes('መምህር') && spec.includes('የደብሩ አስተዳዳሪ'), true);
+  check('a specimen still refuses to claim a diocesan endorsement',
+    spec.includes('የሀገረ ስብከት እውቅና አይደለም'), true);
+
+  // the issuance path is untouched — this is the assertion that stops
+  // `sample` becoming a quiet way to ship unsigned certificates
+  check('an ISSUED certificate still shows all three placeholders',
+    ['TEACHER_NAME', 'PRIEST_NAME', 'PARISH_NAME'].filter(n => !svg.includes(n)), []);
+  check('and defaults to issued when nobody asks for a sample',
+    certificateSVG({ studentName: 'A B', subject: amestu, date: DAY }).includes('TEACHER_NAME'), true);
+}
+
 console.log('\nnames are escaped, because a name is text a parent typed');
 const nasty = certificateSVG({
   studentName: '<script>alert(1)</script> & "co"', subject: amestu, date: DAY

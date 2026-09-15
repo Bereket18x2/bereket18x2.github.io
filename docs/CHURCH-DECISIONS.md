@@ -8,9 +8,11 @@ priest, a parish council — not for a developer. There is no code in it. Where 
 decision has technical consequences, they are described in plain terms and the
 detailed version is linked at the end of each item.
 
-**Four of these should be settled before real families enrol and pay.** The
-fifth (certificates) can wait until the first child finishes a subject, but not
-longer.
+**All five should now be settled before real families enrol and pay.** The fifth
+used to be the one that could wait — nothing was at stake until a child finished
+a subject. That changed when the landing page began showing a specimen
+certificate: the earned titles are on the public page, in front of every parent
+deciding whether to enrol.
 
 ---
 
@@ -22,7 +24,7 @@ longer.
 | 2 | Who owns the Firebase project | Parish council | Children's records sit in one person's private Google account |
 | 3 | How long payment receipts are kept | Treasurer + accountant | We keep them forever by default, and the cheap option expires |
 | 4 | Whether the consent method is lawful | A lawyer, paid for by the parish | We should not enrol paying families |
-| 5 | Whose names, and which titles, go on a certificate | A መምህር + priest + parish council | Certificates cannot be issued |
+| 5 | Whose names, and which titles, go on a certificate | A መምህር + priest + parish council | Certificates cannot be issued, and unapproved titles are already on the public page |
 
 ---
 
@@ -318,8 +320,20 @@ anybody. A certificate reading `TEACHER_NAME` gets caught; one awarding a title
 no መምህር chose would simply be printed, framed, and read aloud. If only one half
 of this item is answered, answer the titles.
 
-This is the least urgent item on the page, because no child has finished a
-subject yet. It becomes urgent the moment one does.
+**This stopped being the least urgent item on 2026-09-15.** It used to be —
+nothing was at stake until a child finished a subject. Then the landing page
+started showing a specimen certificate, so that what a child earns is visible
+to a parent deciding whether to enrol.
+
+The specimen is shown with its signature lines **ruled but blank**, which is
+what a specimen should look like, and it says on its face that it is a sample.
+Nobody is being shown a forged signature. But it does mean the certificate is
+now part of how the school presents itself, rather than a document that appears
+only at the end — and the titles in the table above are printed on it, in full,
+on the public page.
+
+So the practical deadline moved forward: not "when the first child finishes",
+but **before the site is shown to families at all**.
 
 ### What changes once it is answered
 

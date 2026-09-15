@@ -102,7 +102,31 @@ const geez = (n) => (Number.isInteger(n) && n > 0 && n < 100)
 /* `date` is passed in rather than read from the clock, so the same
    inputs always produce the same file — which is what makes this
    testable without freezing time. */
-export function certificateSVG({ studentName, subject, lessonCount = 0, date = new Date() }) {
+/* `sample: true` is for the specimen on the public landing page.
+
+   It leaves the signature lines RULED BUT BLANK instead of printing
+   TEACHER_NAME / PRIEST_NAME / PARISH_NAME. That is not a softening of
+   the placeholder rule — it is the rule applied correctly to two
+   different audiences:
+
+     an ISSUED certificate goes to one family, and must be obviously
+     unfinished if the names are still missing, so it shows the ASCII
+     placeholders and gets caught;
+
+     a SPECIMEN is shown to every prospective parent on the front page,
+     where a blank signature line is what a specimen is supposed to look
+     like, and English capitals read as a broken site.
+
+   A blank line makes no false claim — nobody has signed the sample, and
+   it does not pretend anybody has. The issuance path is untouched and
+   still shows the placeholders; tests/certificate.test.mjs asserts both
+   halves so this cannot quietly become a way to ship unsigned
+   certificates to families. */
+export function certificateSVG({ studentName, subject, lessonCount = 0, date = new Date(),
+                                 sample = false }) {
+  const signer = sample
+    ? { teacher: '', priest: '', parish: '' }
+    : SIGNATORIES;
   const subjectName = (subject && subject.am) || String(subject || '');
   const badge = subject && subject.badge;
   // The signature block is laid out from the BOTTOM edge (H - n) while the
@@ -151,8 +175,8 @@ export function certificateSVG({ studentName, subject, lessonCount = 0, date = n
     <line x1="570" y1="${H - 140}" x2="890" y2="${H - 140}"/>
   </g>
   <g fill="${INK.text}" font-size="19" text-anchor="middle">
-    <text x="270" y="${H - 150}">${x(SIGNATORIES.teacher)}</text>
-    <text x="730" y="${H - 150}">${x(SIGNATORIES.priest)}</text>
+    <text x="270" y="${H - 150}">${x(signer.teacher)}</text>
+    <text x="730" y="${H - 150}">${x(signer.priest)}</text>
   </g>
   <g fill="${INK.dim}" font-size="15" text-anchor="middle">
     <text x="270" y="${H - 116}">መምህር</text>
@@ -161,7 +185,7 @@ export function certificateSVG({ studentName, subject, lessonCount = 0, date = n
 
   <g fill="${INK.dim}" font-size="16">
     <text x="80" y="${H - 84}">ቀን፦ ${x(stamp)}</text>
-    <text x="${W - 80}" y="${H - 84}" text-anchor="end">${x(SIGNATORIES.parish)}</text>
+    <text x="${W - 80}" y="${H - 84}" text-anchor="end">${x(signer.parish)}</text>
   </g>
 
   <!-- kept honest against terms.html §4 -->

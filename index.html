@@ -425,7 +425,11 @@ function renderCertificate() {
     studentName: 'የተማሪው ስም',
     subject,
     lessonCount: lessonsForSubject(subject.id).length,
-    date: new Date()
+    date: new Date(),
+    /* A specimen, so the signature lines are ruled and blank. The real
+       one still carries the placeholder names until a መምህር supplies
+       them — see docs/CHURCH-DECISIONS.md §5. */
+    sample: true
   });
 }
 
