@@ -53,22 +53,50 @@ defeats *seeking to the end*, which is the common case, but a student who
 deliberately scrubs bucket by bucket can still register coverage. It is an
 attendance measure, not an anti-cheat system.
 
-### Coverage is single-session, and that is a real limit
+### Coverage survives leaving — fixed 2026-09-15
 
-`seen` is an in-memory `Set` rebuilt on every page load, and
-`saveVideoCompletion` only writes when a lesson *completes*. Partial coverage
-is never stored, so **90% has to be reached in one unbroken sitting.**
+It did not always. `seen` was an in-memory `Set` rebuilt on every page load and
+`saveVideoCompletion` only wrote on *completion*, so 90% had to be reached in
+one unbroken sitting. That was tolerable while the rule assumed 10–12 minute
+lessons; the first real lesson, `am1`, runs 1685 seconds — 337 buckets, of
+which 304 are needed, about 25 minutes held in one go by a child who may well
+be on a phone. Watch it in two halves and neither half completed; reload and it
+started from zero. The failure mode was not a cheat getting through, it was an
+honest student giving up.
 
-That was tolerable while the rule assumed 10–12 minute lessons. The first real
-lesson, `am1`, runs 1685 seconds — 337 buckets, of which 304 are needed. About
-25 minutes, held in one go, by a child who may well be on a phone. Watch it in
-two halves and neither half completes; reload and it starts from zero.
+Now the bucket set is stored on `users/{uid}/progress/{lessonId}` and reloaded
+on the next visit, so two sittings add up. What is stored, and why each field:
 
-The failure mode is not a cheat getting through, it is an honest student giving
-up. That makes it worth fixing rather than merely documenting, and the fix is a
-schema and write-cost decision — the same write-frequency question as
-`studySeconds` — not a patch. Until it is made, this is the honest record of
-where the mechanism stands.
+| field | why |
+|---|---|
+| `seenBuckets` | the indices themselves — a *count* cannot merge two sessions without double-counting a stretch watched twice |
+| `bucketSeconds` | what an index means |
+| `videoSeconds` | what the indices were measured against |
+| `coverage` | derived, so the teacher dashboard and certificates needed no change |
+
+The last two exist to invalidate cleanly. Bucket indices are relative to a
+duration, so re-uploading a video at a different length would silently mismap
+every stored index. `restoreSeen()` refuses a record whose `videoSeconds` no
+longer matches and returns an empty set — it fails closed, costing a rewatch
+rather than crediting buckets of a video that no longer exists.
+
+**Write cadence is `stop()` plus a 120-second safety flush**, and the choice was
+about cost. `stop()` already fires at every moment a sitting might be ending —
+pause, tab hidden, window gone, page unloading, video finished — so the timer
+only guards against a crash or a phone browser being killed in the background.
+Coverage writes are skipped entirely unless the set actually grew.
+
+Roughly 15 coverage writes per full watch of `am1`, against ~58 today. Note
+where the cost really is: **the 30-second `studySeconds` flush is about 56 of
+those 58 writes — 97% of the whole lesson.** Anyone looking to save writes
+should go there and leave coverage alone. It is also the one CLAUDE.md forbids
+making more frequent.
+
+Still true, and still the honest limit: `seenBuckets` is client-written and
+forgeable exactly as `coverage` always was. Persisting it adds no new forgery
+surface — anyone who wants to fake completion can write `coverage: 1` and
+`videoCompleted: true` today. `isSuspicious()` still flags high coverage earned
+in implausibly little wall-clock time.
 
 ## What is enforced
 
