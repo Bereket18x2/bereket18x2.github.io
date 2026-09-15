@@ -318,10 +318,46 @@ a  { color: var(--accent-text); }
 .course--closed { opacity: .6; }
 .course--closed:hover { border-color: var(--line); }
 
+/* ---------- landing page: prices and the certificate preview ---------- */
+.price-card {
+  border: 1px solid var(--line); border-radius: var(--r);
+  padding: 14px 16px; background: var(--surface-2);
+}
+.price-card__figure {
+  margin: 0; font-family: var(--f-util);
+  font-size: 1.45rem; color: var(--accent-text);
+}
+/* The certificate is a fixed-ratio SVG; let it scale to the panel rather
+   than overflow it on a phone. */
+.cert-preview { border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.cert-preview svg { display: block; width: 100%; height: auto; }
+
 /* ---------- modal ----------
    Used by the "still watching?" prompt. Deliberately has no dismiss
    control other than the confirm button: ignoring it is the case it
    exists to detect, so ignoring it must be possible. */
+/* ---------- the hidden attribute must actually hide ----------
+
+   `hidden` is a UA default of `display: none`, and ANY author rule that
+   sets display beats it — no specificity contest, the author sheet just
+   wins. Every element in this project that toggles with `.hidden = true`
+   and also carries a class with a display rule was therefore never
+   hidden at all.
+
+   It cost two live bugs before anyone connected them:
+
+     - #stillWatching is .modal { display: flex }, so the "are you still
+       there" prompt was painted over the lesson from page load, before
+       the video had played a single frame;
+     - #biblePlanField is .field { display: block }, so the Bible payment
+       options showed on registration permanently, including to a parent
+       who had chosen Zema or chosen nothing.
+
+   One rule, first, so the attribute means what it says everywhere and
+   the next element to use it is not a third instance of this. !important
+   because the whole point is to outrank a later display declaration. */
+[hidden] { display: none !important; }
+
 .modal {
   position: fixed; inset: 0; z-index: 50;
   display: flex; align-items: center; justify-content: center;
