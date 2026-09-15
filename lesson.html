@@ -126,19 +126,22 @@
   </div>
 </main>
 
-<!-- "still watching?" — shown after 5 minutes of continuous playback.
-     Ignoring it for 30 seconds pauses the video and stops the clock, so a
-     lesson left playing to an empty room banks nothing. -->
+<!-- Shown after five UNBROKEN minutes of playback, and never before the
+     video has played. Its job is to stop the clock running in an empty
+     room — not to challenge a child, who is between seven and thirteen
+     and has done nothing wrong by watching a long lesson. So it states
+     what is happening and offers a way on, rather than asking them to
+     account for themselves. -->
 <div class="modal" id="stillWatching" hidden>
   <div class="modal__box panel">
-    <p class="eyebrow">አሁንም እየተመለከቱ ነው?</p>
-    <h2 style="font-size:1.3rem;margin:0 0 8px">አሁንም እዚህ ነዎት?</h2>
+    <p class="eyebrow">ትምህርቱ ቀጥሏል</p>
+    <h2 style="font-size:1.3rem;margin:0 0 8px">ትምህርቱ እየቀጠለ ነው</h2>
     <p class="muted small" style="margin:0 0 6px">
-      ትምህርቱ እየተጫወተ ነው። መልስ ካልሰጡ በ<span id="stillCount">30</span> ሰከንድ ውስጥ
-      ቪዲዮው ይቆማል፤ የጥናት ሰዓቱም መቆጠር ያቆማል።
+      ለመቀጠል ከታች ያለውን ይጫኑ። በ<span id="stillCount">30</span> ሰከንድ ውስጥ
+      ካልተጫኑ ቪዲዮው ለጊዜው ይቆማል — በኋላ ከቆመበት መቀጠል ይችላሉ።
     </p>
     <div class="row" style="margin-top:16px">
-      <button class="btn btn--gold" type="button" id="stillYes">አዎ፣ እየተመለከትኩ ነው</button>
+      <button class="btn btn--gold" type="button" id="stillYes">ቀጥል</button>
     </div>
   </div>
 </div>
@@ -362,6 +365,12 @@ if (u && !L) {
 
   function askStillWatching() {
     if (!$('stillWatching').hidden) return;
+    /* Never before the video has played. The tick only runs during
+       playback so this should already hold, but the prompt covers the
+       whole screen and a false one on a lesson nobody has started is
+       alarming — worth refusing outright rather than relying on the
+       caller. */
+    if (!playerIsPlaying()) return;
     stillLeft = STILL_WATCHING_GRACE;
     $('stillCount').textContent = stillLeft;
     $('stillWatching').hidden = false;
@@ -374,7 +383,7 @@ if (u && !L) {
         // no answer: stop the video and the clock together
         if (ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
         stop();
-        $('watchNote').textContent = 'መልስ ስላልተሰጠ ቪዲዮው ቆሟል። ለመቀጠል እንደገና ያጫውቱት።';
+        $('watchNote').textContent = 'ቪዲዮው ለጊዜው ቆሟል። ለመቀጠል እንደገና ያጫውቱት — ከቆመበት ይቀጥላል።';
         $('watchNote').className = 'note small';
       }
     }, 1000);
@@ -388,6 +397,11 @@ if (u && !L) {
 
   const start = () => {
     if (tick) return;
+    /* Every (re)start begins a fresh run of CONTINUOUS playback, so the
+       presence prompt measures five unbroken minutes rather than five
+       minutes accumulated across a morning of pausing. A pause, a seek,
+       a tab switch and a resume all land here. */
+    sincePrompt = 0;
     lastTickAt = Date.now();
     tick = setInterval(() => {
       const now = Date.now();
@@ -531,8 +545,17 @@ if (u && !L) {
             }
           },
           onStateChange: (e) => {
-            if (e.data === YT.PlayerState.PLAYING) start();
-            else { stop(); closeStillWatching(); }
+            if (e.data === YT.PlayerState.PLAYING) {
+              start();
+            } else {
+              /* Pausing, seeking (which surfaces as BUFFERING) or ending
+                 breaks the run. Clearing it here as well as in start()
+                 means a prompt cannot be waiting to fire the instant
+                 playback resumes. */
+              sincePrompt = 0;
+              stop();
+              closeStillWatching();
+            }
             if (e.data === YT.PlayerState.ENDED) onVideoEnded();
           }
         }
