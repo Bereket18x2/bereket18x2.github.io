@@ -40,25 +40,24 @@ const INK = {
 
 const SCHOOL_AM = 'ፍኖተ ያሬድ';
 
-/* ---------------- the signature block ----------------
+/* ---------------- no signature block ----------------
 
-   WHO SIGNS A CERTIFICATE IS NOT A DEVELOPER'S DECISION. Whose names
-   appear, whether a priest signs alongside the teacher, which parish is
-   named, and whether a diocesan blessing is sought at all — those go
-   through the parish. See docs/CHURCH-DECISIONS.md §5.
+   There is deliberately NO signature line on this certificate, and no
+   blank space where one would go.
 
-   These are deliberately left as ASCII placeholders rather than
-   plausible Amharic names. A certificate that goes out reading
-   TEACHER_NAME is obviously broken and gets caught; one reading a
-   convincing invented name would ship, and would put a name that never
-   agreed to it on a document about a child.
+   The names were placeholders — TEACHER_NAME, PRIEST_NAME, PARISH_NAME —
+   because whose name goes on a document about a child is the parish's
+   decision and not a developer's. But a ruled line with nothing on it
+   reads as an unfinished document, which is worse for a family to
+   receive than a certificate that simply does not carry a signature.
 
-   Replace all three at once, when the parish has answered. */
-const SIGNATORIES = {
-  teacher: 'TEACHER_NAME',
-  priest:  'PRIEST_NAME',
-  parish:  'PARISH_NAME'
-};
+   So the block is absent until the parish names its signatories. The
+   constants are parked unused in config.js next to a pointer to
+   docs/CHURCH-DECISIONS.md §5; restoring the block is one change when
+   there are real names to put in it.
+
+   What does NOT depend on that decision, and stays either way, is the
+   line below stating what this document is. */
 
 /* terms.html states that the service carries no accreditation or
    endorsement from any diocese or institution. A certificate that
@@ -102,37 +101,21 @@ const geez = (n) => (Number.isInteger(n) && n > 0 && n < 100)
 /* `date` is passed in rather than read from the clock, so the same
    inputs always produce the same file — which is what makes this
    testable without freezing time. */
-/* `sample: true` is for the specimen on the public landing page.
-
-   It leaves the signature lines RULED BUT BLANK instead of printing
-   TEACHER_NAME / PRIEST_NAME / PARISH_NAME. That is not a softening of
-   the placeholder rule — it is the rule applied correctly to two
-   different audiences:
-
-     an ISSUED certificate goes to one family, and must be obviously
-     unfinished if the names are still missing, so it shows the ASCII
-     placeholders and gets caught;
-
-     a SPECIMEN is shown to every prospective parent on the front page,
-     where a blank signature line is what a specimen is supposed to look
-     like, and English capitals read as a broken site.
-
-   A blank line makes no false claim — nobody has signed the sample, and
-   it does not pretend anybody has. The issuance path is untouched and
-   still shows the placeholders; tests/certificate.test.mjs asserts both
-   halves so this cannot quietly become a way to ship unsigned
-   certificates to families. */
-export function certificateSVG({ studentName, subject, lessonCount = 0, date = new Date(),
-                                 sample = false }) {
-  const signer = sample
-    ? { teacher: '', priest: '', parish: '' }
-    : SIGNATORIES;
+/* With no signature block there is no longer a specimen/issued
+   distinction to draw: the landing page and a real certificate render
+   the same document, which is the honest arrangement anyway. */
+export function certificateSVG({ studentName, subject, lessonCount = 0, date = new Date() }) {
   const subjectName = (subject && subject.am) || String(subject || '');
   const badge = subject && subject.badge;
-  // The signature block is laid out from the BOTTOM edge (H - n) while the
-  // citation above is laid out from the top, so the height is what keeps the
-  // two from meeting. 800 leaves the lower harag clear of the lesson count.
-  const W = 1000, H = 800;
+  /* Shorter than it was: removing the signature block took the lower
+     third with it, and leaving the old height would have left exactly
+     the empty panel the removal was meant to avoid.
+
+     The citation above is laid out from the TOP and ends at y=580, so
+     the closing band is placed absolutely below it rather than from the
+     bottom edge — deriving it from H is what let it ride up over the
+     badge line when H shrank. */
+  const W = 1000, H = 750;
   const when = date instanceof Date ? date : new Date(date);
   const stamp = isNaN(when) ? '' : when.toISOString().slice(0, 10);
 
@@ -165,31 +148,16 @@ export function certificateSVG({ studentName, subject, lessonCount = 0, date = n
     ? `<text x="${W / 2}" y="580" fill="${INK.dim}" font-size="18">${x(geez(lessonCount))} ትምህርቶች</text>` : ''}
 </g>
 
-<g transform="translate(80 ${H - 200})">${harag(0, W - 160)}</g>
+<g transform="translate(80 604)">${harag(0, W - 160)}</g>
 
 <g font-family="'Noto Sans Ethiopic',sans-serif">
-  <!-- two ruled signature lines: the teacher who taught, and the priest.
-       Whether both are used is the parish's call, not this file's. -->
-  <g stroke="${INK.line}" stroke-width="1">
-    <line x1="110" y1="${H - 140}" x2="430" y2="${H - 140}"/>
-    <line x1="570" y1="${H - 140}" x2="890" y2="${H - 140}"/>
-  </g>
-  <g fill="${INK.text}" font-size="19" text-anchor="middle">
-    <text x="270" y="${H - 150}">${x(signer.teacher)}</text>
-    <text x="730" y="${H - 150}">${x(signer.priest)}</text>
-  </g>
-  <g fill="${INK.dim}" font-size="15" text-anchor="middle">
-    <text x="270" y="${H - 116}">መምህር</text>
-    <text x="730" y="${H - 116}">የደብሩ አስተዳዳሪ</text>
-  </g>
+  <text x="${W / 2}" y="${H - 86}" fill="${INK.dim}" font-size="16"
+        text-anchor="middle">ቀን፦ ${x(stamp)}</text>
 
-  <g fill="${INK.dim}" font-size="16">
-    <text x="80" y="${H - 84}">ቀን፦ ${x(stamp)}</text>
-    <text x="${W - 80}" y="${H - 84}" text-anchor="end">${x(signer.parish)}</text>
-  </g>
-
-  <!-- kept honest against terms.html §4 -->
-  <text x="${W / 2}" y="${H - 58}" fill="${INK.dim}" font-size="13"
+  <!-- Stays whatever else changes. terms.html §4 tells parents the
+       service carries no accreditation from any diocese, and a
+       certificate implying otherwise would make that false. -->
+  <text x="${W / 2}" y="${H - 60}" fill="${INK.dim}" font-size="13"
         text-anchor="middle">${x(PARTICIPATION_NOTE)}</text>
 </g>
 </svg>`;

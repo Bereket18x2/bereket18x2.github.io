@@ -10,7 +10,9 @@
    the function rather than by remembering not to add the check. */
 
 import { certificateSVG, certificateFilename } from '../assets/js/certificate.js';
+import { CERTIFICATE_SIGNATORIES } from '../assets/js/config.js';
 import { SUBJECTS, subjectById, lessonsForSubject } from '../assets/js/lessons.js';
+import { readFileSync } from 'node:fs';
 
 let pass = 0, fail = 0;
 const check = (label, actual, expected) => {
@@ -28,7 +30,8 @@ const svg = certificateSVG({
 console.log('\nit is a real, standalone SVG');
 check('starts as an svg element', svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"'), true);
 check('closes', svg.trim().endsWith('</svg>'), true);
-check('declares its size', /width="1000" height="800"/.test(svg), true);
+// shorter since the signature block was removed — see below
+check('declares its size', /width="1000" height="750"/.test(svg), true);
 // a downloaded file has no stylesheet, so a var() would render as nothing
 check('carries no CSS custom properties', /var\(--/.test(svg), false);
 check('carries no external reference', /https?:\/\//.test(svg.replace('http://www.w3.org/2000/svg', '')), false);
@@ -44,48 +47,45 @@ check('the lesson count in Geez', svg.includes('፪'), true);
 // wrong object, so its two stroke colours must both be present
 check('the harag band is drawn', svg.includes('#E8A73C') && svg.includes('#B22F30'), true);
 
-console.log('\nthe signature block is unmistakably unfinished');
-/* Placeholders, not plausible invented names. A certificate reading
-   TEACHER_NAME gets caught before it reaches a family; one reading a
-   convincing Amharic name would ship, carrying a signature nobody gave.
-   Who actually signs is docs/CHURCH-DECISIONS.md §5. */
-check('the teacher line is a visible placeholder', svg.includes('TEACHER_NAME'), true);
-check('the priest line is a visible placeholder', svg.includes('PRIEST_NAME'), true);
-check('the parish line is a visible placeholder', svg.includes('PARISH_NAME'), true);
-check('the signature roles are labelled in Amharic',
-  svg.includes('መምህር') && svg.includes('የደብሩ አስተዳዳሪ'), true);
-/* terms.html §4: the service carries no accreditation or endorsement
-   from any diocese. A certificate implying otherwise makes that false. */
-check('it does not claim a diocesan endorsement',
-  svg.includes('የሀገረ ስብከት እውቅና አይደለም'), true);
-check('and says what it IS', svg.includes('የተሳትፎና የማጠናቀቅ ማረጋገጫ'), true);
+console.log('\nthere is no signature block, and no blank line where one was');
+/* The names were placeholders because whose name goes on a document
+   about a child is the parish's decision, not a developer's. But a ruled
+   line with nothing on it reads as an unfinished document — worse for a
+   family to receive than a certificate that simply does not carry a
+   signature at all. So the block is absent until
+   docs/CHURCH-DECISIONS.md §5 is answered, and these assert that nothing
+   was left behind half-removed. */
+check('no placeholder name survives anywhere',
+  /TEACHER_NAME|PRIEST_NAME|PARISH_NAME/.test(svg), false);
+check('no ruled line is left waiting for a signature',
+  (svg.match(/<line /g) || []).length, 0);
+check('and no orphaned role label', /የደብሩ አስተዳዳሪ/.test(svg), false);
 
-console.log('\na specimen is blank-signed; an issued one still shows the placeholders');
-/* The landing page shows a certificate to every prospective parent. On
-   that page TEACHER_NAME reads as a broken site; on a certificate handed
-   to one family it is the safety catch that stops an unsigned document
-   going out. Both must hold at once, which is what `sample` separates.
-   Neither half may drift into the other. */
+/* The constants are parked in config.js so restoring the block is one
+   change rather than a rediscovery. certificate.js must NOT import them:
+   the file imports nothing by design, which is what keeps it testable in
+   node without a resolvable import map. */
 {
-  const spec = certificateSVG({ studentName: 'የተማሪው ስም', subject: amestu, date: DAY, sample: true });
-  check('a specimen prints no placeholder names',
-    /TEACHER_NAME|PRIEST_NAME|PARISH_NAME/.test(spec), false);
-  // ruled but blank: the lines are still drawn, so it looks like a
-  // specimen rather than like a certificate missing its footer
-  check('but the signature lines are still ruled',
-    (spec.match(/<line /g) || []).length, 2);
-  check('and the roles are still named',
-    spec.includes('መምህር') && spec.includes('የደብሩ አስተዳዳሪ'), true);
-  check('a specimen still refuses to claim a diocesan endorsement',
-    spec.includes('የሀገረ ስብከት እውቅና አይደለም'), true);
-
-  // the issuance path is untouched — this is the assertion that stops
-  // `sample` becoming a quiet way to ship unsigned certificates
-  check('an ISSUED certificate still shows all three placeholders',
-    ['TEACHER_NAME', 'PRIEST_NAME', 'PARISH_NAME'].filter(n => !svg.includes(n)), []);
-  check('and defaults to issued when nobody asks for a sample',
-    certificateSVG({ studentName: 'A B', subject: amestu, date: DAY }).includes('TEACHER_NAME'), true);
+  const source = readFileSync(new URL('../assets/js/certificate.js', import.meta.url), 'utf8');
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  check('certificate.js holds no signatory constant of its own',
+    /SIGNATORIES|TEACHER_NAME/.test(code), false);
+  check('and still imports nothing at all',
+    /\bimport\b|\brequire\(/.test(code), false);
 }
+check('the parked constants live in config.js instead',
+  [CERTIFICATE_SIGNATORIES.teacher, CERTIFICATE_SIGNATORIES.priest,
+   CERTIFICATE_SIGNATORIES.parish],
+  ['TEACHER_NAME', 'PRIEST_NAME', 'PARISH_NAME']);
+
+/* This line stays whatever else changes. terms.html §4 tells parents the
+   service carries no accreditation from any diocese, and a certificate
+   implying otherwise would make that statement false. */
+check('the not-an-accreditation line is still present',
+  svg.includes('የሀገረ ስብከት እውቅና አይደለም'), true);
+check('and it still says what the document IS',
+  svg.includes('የተሳትፎና የማጠናቀቅ ማረጋገጫ'), true);
+check('the date survived the removal', svg.includes('2026-09-08'), true);
 
 console.log('\nnames are escaped, because a name is text a parent typed');
 const nasty = certificateSVG({
