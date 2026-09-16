@@ -61,10 +61,10 @@ register.html   account creation
 dashboard.html  student: lessons, study hours, average score
 lesson.html     video + watch-time heartbeat + quiz
 admin.html      teacher: roster, hours, last online, scores
-checkout.html   3D card mirror (visual only)
-billing.html    pricing
+billing.html    pricing + how a family actually pays
 assets/js/config.js   Firebase config — PUBLIC BY DESIGN
 assets/js/store.js    ← ONLY file that touches storage
+assets/js/card-preview.js  3D card mirror — PARKED, imported by nothing
 assets/js/lessons.js  ← curriculum
 assets/js/sky.js      ← canvas starfield
 assets/css/style.css  ← single stylesheet, tokens at :root
@@ -86,9 +86,13 @@ visibilitychange, and pagehide; a failed flush returns its seconds to `pending`.
 **Study hours come from playback, not a stopwatch.** Seconds bank only while the player
 reports PLAYING. Never replace this with a timer that runs regardless.
 
-**Never handle raw card numbers.** The card in `checkout.html` is a visual mirror with a
-warning label. Real digits must live in Stripe Elements iframes. Any code that reads,
-stores, logs, or transmits a PAN puts the project in PCI DSS scope.
+**Never handle raw card numbers.** `assets/js/card-preview.js` is a visual mirror with
+a warning label, and it is imported by nothing: the form came off `billing.html` because
+the page tells parents payment goes through the church, and a card form under that
+sentence contradicts it however it is labelled. It is kept intact for a checkout page
+that does not exist yet (CHURCH-DECISIONS.md §1). Real digits must live in Stripe
+Elements iframes. Any code that reads, stores, logs, or transmits a PAN puts the project
+in PCI DSS scope.
 
 **Never host video in Firebase Storage.** A 20-min lesson is ~200MB; egress costs are
 punitive. Unlisted YouTube, or Bunny/Cloudflare Stream later.
@@ -133,7 +137,7 @@ was not built to satisfy it. `privacy.html` therefore describes exactly what the
 does and claims nothing further. Do not add compliance language to it without a
 lawyer. This is the one open item that should gate real families enrolling.
 
-It is put to the parish, with the four other things only they can decide, in
+It is put to the parish, with the five other things only they can decide, in
 `docs/CHURCH-DECISIONS.md` — written for a treasurer rather than a developer.
 
 The Firebase API key is public by design and ships in every web app. Security is the

@@ -289,6 +289,12 @@ a  { color: var(--accent-text); }
 .course__price { font-family: var(--f-util); font-size: 1.2rem; color: var(--accent-text); white-space: nowrap; }
 .course__price small { font-family: var(--f-body); font-size: .8rem; color: var(--text-dim); font-weight: 400; }
 .course__alt { font-size: .9rem; color: var(--text-dim); }
+/* the estimated local figure, deliberately quieter than the USD price
+   above it — it is a courtesy, not the amount anyone is charged */
+.course__approx {
+  margin: 0; font-size: .84rem; color: var(--text-dim);
+  font-family: var(--f-util);
+}
 .course__alt b { color: var(--accent-text); }
 
 /* the age line reads as a rubric note, not a form field */
@@ -631,7 +637,14 @@ td.num { font-family: var(--f-util); }
   50%      { transform: translateY(-34px) scale(1.3); opacity: .9; }
 }
 
-/* ---------- live 3D card preview ---------- */
+/* ---------- live 3D card preview ----------
+   NOT DEAD CSS, though nothing on the site uses it today. It styles
+   assets/js/card-preview.js, which is parked rather than deleted: the
+   card form came off billing.html because that page tells parents
+   payment goes through the church. When the parish's Stripe account is
+   live (CHURCH-DECISIONS.md §1) a checkout page mounts the component and
+   these rules are what make it a card. Delete them and the component no
+   longer returns unchanged, which was the whole point of keeping it. */
 .card-note {
   display: flex; align-items: center; gap: 8px;
   font-size: .82rem; color: var(--text-dim);

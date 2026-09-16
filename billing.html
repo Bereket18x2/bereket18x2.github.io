@@ -17,14 +17,14 @@
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="shortcut icon" href="assets/favicon.svg">
 <meta property="og:title" content="ክፍያ — ፍኖተ ያሬድ">
-<meta property="og:description" content="ወርኃዊ ክፍያ በVisa፣ Mastercard እና American Express — ደህንነቱ በተጠበቀ በStripe አማካኝነት።">
+<meta property="og:description" content="ክፍያው በቤተ ክርስቲያኑ በኩል ይፈጸማል፤ መምህር መለያውን ያረጋግጣል።">
 <meta property="og:image" content="https://bereket18x2.github.io/assets/og.png">
 <meta property="og:url" content="https://bereket18x2.github.io/billing.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="am_ET">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ክፍያ — ፍኖተ ያሬድ">
-<meta name="twitter:description" content="ወርኃዊ ክፍያ በVisa፣ Mastercard እና American Express — ደህንነቱ በተጠበቀ በStripe አማካኝነት።">
+<meta name="twitter:description" content="ክፍያው በቤተ ክርስቲያኑ በኩል ይፈጸማል፤ መምህር መለያውን ያረጋግጣል።">
 <meta name="twitter:image" content="https://bereket18x2.github.io/assets/og.png">
 <script type="importmap">
 {
@@ -74,8 +74,13 @@
     </span>
     <p class="eyebrow" style="justify-content:center">ወርኃዊ ክፍያ</p>
     <h1 style="font-size:2rem">የተማሪ ደንበኝነት</h1>
-    <p class="muted small" style="max-width:44ch;margin:0 auto">
-      Visa፣ Mastercard እና American Express ተቀባይነት አላቸው — ክፍያው በStripe አማካኝነት በደህንነት ይፈጸማል።
+    <!-- This said cards were accepted and processed by Stripe. Neither
+         is true: there is no Stripe account and card payment is blocked
+         on the parish (docs/CHURCH-DECISIONS.md §1). The landing page
+         had the same claim removed; this is the same fix. -->
+    <p class="muted small" style="max-width:46ch;margin:0 auto">
+      ክፍያው በቤተ ክርስቲያኑ በኩል ይፈጸማል። ከትምህርት ቤቱ ጋር ተነጋግረው ካስተካከሉ በኋላ መምህር
+      መለያዎን ያረጋግጣል።
     </p>
   </div>
 
@@ -98,6 +103,10 @@
 
       <div class="harag harag--thin" style="margin:18px 0"></div>
 
+      <p class="note small" style="margin:0 0 12px">
+        ክፍያው በአሜሪካ ዶላር ($) ነው የሚፈጸመው። በአገርዎ ገንዘብ ሲመነዘር የመጨረሻውን ምንዛሪ
+        የሚወስነው ባንክዎ ነው።
+      </p>
       <p class="muted small" style="margin:0 0 10px">ይህ ክፍያ የሚያካትተው፦</p>
       <ul class="muted small" style="margin:0;padding-inline-start:20px;line-height:1.9">
         <li>ሁሉንም የቪዲዮ ትምህርቶች (<span id="lessonCount">…</span> ትምህርቶች እስካሁን፣ በየሳምንቱ ይጨመራል)</li>
@@ -133,98 +142,13 @@
       <div id="receiptList"></div>
     </div>
 
-    <!-- ---------------- live card preview + form ---------------- -->
-    <form id="form" class="panel" style="margin-top:16px" novalidate>
-      <p class="eyebrow">የክፍያ ካርድ</p>
-
-      <p class="card-note">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B8266" stroke-width="2" stroke-linecap="round"><path d="M12 15v2M7 10V7a5 5 0 0 1 10 0v3"/><rect x="5" y="10" width="14" height="10" rx="2"/></svg>
-        ይህ ካርድ ቅድመ-እይታ ብቻ ነው። እዚህ የገባ ቁጥር በዚህ ድረ-ገጽ ላይ አይቀመጥም፣ ወደ የትም አይላክም — እውነተኛው ክፍያ በሚቀጥለው ገጽ በStripe ደህንነቱ በተጠበቀ ገጽ ላይ ይፈጸማል።
-      </p>
-
-      <div class="card-stage">
-        <div class="card3d" id="card3d">
-          <div class="card3d__face card3d__front" id="cardFrontFace">
-            <div class="card3d__top">
-              <div class="card3d__chip"></div>
-              <div class="card3d__brand" id="cardBrand">CARD</div>
-            </div>
-            <div class="card3d__number" id="cardNumberDisplay">•••• •••• •••• ••••</div>
-            <div class="card3d__row">
-              <div>
-                <div class="card3d__label">ስም</div>
-                <div class="card3d__value" id="cardNameDisplay">YOUR NAME</div>
-              </div>
-              <div>
-                <div class="card3d__label">ያበቃበት</div>
-                <div class="card3d__value" id="cardExpDisplay">MM/YY</div>
-              </div>
-            </div>
-          </div>
-          <div class="card3d__face card3d__back">
-            <div class="card3d__stripe"></div>
-            <div class="card3d__cvv-row">
-              <div class="card3d__cvv-band"></div>
-              <div class="card3d__cvv" id="cardCvvDisplay">•••</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card-fields">
-        <div class="field field--full">
-          <label for="ccName">የካርድ ያዥ ስም</label>
-          <input class="input" id="ccName" placeholder="ለምሳሌ፡ Sara Tesfaye" autocomplete="cc-name">
-          <p class="field-msg" id="ccNameMsg"></p>
-        </div>
-        <div class="field field--full">
-          <label for="ccNumber">የካርድ ቁጥር</label>
-          <input class="input" id="ccNumber" inputmode="numeric" placeholder="•••• •••• •••• ••••" autocomplete="cc-number" maxlength="23">
-          <p class="field-msg" id="ccNumberMsg"></p>
-        </div>
-        <div class="field">
-          <label for="ccExp">ያበቃበት (MM/YY)</label>
-          <input class="input" id="ccExp" inputmode="numeric" placeholder="MM/YY" autocomplete="cc-exp" maxlength="5">
-          <p class="field-msg" id="ccExpMsg"></p>
-        </div>
-        <div class="field">
-          <label for="ccCvv">CVV</label>
-          <input class="input" id="ccCvv" inputmode="numeric" placeholder="•••" autocomplete="cc-csc" maxlength="4">
-          <p class="field-msg" id="ccCvvMsg"></p>
-        </div>
-      </div>
-
-      <div class="trust-row">
-        <span class="trust-chip">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 15v2M7 10V7a5 5 0 0 1 10 0v3"/><rect x="5" y="10" width="14" height="10" rx="2"/></svg>
-          256-bit SSL
-        </span>
-        <span class="trust-chip">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6z"/></svg>
-          PCI-DSS via Stripe
-        </span>
-        <span class="trust-chip">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
-          በማንኛውም ጊዜ ማቋረጥ ይቻላል
-        </span>
-      </div>
-
-      <div class="field" style="margin-top:4px">
-        <label for="email">ደረሰኝ የሚላክበት ኢሜይል</label>
-        <input class="input" id="email" type="email" readonly autocomplete="email">
-      </div>
-
-      <p id="err" class="note note--red" style="display:none"></p>
-      <p id="cfg" class="note small" style="display:none;margin-bottom:14px"></p>
-
-      <button class="btn btn--gold btn--block" type="submit">✦ ወደ ደህንነቱ የተጠበቀ ክፍያ ይቀጥሉ →</button>
-      <p class="help" style="margin-top:12px">
-        ክፍያው ከተፈጸመ በኋላ መለያዎ በአስተዳዳሪ ተረጋግጦ ትምህርቶቹ ይከፈታሉ። ክፍያ ከአሳሽ ላይ በቀጥታ አይመዘገብም።
-      </p>
-    </form>
-
-    <!-- shown when the pay button is pressed while card payment is off -->
-    <div class="panel" id="contactPanel" style="display:none;margin-top:16px;border-inline-start:3px solid var(--accent)">
+    <!-- How a family actually pays, stated in the place a card form
+         used to sit. The form was removed rather than relabelled: the
+         hero says payment goes through the church, and four card fields
+         under that sentence contradict it however they are labelled. The
+         component is parked intact in assets/js/card-preview.js and
+         returns unchanged when the parish's Stripe account is live. -->
+    <div class="panel" id="contactPanel" style="margin-top:16px;border-inline-start:3px solid var(--accent)">
       <p class="eyebrow">የክፍያ መንገድ</p>
       <h3 style="margin:0 0 8px;font-size:1.05rem">የካርድ ክፍያ ገና አልተጀመረም</h3>
       <p class="muted small" style="margin:0 0 12px">
@@ -240,15 +164,15 @@
     <div style="margin-top:16px">
       <details class="faq">
         <summary>ይህ ክፍያ ደህንነቱ የተጠበቀ ነው?</summary>
-        <p>አዎ። የካርድ መረጃዎ የሚያልፈው በStripe ደህንነቱ በተጠበቀ ገጽ ብቻ ነው፤ ይህ ድረ-ገጽ የካርድ ቁጥር በጭራሽ አያከማችም።</p>
+        <p>አዎ። ክፍያው በቀጥታ ከትምህርት ቤቱ ጋር ነው የሚፈጸመው፤ ይህ ድረ-ገጽ የካርድ ቁጥር በጭራሽ አይጠይቅም፣ አያከማችም።</p>
       </details>
       <details class="faq">
         <summary>በማንኛውም ጊዜ ማቋረጥ እችላለሁ?</summary>
         <p>አዎ፣ ምንም ቅጣት ሳይኖር በማንኛውም ጊዜ ማቋረጥ ይችላሉ። ቀጣዩ ወር ክፍያ ብቻ ይቆማል።</p>
       </details>
       <details class="faq">
-        <summary>ክፍያው ቢወድቅ ምን ይሆናል?</summary>
-        <p>ትምህርቶቹ ይቆያሉ፣ ነገር ግን ተጨማሪ ትምህርት ለማየት ክፍያውን ደግመው እስኪያጠናቅቁ ድረስ ገጹ ያሳውቅዎታል።</p>
+        <summary>የትምህርት ጊዜው ካበቃ ምን ይሆናል?</summary>
+        <p>ልጅዎ ያገኘው ውጤት፣ ባጅና የምስክር ወረቀት አይጠፋም። አዲስ ትምህርት ለማየት ግን ክፍያውን ከትምህርት ቤቱ ጋር ማደስ ያስፈልጋል።</p>
       </details>
     </div>
 
@@ -282,7 +206,7 @@
 </footer>
 
 <script type="module">
-import { Store, requireAuth, accessActive, accessExpired, STRIPE_PAYMENT_LINK } from '@store';
+import { Store, requireAuth, accessActive, accessExpired } from '@store';
 import { lessonsFor } from '@lessons';
 import { CHURCH_CONTACT, PRICING, priceFor } from '@config';
 import { TRACKS } from '@validators';
@@ -310,7 +234,6 @@ if (u) {
   $('planName').textContent = TRACKS[u.track]?.am ?? '—';
   $('studentName').textContent = u.studentName;
   $('lessonCount').textContent = lessonsFor(u.track).length;
-  $('email').value = u.email || '';
 
   // one constant in config.js drives every mention of how to reach us
   $('contactName').textContent = CHURCH_CONTACT.name;
@@ -324,15 +247,14 @@ if (u) {
      taken away — which is why the expired note leads with the
      certificates rather than with the price. */
   if (accessActive(u)) {
-    $('form').style.display = 'none';
+    // a family whose term is running does not need telling how to pay again
+    $('contactPanel').style.display = 'none';
     $('paidNote').style.display = 'block';
     if (u.paidUntil) $('paidUntilNote').textContent = `እስከ ${u.paidUntil} ድረስ።`;
   } else if (accessExpired(u)) {
-    $('form').style.display = 'none';
     $('expiredNote').style.display = 'block';
     if (u.paidUntil) $('expiredWhen').textContent = `(${u.paidUntil} ላይ አብቅቷል።)`;
   }
-  if (u.guardianName) $('ccName').value = u.guardianName;
 
   /* The parent's own receipts. privacy.html says they can see what they
      were charged; this is where they see it. */
@@ -365,138 +287,7 @@ if (u) {
     }
   }
 
-  if (!STRIPE_PAYMENT_LINK) {
-    $('cfg').style.display = 'block';
-    $('cfg').textContent = 'ማስታወሻ ለአስተዳዳሪ፡ የStripe Payment Link ገና በassets/js/config.js አጠገብ ባለው store.js ውስጥ አልተቀመጠም።';
-  }
 
-  /* ---------------- live card preview — display only, nothing persisted ---------------- */
-  const brandOf = (digits) => {
-    if (/^3[47]/.test(digits)) return 'AMEX';
-    if (/^4/.test(digits)) return 'VISA';
-    if (/^(5[1-5]|2[2-7])/.test(digits)) return 'MASTERCARD';
-    return 'CARD';
-  };
-  const groupNumber = (digits, brand) => {
-    if (brand === 'AMEX') return digits.replace(/(\d{4})(\d{0,6})(\d{0,5})/, (_, a, b, c) => [a, b, c].filter(Boolean).join(' '));
-    return digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-  };
-  // standard Luhn checksum — catches typos/mashed keyboards, not fraud;
-  // Stripe's own page re-validates for real when the card actually charges
-  const luhnOk = (digits) => {
-    let sum = 0, dbl = false;
-    for (let i = digits.length - 1; i >= 0; i--) {
-      let d = +digits[i];
-      if (dbl) { d *= 2; if (d > 9) d -= 9; }
-      sum += d; dbl = !dbl;
-    }
-    return sum % 10 === 0;
-  };
-
-  const valid = { name: false, number: false, exp: false, cvv: false };
-  const mark = (input, msgEl, state, msg) => {
-    input.classList.remove('is-valid', 'is-invalid');
-    msgEl.classList.remove('valid', 'invalid');
-    msgEl.textContent = '';
-    if (state === 'valid') { input.classList.add('is-valid'); msgEl.classList.add('valid'); msgEl.textContent = msg || '✓ ትክክል'; }
-    else if (state === 'invalid') { input.classList.add('is-invalid'); msgEl.classList.add('invalid'); msgEl.textContent = msg; }
-  };
-
-  $('ccName').addEventListener('input', () => {
-    const name = $('ccName').value.trim();
-    $('cardNameDisplay').textContent = name.toUpperCase() || 'YOUR NAME';
-    if (!name) { valid.name = false; mark($('ccName'), $('ccNameMsg'), 'none'); }
-    else if (name.length < 3 || !name.includes(' ')) { valid.name = false; mark($('ccName'), $('ccNameMsg'), 'invalid', '✕ ሙሉ ስም (የመጀመሪያና የአባት ስም) ያስገቡ'); }
-    else { valid.name = true; mark($('ccName'), $('ccNameMsg'), 'valid'); }
-  });
-
-  $('ccNumber').addEventListener('input', () => {
-    const raw = $('ccNumber').value.replace(/\D/g, '');
-    const brand = brandOf(raw);
-    const expectedLen = brand === 'AMEX' ? 15 : brand === 'CARD' ? 16 : 16;
-    const digits = raw.slice(0, expectedLen);
-    const grouped = groupNumber(digits, brand);
-    $('ccNumber').value = grouped;
-    $('cardBrand').textContent = brand;
-    $('cardNumberDisplay').textContent = grouped || '•••• •••• •••• ••••';
-    $('ccCvv').maxLength = brand === 'AMEX' ? 4 : 3;
-
-    if (!digits) { valid.number = false; mark($('ccNumber'), $('ccNumberMsg'), 'none'); }
-    else if (digits.length < expectedLen) { valid.number = false; mark($('ccNumber'), $('ccNumberMsg'), 'none'); }
-    else if (!luhnOk(digits)) { valid.number = false; mark($('ccNumber'), $('ccNumberMsg'), 'invalid', '✕ ልክ ያልሆነ የካርድ ቁጥር'); }
-    else { valid.number = true; mark($('ccNumber'), $('ccNumberMsg'), 'valid', `✓ ትክክለኛ ${brand} ቁጥር`); }
-  });
-
-  $('ccExp').addEventListener('input', () => {
-    let digits = $('ccExp').value.replace(/\D/g, '').slice(0, 4);
-    if (digits.length >= 3) digits = digits.slice(0, 2) + '/' + digits.slice(2);
-    $('ccExp').value = digits;
-    $('cardExpDisplay').textContent = digits || 'MM/YY';
-
-    if (digits.length < 5) { valid.exp = false; mark($('ccExp'), $('ccExpMsg'), 'none'); return; }
-    const [mm, yy] = digits.split('/').map(Number);
-    const now = new Date();
-    const curYY = now.getFullYear() % 100, curMM = now.getMonth() + 1;
-    if (mm < 1 || mm > 12) { valid.exp = false; mark($('ccExp'), $('ccExpMsg'), 'invalid', '✕ ወር ከ01–12 መሆን አለበት'); }
-    else if (yy < curYY || (yy === curYY && mm < curMM)) { valid.exp = false; mark($('ccExp'), $('ccExpMsg'), 'invalid', '✕ ካርዱ ጊዜው አልፏል'); }
-    else { valid.exp = true; mark($('ccExp'), $('ccExpMsg'), 'valid'); }
-  });
-
-  $('ccCvv').addEventListener('input', () => {
-    $('ccCvv').value = $('ccCvv').value.replace(/\D/g, '');
-    const v = $('ccCvv').value;
-    $('cardCvvDisplay').textContent = v || '•••';
-    const need = +$('ccCvv').maxLength;
-    if (!v) { valid.cvv = false; mark($('ccCvv'), $('ccCvvMsg'), 'none'); }
-    else if (v.length < need) { valid.cvv = false; mark($('ccCvv'), $('ccCvvMsg'), 'none'); }
-    else { valid.cvv = true; mark($('ccCvv'), $('ccCvvMsg'), 'valid'); }
-  });
-  $('ccCvv').addEventListener('focus', () => $('card3d').style.setProperty('--flip', '180deg'));
-  $('ccCvv').addEventListener('blur', () => $('card3d').style.setProperty('--flip', '0deg'));
-
-  /* ---------------- tilt + gloss follow the pointer — pure decoration ---------------- */
-  const stage = document.querySelector('.card-stage');
-  const card3d = $('card3d');
-  stage.addEventListener('pointermove', (e) => {
-    const r = stage.getBoundingClientRect();
-    const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
-    card3d.style.setProperty('--tiltX', ((0.5 - py) * 12).toFixed(2) + 'deg');
-    card3d.style.setProperty('--tiltY', ((px - 0.5) * 16).toFixed(2) + 'deg');
-    card3d.style.setProperty('--mx', (px * 100).toFixed(1) + '%');
-    card3d.style.setProperty('--my', (py * 100).toFixed(1) + '%');
-  });
-  stage.addEventListener('pointerleave', () => {
-    card3d.style.setProperty('--tiltX', '0deg');
-    card3d.style.setProperty('--tiltY', '0deg');
-  });
-
-  /* ---------------- submit → hand off to Stripe (or the phase-1 demo) ---------------- */
-  $('form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    $('err').style.display = 'none';
-
-    if (!valid.name || !valid.number || !valid.exp || !valid.cvv) {
-      $('err').textContent = 'እባክዎ ትክክለኛ የካርድ ያዥ ስም፣ ቁጥር፣ ማብቂያ ቀንና CVV ያስገቡ — ከላይ ያሉት ቀይ ማሳሰቢያዎች የትኛው መስተካከል እንዳለበት ያሳያሉ።';
-      $('err').style.display = 'block';
-      (!valid.name ? $('ccName') : !valid.number ? $('ccNumber') : !valid.exp ? $('ccExp') : $('ccCvv')).focus();
-      return;
-    }
-    if (!STRIPE_PAYMENT_LINK) { openContactPanel(); return; }
-
-    const url = new URL(STRIPE_PAYMENT_LINK);
-    if (u.email) url.searchParams.set('prefilled_email', u.email);
-    url.searchParams.set('client_reference_id', u.uid);
-    location.href = url.toString();
-  });
-
-  /* Card payment is not live yet — see docs/PAYMENTS.md. Rather than a
-     dead button or a fake success, say plainly that it is not connected
-     and give the parent a way to actually pay. */
-  function openContactPanel() {
-    $('contactPanel').style.display = 'block';
-    $('contactPanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-}
 </script>
 <script src="assets/js/sky.js" defer></script>
 <script src="assets/js/theme.js" defer></script>
