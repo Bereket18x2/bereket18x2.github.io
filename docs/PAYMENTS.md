@@ -124,7 +124,7 @@ account.
 
 That is a decision for the parish, not a task waiting on a developer, and it is
 put to them in plain terms in **`docs/CHURCH-DECISIONS.md` §1** — along with the
-four other things only the church can settle. Once an account exists, pointing
+five other things only the church can settle. Once an account exists, pointing
 this code at it is about a day's work.
 
 **Technical.** GitHub Pages serves static files and cannot run a webhook.

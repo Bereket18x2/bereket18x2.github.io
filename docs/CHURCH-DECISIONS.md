@@ -1,18 +1,22 @@
 # Decisions for the church
 
-**Five things only the parish can decide.** None of them is a technical problem,
-none can be solved by writing more code, and all five are open today.
+**Six things only the parish can decide.** None of them is a technical problem,
+none can be solved by writing more code, and all six are open today.
 
 This page is written for the people who will actually decide — a treasurer, a
 priest, a parish council — not for a developer. There is no code in it. Where a
 decision has technical consequences, they are described in plain terms and the
 detailed version is linked at the end of each item.
 
-**All five should now be settled before real families enrol and pay.** The fifth
+**All six should now be settled before real families enrol and pay.** The fifth
 used to be the one that could wait — nothing was at stake until a child finished
 a subject. That changed when the landing page began showing a specimen
 certificate: the earned titles are on the public page, in front of every parent
 deciding whether to enrol.
+
+The sixth is the cheapest on the list and the easiest to leave undone. It is
+here for the same reason receipt retention is: it costs one person ten minutes
+now, and it is the kind of thing that is embarrassing later.
 
 ---
 
@@ -24,7 +28,8 @@ deciding whether to enrol.
 | 2 | Who owns the Firebase project | Parish council | Children's records sit in one person's private Google account |
 | 3 | How long payment receipts are kept | Treasurer + accountant | We keep them forever by default, and the cheap option expires |
 | 4 | Whether the consent method is lawful | A lawyer, paid for by the parish | We should not enrol paying families |
-| 5 | Whose names, and which titles, go on a certificate | A መምህር + priest + parish council | Certificates cannot be issued, and unapproved titles are already on the public page |
+| 5 | Whose names, and which titles, go on a certificate | A መምህር + priest + parish council | Certificates go out unsigned, and unapproved titles are already on the public page |
+| 6 | Verifying the currency conversion table | Treasurer, ten minutes with a bank rate | Families abroad see no local figure at all, or eventually a stale one |
 
 ---
 
@@ -70,7 +75,38 @@ to run, which is a separate small cost (roughly $0–25 a month depending on the
 option chosen) — that part *is* a developer decision and does not need the
 parish.
 
-*Technical detail: `docs/PAYMENTS.md`.*
+### A second question that arrives with the first
+
+**Once card payment works, families outside the United States can pay too.** A
+card issued in the UK, Germany, Canada or the Gulf will simply go through. The
+registration form already asks which country a family is in, and the diaspora
+this school is for does not live only in America.
+
+**That is a policy question, not a technical one.** Nothing needs building for
+it to happen — it happens by default the day Stripe is switched on, unless
+somebody decides otherwise. So the parish should decide on purpose whether the
+school enrols families outside the US, rather than discovering the answer from
+a bank statement.
+
+It matters because of item 4. **All of the consent and privacy work assumes US
+children.** It was built around COPPA, which is a United States law. A family in
+the UK or the EU is covered by GDPR instead, which treats children's data
+differently: it sets its own age of consent (13 to 16, varying by country), it
+gives families rights the current policy does not describe, and it can apply to
+a US organisation that knowingly serves European families. A Canadian or Gulf
+family raises smaller but similar questions.
+
+Nobody needs to solve that here. What matters is the timing: **it is the same
+lawyer, in the same hour.** Ask both questions at once — "is our consent method
+sufficient for children in the US?" and "may we enrol families outside the US,
+and what changes if we do?" — rather than paying twice, or worse, discovering
+the second question after a family in London has already enrolled.
+
+If the answer is "US families only", that is a perfectly good answer, and it
+becomes a line in the terms of service and a check at registration. It is a
+small piece of work. Finding out afterwards is not.
+
+*Technical detail: `docs/PAYMENTS.md`. Related: item 4 below.*
 
 ---
 
@@ -248,9 +284,15 @@ and print. It carries the school's name, the child's name, the subject, the
 Two separate things on that document need a church's authority behind them, and
 neither has it yet.
 
-**a) The signature lines.** There are two, plus the parish's name, and all three
-are currently blank placeholders reading `TEACHER_NAME`, `PRIEST_NAME` and
-`PARISH_NAME`.
+**a) The signature lines — currently ABSENT, not blank.** The certificate
+carries no signature block at all today. It used to print the placeholders
+`TEACHER_NAME`, `PRIEST_NAME` and `PARISH_NAME`; leaving ruled lines with
+nothing on them made the document look unfinished, which is worse for a family
+to receive than a certificate that simply does not claim a signature. So the
+whole block was removed until there are real names for it.
+
+The names are parked, unused, in `assets/js/config.js`. Restoring the block is
+one change once the parish answers:
 
 - **Which teacher signs** — the teacher who taught that subject, or one person
   for the whole school?
@@ -299,9 +341,10 @@ someone who never agreed to it. Whether a diocese's recognition may be
 represented is a matter for the church hierarchy, and claiming it without leave
 would be a serious thing to have done.
 
-The placeholders are deliberately left as obvious English capitals rather than
-plausible Amharic names, so that a certificate escaping in this state is
-instantly recognisable as unfinished rather than quietly wrong.
+Blank ruled lines were the alternative and they are worse: a parent reading one
+cannot tell whether the school forgot to sign it or whether something went
+wrong in printing. Absent is unambiguous — the certificate says what the child
+did, and claims no signature it does not have.
 
 The titles are the same kind of question wearing a friendlier face. They are
 easier to overlook precisely because they *already read plausibly* — nothing
@@ -311,9 +354,10 @@ tradition is not a formatting decision.
 
 ### If it is deferred
 
-Certificates cannot be issued. A child who finishes a subject can still download
-one, but it will read `TEACHER_NAME`, which is obviously not something to hand a
-family.
+Certificates are issued, and they carry no signature. That is survivable — the
+document still names the child, the subject, the date and the school — but a
+certificate from a church school that nobody has signed is a smaller thing than
+it should be.
 
 The titles carry a quieter risk: unlike the signature lines, they would not stop
 anybody. A certificate reading `TEACHER_NAME` gets caught; one awarding a title
@@ -325,26 +369,97 @@ nothing was at stake until a child finished a subject. Then the landing page
 started showing a specimen certificate, so that what a child earns is visible
 to a parent deciding whether to enrol.
 
-The specimen is shown with its signature lines **ruled but blank**, which is
-what a specimen should look like, and it says on its face that it is a sample.
-Nobody is being shown a forged signature. But it does mean the certificate is
-now part of how the school presents itself, rather than a document that appears
-only at the end — and the titles in the table above are printed on it, in full,
-on the public page.
+The specimen carries no signature block, because no certificate does — the
+sample a parent sees on the landing page and the document their child would
+actually receive are now the same object, which is the honest arrangement.
+Nobody is being shown a signature the school does not have. But it does mean
+the certificate is now part of how the school presents itself, rather than a
+document that appears only at the end — and the titles in the table above are
+printed on it, in full, on the public page.
 
 So the practical deadline moved forward: not "when the first child finishes",
 but **before the site is shown to families at all**.
 
 ### What changes once it is answered
 
-Three names are filled in, the twelve titles are confirmed or replaced, and
-certificates are ready. Both are data edits in one file each — no rebuild, no
+Three names are filled in, the signature block goes back into
+`assets/js/certificate.js`, and the twelve titles are confirmed or replaced.
+All of it is a data edit plus one small block of markup — no rebuild, no
 migration, and nothing already issued to correct, since none has been.
 
 If a blessing is granted, the certificate also carries it. Until then it states
 plainly what it is — a record that a child took part and completed the subject —
 and explicitly says it is **not** a diocesan accreditation, which matches what
 the terms of service already tell parents.
+
+---
+
+## 6. Verifying the currency conversion table
+
+### The decision
+
+Every price on the site is in **US dollars**, and every payment is charged in US
+dollars. That does not change and is not in question here.
+
+But a family in Nairobi or Dubai reading "$50" does not immediately know what
+that means to them. So beneath each price the site shows an *approximate* figure
+in their own currency — clearly marked as approximate, with the date of the rate
+printed next to it, and with a line saying the charge is in dollars and their
+bank sets the final rate.
+
+Those rates are typed into a small table by hand. **Nobody at the parish has
+checked them, and one of them is deliberately blank.**
+
+The blank one is **the Ethiopian birr.** The birr has moved a great deal since
+it was floated, any figure entered from memory would be badly wrong, and a
+parent in Addis is precisely the person who would notice. Showing nothing is
+honest; showing a number that is badly wrong is not. So the birr row shows no
+approximate figure at all until somebody fills it in from a real source.
+
+What is needed: one person, with a bank's published rate or a reputable
+exchange-rate site, spending ten minutes confirming the figures and supplying
+the birr. Then the same again perhaps twice a year.
+
+### Why it cannot be decided in code
+
+The software can display any rate it is given and can do the arithmetic
+perfectly. What it cannot do is **know whether a rate is true.**
+
+The site could fetch live rates automatically, and that was considered and
+rejected. It would cost nothing in money but it adds a live dependency on an
+outside service to a site that currently has none; the figure would shift
+between one page load and the next; there is no server here to cache it; and the
+free feeds that carry the birr generally carry the *official* rate rather than
+the rate a family actually gets — so the site would be spending complexity to
+display a number that is differently wrong. A table checked by a person twice a
+year is both simpler and more honest.
+
+Which leaves it as a small, recurring human task — and those belong to whoever
+owns the school's money, not to whoever wrote the page.
+
+### If it is deferred
+
+Nothing breaks and nobody is misled. A family whose currency has no rate simply
+sees the dollar price with no local figure beside it, which is the same thing
+every website showed ten years ago.
+
+The risk is slower. Rates drift. A table dated eighteen months ago, still shown
+with confidence beside a price, is worse than no table — and the date printed
+beside it is what stops that being invisible, not what stops it happening.
+
+This is the same class of item as receipt retention (item 3): cheap now,
+embarrassing later.
+
+### What changes once it is answered
+
+The figures are corrected, the birr row is filled in, and the approximate line
+appears by itself for every Ethiopian family — no code change, just the number
+and its date. The parish then re-checks it on whatever schedule it decides, and
+the printed date makes it obvious when nobody has.
+
+*Technical detail: the table is `FX` in `assets/js/config.js`, with the date it
+was last set. `tests/pricing.test.mjs` asserts that no rate is zero or negative
+and that a currency with no rate shows nothing rather than a guess.*
 
 ---
 
