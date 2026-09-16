@@ -119,6 +119,13 @@ service cloud.firestore {
                             selectedSubjects opens the Zema course for
                             nothing; one who could write `plan` buys the
                             three-month term at the one-month price.
+       country/region       where the family is. `region` keys the
+                            regional price table in config.js, so a
+                            parent who could write it could move
+                            themselves to a cheaper region; `country` is
+                            what region is derived from, so leaving it
+                            writable would be the same hole one step
+                            removed.
        tier                 the retired tier field, still refused so an
                             old client cannot reintroduce it
        unlockedLessons      opening lessons a teacher has not opened
@@ -147,6 +154,7 @@ service cloud.firestore {
         'role', 'active', 'assignedTeacher',
         'paid', 'amountPaid', 'paidUntil', 'paidAt',
         'tier', 'plan', 'track', 'selectedSubjects',
+        'country', 'region',
         'unlockedLessons', 'remedial', 'remedialSince', 'remedialBy',
         'teachesSubjects', 'parish',
         'badges',
@@ -232,6 +240,7 @@ service cloud.firestore {
             request.resource.data.role == 'student'
             && request.resource.data.keys().hasOnly([
                  'uid', 'role', 'guardianName', 'email', 'studentName', 'age',
+                 'country', 'region',
                  'track', 'selectedSubjects', 'plan',
                  'paid', 'verified', 'studySeconds',
                  'createdAt', 'lastSeen', 'consentGivenAt', 'consentVersion'
@@ -245,6 +254,15 @@ service cloud.firestore {
             && request.resource.data.selectedSubjects is list
             && request.resource.data.selectedSubjects.size() > 0
             && request.resource.data.plan in ['monthly', 'term']
+            /* ISO 3166-1 alpha-2, and one of the six regions the school
+               uses. The list is duplicated from REGIONS in config.js,
+               which rules cannot import — change one, change the other.
+               Pinning region at create is what stops a registrant
+               claiming a cheaper one, since it is frozen afterwards. */
+            && request.resource.data.country is string
+            && request.resource.data.country.size() == 2
+            && request.resource.data.region in
+                 ['ETHIOPIA', 'AFRICA', 'NORTH_AMERICA', 'EUROPE', 'ASIA', 'OTHER']
           ) || (
             request.resource.data.role == 'pending_teacher'
             && request.resource.data.keys().hasOnly([

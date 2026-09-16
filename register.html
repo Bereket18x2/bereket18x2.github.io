@@ -125,10 +125,35 @@
 
       <!-- Each course shows what the child will actually study, not just
            a name and a price. The Zema subjects are tickable in place. -->
+      <!-- Country first: the price shown for each track depends on the
+           region it resolves to, so a parent should not meet a figure
+           before we know which one applies to them. Nothing is
+           preselected — an empty country is the honest starting state,
+           not a guess based on their browser. -->
+      <div class="field">
+        <label for="country">የሚኖሩበት አገር</label>
+        <input class="input" id="countryFilter" type="search" autocomplete="off"
+               data-ph-am="አገር ይፈልጉ…" data-ph-en="Search for a country…"
+               placeholder="አገር ይፈልጉ…">
+        <select class="input" id="country" style="margin-top:8px"></select>
+        <p class="help" data-am="ዝርዝሩን ለማጥበብ ከላይ ይጻፉ። አገርዎ ከሌለ «ሌላ አገር» ይምረጡ።" data-en="Type above to narrow the list. If your country is not listed, choose &ldquo;Another country&rdquo;.">ዝርዝሩን ለማጥበብ ከላይ ይጻፉ። አገርዎ ከሌለ «ሌላ አገር» ይምረጡ።</p>
+        <p class="field-msg" id="countryMsg"></p>
+      </div>
+
       <div class="field">
         <label>የትምህርት ክፍል ይምረጡ</label>
         <p class="help">ልጅዎ የሚማረውን ይምረጡ። ከታች የሚማራቸው ትምህርቶች ተዘርዝረዋል።</p>
         <div id="trackList" class="courses"></div>
+        <!-- Stated next to the prices, not buried in the terms. The
+             figure charged is the USD one; anything in local currency is
+             an estimate this site produces, not an amount anyone will
+             bill. -->
+        <p class="note small" style="margin-top:12px"
+           data-am="ክፍያው ሁልጊዜ በአሜሪካ ዶላር ($) ነው የሚፈጸመው። በአገርዎ ገንዘብ የሚታየው ግምታዊ ብቻ ነው — የመጨረሻውን ምንዛሪ የሚወስነው ባንክዎ ነው።"
+           data-en="The charge is always in US dollars ($). Any figure in your own currency is an approximation — your bank sets the final rate.">
+          ክፍያው ሁልጊዜ በአሜሪካ ዶላር ($) ነው የሚፈጸመው። በአገርዎ ገንዘብ የሚታየው ግምታዊ ብቻ ነው —
+          የመጨረሻውን ምንዛሪ የሚወስነው ባንክዎ ነው።
+        </p>
         <p class="field-msg" id="trackMsg"></p>
       </div>
 
@@ -196,8 +221,10 @@
 
 <script type="module">
 import { Store, ready, homeFor } from '@store';
-import { validateName, validateAge, validatePassword, validateEmail, TRACKS } from '@validators';
-import { PRICING } from '@config';
+import { validateName, validateAge, validatePassword, validateEmail,
+         validateCountry, TRACKS } from '@validators';
+import { PRICING, REGIONS, REGION_IDS, COUNTRIES, countriesInRegion,
+         countryByCode, approxLocal, priceFor, FX } from '@config';
 import { subjectsFor } from '@lessons';
 
 const $ = id => document.getElementById(id);
@@ -275,6 +302,7 @@ const bibleCourse = `
         <label class="course__name" for="trackBible">${esc(TRACKS.bible.am)}</label>
         <span class="course__price">$${B.monthlyUSD}<small> / ወር</small></span>
       </div>
+      <p class="course__approx" id="approxBible" hidden></p>
       <p class="course__alt" style="margin:0">
         ${B.termMonths} ወር ኮርስ — በጠቅላላ $${B.termFullUSD}።
         በአንድ ጊዜ ከከፈሉ <b>$${B.termPrepaidUSD}</b> ብቻ፤ $${B.termSavingUSD} ይቆጥባሉ።
@@ -304,6 +332,7 @@ const zemaCourse = `
         <label class="course__name" for="trackZema">${esc(TRACKS.zema.am)}</label>
         <span class="course__price">$${Z.flatUSD}</span>
       </div>
+      <p class="course__approx" id="approxZema" hidden></p>
       <p class="course__alt" style="margin:0">
         የመረጡት ትምህርት ብዛት ምንም ይሁን ዋጋው አንድ ነው — አንዱንም ይምረጡ ሰባቱንም፣ <b>$${Z.flatUSD}</b>።
       </p>
@@ -330,6 +359,88 @@ const zemaCourse = `
   </div>`;
 
 $('trackList').innerHTML = bibleCourse + zemaCourse;
+
+/* ---------------- country ----------------
+
+   A grouped <select> rather than free text, so the value is always a
+   code we recognise, and a filter box above it because 44 options is a
+   long scroll on a phone. Filtering REBUILDS the options rather than
+   hiding them: `display:none` on an <option> is honoured by some
+   browsers and ignored by others, and a control that silently behaves
+   differently per browser is not one to put in front of a parent.
+
+   Nothing is preselected. We do not guess from the browser's locale —
+   a guess here is a guess about which price a family is shown. */
+let chosenCountry = null;
+
+const countryMatches = (c, q) =>
+  !q || c.am.toLowerCase().includes(q) || c.en.toLowerCase().includes(q)
+     || c.code.toLowerCase() === q;
+
+function renderCountries(filter = '') {
+  const q = filter.trim().toLowerCase();
+  const sel = $('country');
+  const keep = sel.value;
+
+  let html = '<option value="" data-am="— አገር ይምረጡ —" data-en="— Select a country —">— አገር ይምረጡ —</option>';
+  let found = 0;
+  for (const rid of REGION_IDS) {
+    const list = countriesInRegion(rid).filter(c => countryMatches(c, q));
+    if (!list.length) continue;
+    found += list.length;
+    const r = REGIONS[rid];
+    html += `<optgroup label="${esc(r.am)}" data-label-am="${esc(r.am)}" data-label-en="${esc(r.en)}">`
+         + list.map(c =>
+             `<option value="${esc(c.code)}" data-am="${esc(c.am)}" data-en="${esc(c.en)}">${esc(c.am)}</option>`
+           ).join('')
+         + '</optgroup>';
+  }
+  sel.innerHTML = html;
+
+  // keep the chosen country selected when it survives the filter
+  if (keep && sel.querySelector(`option[value="${keep}"]`)) sel.value = keep;
+
+  const msg = $('countryMsg');
+  if (q && found === 0) {
+    msg.textContent = '✕ በዚህ ስም አገር አልተገኘም። «ሌላ አገር» ይምረጡ።';
+    msg.className = 'field-msg invalid';
+  } else {
+    msg.textContent = '';
+    msg.className = 'field-msg';
+  }
+}
+
+/* The approximate local figure, beneath the USD price it estimates.
+   Renders NOTHING when we have no rate for that currency — an invented
+   number is worse than an absent one, and the USD price is the real
+   answer either way. The rate date is shown so a parent can see how old
+   the estimate is. */
+function paintApprox() {
+  const pairs = [
+    ['approxBible', priceFor('bible', { region: chosenCountry?.region })],
+    ['approxZema',  priceFor('zema',  { region: chosenCountry?.region })]
+  ];
+  for (const [id, usd] of pairs) {
+    const node = $(id);
+    const local = chosenCountry ? approxLocal(usd, chosenCountry.currency) : null;
+    if (!local) { node.hidden = true; node.textContent = ''; continue; }
+    node.hidden = false;
+    const am = `≈ ${local.amount.toLocaleString('en-US')} ${local.currency} ግምታዊ · ምንዛሪ ${local.asOf}`;
+    const en = `≈ ${local.amount.toLocaleString('en-US')} ${local.currency} approx · rate of ${local.asOf}`;
+    node.setAttribute('data-am', am);
+    node.setAttribute('data-en', en);
+    node.textContent = am;
+  }
+}
+
+renderCountries();
+$('countryFilter').addEventListener('input', (e) => renderCountries(e.target.value));
+$('country').addEventListener('change', (e) => {
+  chosenCountry = countryByCode(e.target.value);
+  paintApprox();
+  $('countryMsg').textContent = '';
+  $('countryMsg').className = 'field-msg';
+});
 
 /* Both Bible options are shown together with the saving stated plainly.
    There is no auto-renewal: the term ends and a parent chooses again. */
@@ -448,6 +559,11 @@ $('form').addEventListener('submit', async (e) => {
       });
     } else {
       if (!chosenTrack) { throw new Error('እባክዎ የትምህርት ክፍሉን ይምረጡ።'); }
+      /* Checked here as well as in store.js. The form is the courtesy;
+         store.js is the boundary, and it derives `region` from the code
+         rather than trusting anything this page sends. */
+      const countryCheck = validateCountry(chosenCountry);
+      if (!countryCheck.ok) { $('country').focus(); throw new Error(countryCheck.message); }
       const nameCheck = validateName(v('studentName'));
       if (!nameCheck.ok) throw new Error(nameCheck.message);
       const ageCheck = validateAge(v('age'), chosenTrack);
@@ -462,6 +578,7 @@ $('form').addEventListener('submit', async (e) => {
         guardianName: v('fullName'), email: v('email'), password: $('password').value,
         studentName: v('studentName'), age: Number(v('age')),
         track: chosenTrack, selectedSubjects: subjects,
+        countryCode: chosenCountry.code,
         prepaidTerm, consentGiven: true
       });
     }

@@ -224,6 +224,28 @@ export function validateComment(text) {
   return { ok: true };
 }
 
+/* ---------------- country ----------------
+
+   A code from the list, never free text. The list is in config.js, so
+   the caller passes the resolved country object rather than this file
+   importing it — validators.js stays dependency-free and testable.
+
+   Nothing is preselected at registration, so the empty case is the
+   normal starting state and gets a plain instruction rather than a
+   scolding. */
+export function validateCountry(country) {
+  if (!country || !country.code) {
+    return { ok: false, message: 'እባክዎ የሚኖሩበትን አገር ይምረጡ።' };
+  }
+  if (!/^[A-Z]{2}$/.test(country.code)) {
+    return { ok: false, message: 'የአገሩ ኮድ ትክክል አይደለም።' };
+  }
+  if (!country.region) {
+    return { ok: false, message: 'የአገሩ አካባቢ አልታወቀም።' };
+  }
+  return { ok: true };
+}
+
 export function validatePassword(pw) {
   return (typeof pw === 'string' && pw.length >= 8)
     ? { ok: true }

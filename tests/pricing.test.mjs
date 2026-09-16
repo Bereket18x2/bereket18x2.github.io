@@ -10,11 +10,12 @@
    rules and asserted in tools/rules.test.mjs against the emulator. */
 
 import {
-  PRICING, priceFor, priceToAddSubjects, termMonthsFor, addMonths
+  PRICING, priceFor, priceToAddSubjects, termMonthsFor, addMonths,
+  REGION_IDS, COUNTRIES, countryByCode, approxLocal, FX
 } from '../assets/js/config.js';
 import { subjectsFor } from '../assets/js/lessons.js';
 import { TRACKS, ROLES, isStaff, REGISTERABLE_ROLES, validateComment,
-         COMMENT_MAX_CHARS, enrollableTracks, validateTrack }
+         COMMENT_MAX_CHARS, enrollableTracks, validateTrack, validateCountry }
   from '../assets/js/validators.js';
 
 let pass = 0, fail = 0, skipped = 0;
@@ -32,22 +33,35 @@ const skip = (label, why) => {
   console.log(`  skip  ${label}\n        ${why}`);
 };
 
-console.log('\nacceptance 1: Bible is $40/month and $105/quarter, saving $15');
-check('monthly is $40', PRICING.bible.monthlyUSD, 40);
+console.log('\nBible is $50/month, $135 prepaid — and the SAVING is the assertion');
+check('monthly is $50', PRICING.bible.monthlyUSD, 50);
 check('the course runs three months', PRICING.bible.termMonths, 3);
-check('three months at the monthly rate is $120', PRICING.bible.termFullUSD, 120);
-check('prepaid is $105', PRICING.bible.termPrepaidUSD, 105);
-check('the saving is $15', PRICING.bible.termSavingUSD, 15);
-// the saving must be DERIVED, or the page can advertise a discount that
+check('three months at the monthly rate is $150', PRICING.bible.termFullUSD, 150);
+check('prepaid is $135', PRICING.bible.termPrepaidUSD, 135);
+
+/* THE LOAD-BEARING ONE. The prepaid figure once stayed at $105 while the
+   monthly price went $40 -> $50, and the term discount silently tripled
+   from $15 to $45 — a 30% giveaway nobody decided on, which would have
+   been found in the bank rather than here.
+
+   Asserting the SAVING rather than the price is what makes that loud:
+   change either number without the other and this fails immediately,
+   naming the discount you did not mean to offer. Move it deliberately by
+   editing the expected value, which is a decision someone has to write
+   down. */
+check('the prepaid saving is $15', PRICING.bible.termSavingUSD, 15);
+check('which is 10% off the full term, not a third of it',
+  Math.round(PRICING.bible.termSavingUSD / PRICING.bible.termFullUSD * 100), 10);
+// and the saving must be DERIVED, or the page could advertise a discount
 // the recorded payment does not actually give
 check('the saving is the difference, not a typed-in number',
   PRICING.bible.termFullUSD - PRICING.bible.termPrepaidUSD, PRICING.bible.termSavingUSD);
-check('priceFor bible monthly', priceFor('bible'), 40);
-check('priceFor bible prepaid term', priceFor('bible', { prepaidTerm: true }), 105);
+check('priceFor bible monthly', priceFor('bible'), 50);
+check('priceFor bible prepaid term', priceFor('bible', { prepaidTerm: true }), 135);
 
 console.log('\nacceptance 2 + 3: Zema is flat, whatever is ticked');
-check('zema is $30', PRICING.zema.flatUSD, 30);
-check('priceFor zema', priceFor('zema'), 30);
+check('zema is $40', PRICING.zema.flatUSD, 40);
+check('priceFor zema', priceFor('zema'), 40);
 check('there are seven zema subjects to tick', subjectsFor('zema').length, 7);
 
 /* Acceptance 2: Zema registration opens with every subject ticked.
@@ -120,6 +134,68 @@ check('an admin is staff', isStaff('admin'), true);
 // fails closed: an unrecognised role must not be treated as a teacher
 check('an unknown role is not staff', isStaff('superuser'), false);
 check('no role at all is not staff', isStaff(undefined), false);
+
+console.log('\nwhere the family is: countries and regions');
+check('six regions', REGION_IDS,
+  ['ETHIOPIA', 'AFRICA', 'NORTH_AMERICA', 'EUROPE', 'ASIA', 'OTHER']);
+check('every country sits in a real region',
+  COUNTRIES.filter(c => !REGION_IDS.includes(c.region)).map(c => c.code), []);
+check('country codes are unique',
+  new Set(COUNTRIES.map(c => c.code)).size, COUNTRIES.length);
+check('every code is ISO 3166-1 alpha-2 shaped',
+  COUNTRIES.filter(c => !/^[A-Z]{2}$/.test(c.code)).map(c => c.code), []);
+check('every country is named in both languages',
+  COUNTRIES.filter(c => !c.am || !c.en).map(c => c.code), []);
+check('Ethiopia is its own region', countryByCode('ET').region, 'ETHIOPIA');
+// a family whose country is not listed must still be able to register
+check('there is an escape hatch', countryByCode('ZZ').region, 'OTHER');
+check('and it claims no currency', countryByCode('ZZ').currency, null);
+check('an unknown code resolves to nothing, not a guess', countryByCode('QQ'), null);
+
+console.log('\ncountry validation');
+check('a real country passes', validateCountry(countryByCode('US')).ok, true);
+check('nothing chosen is refused', validateCountry(null).ok, false);
+check('and says what to do', validateCountry(null).message.includes('አገር'), true);
+check('a malformed code is refused', validateCountry({ code: 'usa', region: 'OTHER' }).ok, false);
+check('a country with no region is refused', validateCountry({ code: 'US' }).ok, false);
+
+console.log('\nregional pricing is an explicit table, never computed');
+check('the table names every region',
+  Object.keys(PRICING.byRegion).sort(), REGION_IDS.slice().sort());
+// no variation is set today; the mechanism exists so setting it is data
+check('no region overrides the base price yet',
+  Object.values(PRICING.byRegion).filter(v => v !== null), []);
+check('so every region pays the base', REGION_IDS.map(r => priceFor('bible', { region: r })),
+  REGION_IDS.map(() => 50));
+check('an unknown region falls back to the base, it does not guess',
+  priceFor('bible', { region: 'ATLANTIS' }), 50);
+check('and no region is consulted when none is given', priceFor('zema'), 40);
+
+console.log('\nlocal figures are approximate, and never the charge');
+check('the rate table is dated', /^\d{4}-\d{2}-\d{2}$/.test(FX.asOf), true);
+check('USD returns nothing — there is nothing to approximate',
+  approxLocal(50, 'USD'), null);
+check('a currency we have no rate for returns nothing rather than a guess',
+  approxLocal(50, 'XYZ'), null);
+check('a missing currency returns nothing', approxLocal(50, null), null);
+{
+  const kes = approxLocal(50, 'KES');
+  check('a known currency returns a whole number', Number.isInteger(kes.amount), true);
+  check('it carries the rate date so a parent can judge its age', kes.asOf, FX.asOf);
+  check('and names the currency', kes.currency, 'KES');
+}
+/* ETB is deliberately unset. The birr has moved a great deal since the
+   2024 float, a figure entered from memory would be badly wrong, and a
+   parent in Addis is exactly who would notice. Showing nothing is
+   honest. Fill the rate in from a real source and this flips by itself —
+   which is why the assertion names the reason, not just the null. */
+check('ETB shows nothing rather than a number nobody verified',
+  approxLocal(50, 'ETB'), null);
+check('because no ETB rate is set at all', 'ETB' in FX.perUSD, false);
+// every currency a listed country uses either has a rate or shows nothing;
+// what must never happen is a rate of zero or a negative
+check('no rate is zero or negative',
+  Object.entries(FX.perUSD).filter(([, r]) => !(r > 0)).map(([c]) => c), []);
 
 console.log('\nteacher comments are bounded');
 check('empty is refused', validateComment('   ').ok, false);

@@ -275,6 +275,14 @@
         </div>
       </div>
 
+      <!-- Said next to the figures, not only at registration. A parent
+           reads the price here first. -->
+      <p class="note small" style="max-width:64ch;margin:0 0 14px"
+         data-am="ክፍያው ሁልጊዜ በአሜሪካ ዶላር ($) ነው የሚፈጸመው። በአገርዎ ገንዘብ ሲመነዘር የመጨረሻውን ምንዛሪ የሚወስነው ባንክዎ ነው።"
+         data-en="The charge is always in US dollars ($). When it converts to your own currency, your bank sets the final rate.">
+        ክፍያው ሁልጊዜ በአሜሪካ ዶላር ($) ነው የሚፈጸመው። በአገርዎ ገንዘብ ሲመነዘር የመጨረሻውን ምንዛሪ
+        የሚወስነው ባንክዎ ነው።
+      </p>
       <p class="muted small" style="max-width:64ch;margin:0 0 18px"
          data-am="በካርድ የመክፈል አገልግሎት ገና የለም። ክፍያውን በቀጥታ ከትምህርት ቤቱ ጋር ያመቻቻሉ፤ ከዚያም መምህር መለያዎን አረጋግጦ ትምህርቶቹ ይከፈታሉ። የካርድ ቁጥር በዚህ ድረ-ገጽ ላይ በጭራሽ አይሰበሰብም።"
          data-en="Card payment is not available. You arrange payment directly with the school, and a teacher then confirms your account and opens the lessons. Card numbers are never collected on this site.">
@@ -425,11 +433,7 @@ function renderCertificate() {
     studentName: 'የተማሪው ስም',
     subject,
     lessonCount: lessonsForSubject(subject.id).length,
-    date: new Date(),
-    /* A specimen, so the signature lines are ruled and blank. The real
-       one still carries the placeholder names until a መምህር supplies
-       them — see docs/CHURCH-DECISIONS.md §5. */
-    sample: true
+    date: new Date()
   });
 }
 

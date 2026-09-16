@@ -52,7 +52,14 @@ check('no dollar figure appears in the markup', hardcoded, []);
 // and the real figures are reachable from the one place they live
 check('PRICING still holds the numbers the page will render',
   [PRICING.bible.monthlyUSD, PRICING.bible.termPrepaidUSD, PRICING.zema.flatUSD],
-  [40, 105, 30]);
+  [50, 135, 40]);
+/* This one is repeated from tests/pricing.test.mjs on purpose. The
+   prepaid figure above is the number a parent reads off THIS page, and
+   it once stayed at $105 while the monthly price rose — advertising a
+   discount three times the one anybody agreed to. Asserting the saving
+   here too means the landing page cannot quietly start offering it. */
+check('and the prepaid saving the page advertises is still $15',
+  PRICING.bible.termSavingUSD, 15);
 
 console.log('\nthe curriculum it advertises is the curriculum that exists');
 check('every current subject is named on the page',

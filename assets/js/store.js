@@ -29,9 +29,10 @@ import {
    This is the reason for the map: versioning these relatively would let
    a freshly-fetched store.js pull a stale config.js, which is exactly
    the staleness the cache-bust exists to prevent. */
-import { firebaseConfig, CONSENT_VERSION } from '@config';
+import { firebaseConfig, CONSENT_VERSION, countryByCode } from '@config';
 import { validateName, validateAge, validateEnrollableTrack, validatePassword,
-         validateEmail, validateComment, TRACKS, isStaff } from '@validators';
+         validateEmail, validateComment, validateCountry, TRACKS, isStaff }
+  from '@validators';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -178,8 +179,18 @@ export const Store = {
   },
 
   async createUser({ guardianName, email, password, studentName, age, track,
-                     selectedSubjects, prepaidTerm = false, consentGiven }) {
+                     selectedSubjects, prepaidTerm = false, countryCode, consentGiven }) {
     if (!TRACKS[track]) throw new Error('እባክዎ የትምህርት ክፍሉን ይምረጡ።');
+
+    /* The region is DERIVED from the country here, never sent by the
+       form. A browser that could post its own region could post the
+       cheapest one, and the rules lock both fields after create — so the
+       one moment they are written is the one moment they must be right.
+       countryByCode returns null for anything not on the list, which
+       validateCountry then refuses. */
+    const country = countryByCode(countryCode);
+    const countryCheck = validateCountry(country);
+    if (!countryCheck.ok) throw new Error(countryCheck.message);
 
     /* Bible is bought either by the month or as the whole three-month
        term at a discount; Zema is one flat price. `plan` records which,
@@ -222,6 +233,8 @@ export const Store = {
         email: cred.user.email,
         studentName: studentName.trim().replace(/\s+/g, ' '),
         age: Math.trunc(Number(age)),
+        country: country.code,
+        region: country.region,
         track,
         plan,
         /* What the parent actually enrolled in. Locked by the rules after

@@ -53,13 +53,15 @@ async function seed() {
     await setDoc(doc(db, 'users/student1'), {
       uid: 'student1', role: 'student', studentName: 'Sara T', age: 10,
       guardianName: 'Tesfaye G', email: EMAIL('student1'),
+      country: 'US', region: 'NORTH_AMERICA',
       track: 'bible', plan: 'monthly', selectedSubjects: ['amestu'],
       paid: false, studySeconds: 100, verified: true,
       assignedTeacher: 'teacher1', consentVersion: CV
     });
     await setDoc(doc(db, 'users/student2'), {
       uid: 'student2', role: 'student', studentName: 'Nati A', age: 11,
-      email: EMAIL('student2'), track: 'bible', plan: 'term',
+      email: EMAIL('student2'), country: 'ET', region: 'ETHIOPIA',
+      track: 'bible', plan: 'term',
       selectedSubjects: ['amestu'], paid: false, studySeconds: 0, verified: true,
       assignedTeacher: 'teacher2', consentVersion: CV
     });
@@ -79,7 +81,8 @@ async function seed() {
     });
     await setDoc(doc(db, 'users/student3'), {
       uid: 'student3', role: 'student', studentName: 'Hana B', age: 9,
-      email: EMAIL('student3'), track: 'bible', plan: 'monthly',
+      email: EMAIL('student3'), country: 'GB', region: 'EUROPE',
+      track: 'bible', plan: 'monthly',
       selectedSubjects: ['amestu'], paid: false, studySeconds: 0, verified: true,
       assignedTeacher: 'teacher3', consentVersion: CV
     });
@@ -146,6 +149,7 @@ console.log('\n=== acceptance 10: registration cannot mint privilege ===');
 const newStudent = {
   uid: 'newbie', role: 'student', studentName: 'New Child', age: 9,
   guardianName: 'A Parent', email: EMAIL('newbie'),
+  country: 'US', region: 'NORTH_AMERICA',
   track: 'bible', plan: 'monthly', selectedSubjects: ['amestu'],
   paid: false, studySeconds: 0,
   consentVersion: CV, consentGivenAt: serverTimestamp()
@@ -237,6 +241,38 @@ await t('studySeconds cannot jump by an hour', () =>
   assertFails(updateDoc(doc(AS('student1'), 'users/student1'), { studySeconds: 3700 })));
 await t('studySeconds cannot go backwards', () =>
   assertFails(updateDoc(doc(AS('student1'), 'users/student1'), { studySeconds: 5 })));
+
+/* `region` keys the regional price table in config.js, so a parent who
+   could write it could move themselves to a cheaper region. `country` is
+   what region is derived from, so leaving that writable would be the
+   same hole one step removed. Both are pinned at create and frozen
+   afterwards. */
+console.log('\n=== a family cannot move itself to a cheaper region ===');
+await seed();
+await t('a student cannot change their own region', () =>
+  assertFails(updateDoc(doc(AS('student1'), 'users/student1'), { region: 'ETHIOPIA' })));
+await t('a student cannot change their own country', () =>
+  assertFails(updateDoc(doc(AS('student1'), 'users/student1'), { country: 'ET' })));
+await t('a teacher cannot change a student\'s region either', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student1'), { region: 'ETHIOPIA' })));
+await t('an admin CAN correct a region', () =>
+  assertSucceeds(updateDoc(doc(AS('admin1'), 'users/student1'), { region: 'EUROPE' })));
+
+await seed();
+await t('registering without a country is REFUSED', () =>
+  assertFails(setDoc(doc(AS('newbie'), 'users/newbie'),
+    (({ country, ...rest }) => rest)(newStudent))));
+await t('registering without a region is REFUSED', () =>
+  assertFails(setDoc(doc(AS('newbie'), 'users/newbie'),
+    (({ region, ...rest }) => rest)(newStudent))));
+await t('an invented region is REFUSED', () =>
+  assertFails(setDoc(doc(AS('newbie'), 'users/newbie'),
+    { ...newStudent, region: 'ATLANTIS' })));
+await t('a country code that is not two letters is REFUSED', () =>
+  assertFails(setDoc(doc(AS('newbie'), 'users/newbie'), { ...newStudent, country: 'USA' })));
+await t('a real country and region register fine', () =>
+  assertSucceeds(setDoc(doc(AS('newbie'), 'users/newbie'),
+    { ...newStudent, country: 'ET', region: 'ETHIOPIA' })));
 
 console.log('\n=== acceptance 8: a pending teacher reads NOTHING ===');
 await seed();
@@ -450,6 +486,10 @@ await t('the access grant DOES stay on the child\'s record', () =>
 
 await t('the assigned teacher can write the payment summary', () =>
   assertSucceeds(setDoc(doc(AS('teacher1'), 'payments/student1'), {
+    /* No country/region here on purpose: a payment record is about the
+       PARENT and carries only what the books need. The summary rule's
+       hasOnly refuses anything else, which is what caught this fixture
+       when the field was added to it by mistake. */
     uid: 'student1', guardianName: 'Tesfaye G', email: EMAIL('student1'),
     totalPaid: 105, lastAmount: 105, lastPaidAt: serverTimestamp(),
     lastPaidUntil: '2026-12-08', recordedBy: 'teacher1', recordedByName: 'Memhir D'
