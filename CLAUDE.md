@@ -154,6 +154,12 @@ rules, not the key. Do not "fix" it by hiding it.
 - Design tokens only, no hardcoded hex. Palette is Ge'ez manuscript: sanctuary blue
   ground, gold leaf, rubric crimson, parchment. Keep the harag interlace band and the
   Ge'ez numerals — both carry real meaning, not decoration.
+- **Flags are emoji derived from the ISO country code, and that is not a bug to
+  fix.** `flagEmoji()` in `config.js` is two characters of arithmetic — no image
+  files, no sprite, no network requests, nothing to maintain when a flag changes.
+  Some Windows browsers draw a boxed letter pair instead; the country name is
+  right beside it and carries the meaning. Do not "fix" this by adding flag
+  images to a site with no build step.
 - `[hidden]` must be declared in the stylesheet. It is a UA default only, and any
   class with a display rule silently beats it. This has caused at least two
   production bugs and one call-site workaround.
