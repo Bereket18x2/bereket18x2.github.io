@@ -130,13 +130,32 @@
            before we know which one applies to them. Nothing is
            preselected — an empty country is the honest starting state,
            not a guess based on their browser. -->
+      <!-- A combobox, not a <select>. The list is 248 long and a parent
+           knows the name of their own country, so typing it is faster
+           than scrolling to it — and this is the pattern they have
+           already used on every checkout form.
+
+           The roles matter: the INPUT owns the combobox role and
+           aria-activedescendant, the UL is the listbox, and the whole
+           thing is operable from the keyboard alone. aria-expanded and
+           aria-activedescendant are set by script, never left stale. -->
       <div class="field">
         <label for="country">የሚኖሩበት አገር</label>
-        <input class="input" id="countryFilter" type="search" autocomplete="off"
-               data-ph-am="አገር ይፈልጉ…" data-ph-en="Search for a country…"
-               placeholder="አገር ይፈልጉ…">
-        <select class="input" id="country" style="margin-top:8px"></select>
-        <p class="help" data-am="ዝርዝሩን ለማጥበብ ከላይ ይጻፉ። አገርዎ ከሌለ «ሌላ አገር» ይምረጡ።" data-en="Type above to narrow the list. If your country is not listed, choose &ldquo;Another country&rdquo;.">ዝርዝሩን ለማጥበብ ከላይ ይጻፉ። አገርዎ ከሌለ «ሌላ አገር» ይምረጡ።</p>
+        <div class="combo" id="countryCombo">
+          <input class="input combo__input" id="country" type="text" role="combobox"
+                 autocomplete="off" autocapitalize="off" spellcheck="false"
+                 aria-expanded="false" aria-controls="countryList"
+                 aria-autocomplete="list" aria-describedby="countryHelp"
+                 data-ph-am="አገር ይፈልጉ… (በእንግሊዝኛ)" data-ph-en="Search for a country…"
+                 placeholder="አገር ይፈልጉ… (በእንግሊዝኛ)">
+          <ul class="combo__list" id="countryList" role="listbox"
+              aria-label="አገሮች" hidden></ul>
+        </div>
+        <!-- The stored value. A parent never sees or types this; it is
+             here so the chosen code is read from one place rather than
+             re-derived from whatever text is in the input. -->
+        <input type="hidden" id="countryCode" value="">
+        <p class="help" id="countryHelp" data-am="የአገርዎን ስም በእንግሊዝኛ ይጻፉ — ለምሳሌ «eth»። አገርዎ ከሌለ «Another country» ይምረጡ።" data-en="Type your country&rsquo;s name in English &mdash; e.g. &ldquo;eth&rdquo;. If it is not listed, choose &ldquo;Another country&rdquo;.">የአገርዎን ስም በእንግሊዝኛ ይጻፉ — ለምሳሌ «eth»። አገርዎ ከሌለ «Another country» ይምረጡ።</p>
         <p class="field-msg" id="countryMsg"></p>
       </div>
 
@@ -223,8 +242,8 @@
 import { Store, ready, homeFor } from '@store';
 import { validateName, validateAge, validatePassword, validateEmail,
          validateCountry, TRACKS } from '@validators';
-import { PRICING, REGIONS, REGION_IDS, COUNTRIES, countriesInRegion,
-         countryByCode, approxLocal, priceFor, FX } from '@config';
+import { PRICING, countryByCode, searchCountries, flagEmoji,
+         approxLocal, priceFor, FX } from '@config';
 import { subjectsFor } from '@lessons';
 
 const $ = id => document.getElementById(id);
@@ -360,55 +379,174 @@ const zemaCourse = `
 
 $('trackList').innerHTML = bibleCourse + zemaCourse;
 
-/* ---------------- country ----------------
+/* ---------------- country: a combobox ----------------
 
-   A grouped <select> rather than free text, so the value is always a
-   code we recognise, and a filter box above it because 44 options is a
-   long scroll on a phone. Filtering REBUILDS the options rather than
-   hiding them: `display:none` on an <option> is honoured by some
-   browsers and ignored by others, and a control that silently behaves
-   differently per browser is not one to put in front of a parent.
+   NOT a <select>. The list is every country there is, a parent knows the
+   name of their own, and typing it beats scrolling to it on a phone. This
+   is the pattern they have already used on every checkout form: type,
+   arrow down, Enter.
 
-   Nothing is preselected. We do not guess from the browser's locale —
-   a guess here is a guess about which price a family is shown. */
+   The previous version filtered a <select> by REBUILDING its options,
+   which is fragile in a way that is hard to see — the control loses its
+   selection, the browser's own type-ahead fights the filter box above it,
+   and none of it behaves like a picker anybody has used. It is gone.
+
+   WHAT THIS OWNS. The input holds the text a parent typed OR the name of
+   the country they chose; `#countryCode` holds the ISO code, and is the
+   only thing read at submit. They can disagree for exactly as long as
+   somebody is typing, and `chosenCountry` is cleared the moment they do —
+   so a parent cannot leave "Ethiopia" visible, type over half of it, and
+   submit a country they can no longer see.
+
+   Nothing is preselected, and the browser's locale is not consulted. A
+   guess here is a guess about which price a family is shown.
+
+   Keyboard: ArrowDown/ArrowUp move, Enter takes the active row, Escape
+   closes and — pressed again on a chosen country — clears it, Tab leaves.
+   aria-activedescendant follows the highlight so a screen reader hears
+   the row without focus ever leaving the input. */
 let chosenCountry = null;
+let matches = [];        // what the list is currently showing
+let active = -1;         // index into `matches`, -1 = nothing highlighted
 
-const countryMatches = (c, q) =>
-  !q || c.am.toLowerCase().includes(q) || c.en.toLowerCase().includes(q)
-     || c.code.toLowerCase() === q;
+const combo = $('countryCombo');
+const cInput = $('country');
+const cList = $('countryList');
 
-function renderCountries(filter = '') {
-  const q = filter.trim().toLowerCase();
-  const sel = $('country');
-  const keep = sel.value;
+const labelFor = (c) => {
+  const flag = flagEmoji(c.code);
+  return (flag ? flag + ' ' : '') + c.en;
+};
 
-  let html = '<option value="" data-am="— አገር ይምረጡ —" data-en="— Select a country —">— አገር ይምረጡ —</option>';
-  let found = 0;
-  for (const rid of REGION_IDS) {
-    const list = countriesInRegion(rid).filter(c => countryMatches(c, q));
-    if (!list.length) continue;
-    found += list.length;
-    const r = REGIONS[rid];
-    html += `<optgroup label="${esc(r.am)}" data-label-am="${esc(r.am)}" data-label-en="${esc(r.en)}">`
-         + list.map(c =>
-             `<option value="${esc(c.code)}" data-am="${esc(c.am)}" data-en="${esc(c.en)}">${esc(c.am)}</option>`
-           ).join('')
-         + '</optgroup>';
-  }
-  sel.innerHTML = html;
-
-  // keep the chosen country selected when it survives the filter
-  if (keep && sel.querySelector(`option[value="${keep}"]`)) sel.value = keep;
-
-  const msg = $('countryMsg');
-  if (q && found === 0) {
-    msg.textContent = '✕ በዚህ ስም አገር አልተገኘም። «ሌላ አገር» ይምረጡ።';
-    msg.className = 'field-msg invalid';
-  } else {
-    msg.textContent = '';
-    msg.className = 'field-msg';
-  }
+function closeList() {
+  cList.hidden = true;
+  cInput.setAttribute('aria-expanded', 'false');
+  cInput.removeAttribute('aria-activedescendant');
+  active = -1;
 }
+
+/* Renders the rows. This REPLACES the list's contents, which is fine
+   here in a way it was not for a <select>: a <ul> has no selection state
+   of its own to lose and no native type-ahead to fight. */
+function openList(query) {
+  matches = searchCountries(query);
+  if (!matches.length) {
+    // Amharic, because it is a message to a parent rather than a name
+    cList.innerHTML = '<li class="combo__empty" role="presentation">አገር አልተገኘም</li>';
+    cList.hidden = false;
+    cInput.setAttribute('aria-expanded', 'true');
+    cInput.removeAttribute('aria-activedescendant');
+    active = -1;
+    return;
+  }
+  cList.innerHTML = matches.map((c, i) =>
+    `<li class="combo__row" id="cty-${esc(c.code)}" role="option" aria-selected="false"` +
+    ` data-code="${esc(c.code)}" data-i="${i}">` +
+    `<span class="combo__flag" aria-hidden="true">${esc(flagEmoji(c.code))}</span>` +
+    `<span class="combo__name">${esc(c.en)}</span></li>`).join('');
+  cList.hidden = false;
+  cInput.setAttribute('aria-expanded', 'true');
+  setActive(-1);
+}
+
+function setActive(i) {
+  const rows = cList.querySelectorAll('.combo__row');
+  rows.forEach(r => { r.classList.remove('is-active'); r.setAttribute('aria-selected', 'false'); });
+  active = i;
+  if (i < 0 || i >= rows.length) { cInput.removeAttribute('aria-activedescendant'); return; }
+  const row = rows[i];
+  row.classList.add('is-active');
+  row.setAttribute('aria-selected', 'true');
+  cInput.setAttribute('aria-activedescendant', row.id);
+  /* The LIST scrolls, never the page. `block: 'nearest'` is what keeps
+     that true — anything else scrolls the whole form out from under a
+     parent's thumb, and this is mostly a phone form. */
+  row.scrollIntoView({ block: 'nearest' });
+}
+
+function choose(country) {
+  chosenCountry = country;
+  $('countryCode').value = country.code;
+  cInput.value = labelFor(country);
+  closeList();
+  clearCountryError();
+  paintApprox();
+}
+
+function clearChoice() {
+  chosenCountry = null;
+  $('countryCode').value = '';
+  paintApprox();
+}
+
+function clearCountryError() {
+  $('countryMsg').textContent = '';
+  $('countryMsg').className = 'field-msg';
+  cInput.classList.remove('is-invalid');
+}
+
+cInput.addEventListener('input', () => {
+  // typing over a chosen country un-chooses it, so what is stored can
+  // never disagree with what the parent can see
+  if (chosenCountry) clearChoice();
+  clearCountryError();
+  openList(cInput.value);
+});
+
+// clicking the field reopens the list — including on a chosen country,
+// so changing your mind does not mean deleting the text first
+const reopen = () => { if (cList.hidden) openList(chosenCountry ? '' : cInput.value); };
+cInput.addEventListener('focus', reopen);
+cInput.addEventListener('click', reopen);
+
+cInput.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (cList.hidden) { reopen(); if (matches.length) setActive(0); return; }
+    if (!matches.length) return;
+    const next = e.key === 'ArrowDown'
+      ? (active + 1) % matches.length
+      : (active <= 0 ? matches.length - 1 : active - 1);
+    setActive(next);
+    return;
+  }
+  if (e.key === 'Enter') {
+    if (!cList.hidden && active >= 0 && matches[active]) { e.preventDefault(); choose(matches[active]); }
+    /* With nothing highlighted, Enter falls through to the form. The
+       submit handler is what refuses an empty country, so there is one
+       place that decides it rather than two that can disagree. */
+    return;
+  }
+  if (e.key === 'Escape') {
+    if (!cList.hidden) { closeList(); return; }
+    // a second Escape on a settled field clears it
+    cInput.value = '';
+    clearChoice();
+    clearCountryError();
+    return;
+  }
+  if (e.key === 'Tab') closeList();
+});
+
+/* pointerdown rather than click: the input's blur would otherwise close
+   the list before a click could land on the row. */
+cList.addEventListener('pointerdown', (e) => {
+  const row = e.target.closest('.combo__row');
+  if (!row) return;
+  e.preventDefault();
+  choose(countryByCode(row.dataset.code));
+  cInput.focus();
+});
+cList.addEventListener('pointerover', (e) => {
+  const row = e.target.closest('.combo__row');
+  if (row) setActive(+row.dataset.i);
+});
+
+// clicking outside closes it. Half-typed text may stay behind: the stored
+// code is empty, and submit is what says so.
+document.addEventListener('pointerdown', (e) => {
+  if (!combo.contains(e.target)) closeList();
+});
 
 /* The approximate local figure, beneath the USD price it estimates.
    Renders NOTHING when we have no rate for that currency — an invented
@@ -433,14 +571,7 @@ function paintApprox() {
   }
 }
 
-renderCountries();
-$('countryFilter').addEventListener('input', (e) => renderCountries(e.target.value));
-$('country').addEventListener('change', (e) => {
-  chosenCountry = countryByCode(e.target.value);
-  paintApprox();
-  $('countryMsg').textContent = '';
-  $('countryMsg').className = 'field-msg';
-});
+paintApprox();   // nothing is chosen yet, so both approximate lines stay hidden
 
 /* Both Bible options are shown together with the saving stated plainly.
    There is no auto-renewal: the term ends and a parent chooses again. */
@@ -562,8 +693,18 @@ $('form').addEventListener('submit', async (e) => {
       /* Checked here as well as in store.js. The form is the courtesy;
          store.js is the boundary, and it derives `region` from the code
          rather than trusting anything this page sends. */
-      const countryCheck = validateCountry(chosenCountry);
-      if (!countryCheck.ok) { $('country').focus(); throw new Error(countryCheck.message); }
+      /* The hidden code is the record of what was chosen, not the text
+         in the box — a parent may have typed over it. Re-resolving it
+         through countryByCode means a code we do not recognise fails
+         here rather than reaching store.js. */
+      const countryCheck = validateCountry(countryByCode($('countryCode').value));
+      if (!countryCheck.ok) {
+        $('countryMsg').textContent = '✕ ' + countryCheck.message;
+        $('countryMsg').className = 'field-msg invalid';
+        $('country').classList.add('is-invalid');
+        $('country').focus();
+        throw new Error(countryCheck.message);
+      }
       const nameCheck = validateName(v('studentName'));
       if (!nameCheck.ok) throw new Error(nameCheck.message);
       const ageCheck = validateAge(v('age'), chosenTrack);
@@ -578,7 +719,7 @@ $('form').addEventListener('submit', async (e) => {
         guardianName: v('fullName'), email: v('email'), password: $('password').value,
         studentName: v('studentName'), age: Number(v('age')),
         track: chosenTrack, selectedSubjects: subjects,
-        countryCode: chosenCountry.code,
+        countryCode: $('countryCode').value,
         prepaidTerm, consentGiven: true
       });
     }

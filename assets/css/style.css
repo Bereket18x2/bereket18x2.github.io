@@ -480,6 +480,37 @@ a  { color: var(--accent-text); }
 
 .field-row { display: flex; gap: 8px; align-items: flex-start; }
 .field-row .input { flex: 1; }
+
+/* ---------- combobox (the country picker) ----------
+   A text input with a filtered listbox under it. The list is absolutely
+   positioned so opening it does not push the rest of the form down — a
+   parent's thumb should not have to chase the track chooser. */
+.combo { position: relative; }
+.combo__list {
+  position: absolute; z-index: 40; inset-inline: 0; top: calc(100% + 4px);
+  margin: 0; padding: 4px; list-style: none;
+  /* The LIST scrolls, not the page. 16rem is about six rows — enough to
+     see that filtering is working, short enough to leave the field and
+     its help text visible on a 360px phone. */
+  max-height: 16rem; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r); box-shadow: 0 10px 30px rgb(var(--shadow-rgb) / .35);
+}
+.combo__row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 11px; border-radius: calc(var(--r) - 2px);
+  cursor: pointer; font-size: .95rem; color: var(--text);
+}
+.combo__row.is-active,
+.combo__row:hover { background: rgb(var(--accent-rgb) / .16); color: var(--accent-text); }
+.combo__flag {
+  /* Sized and reserved so the names line up whether the browser draws a
+     flag or the two-letter fallback — see flagEmoji() in config.js. */
+  flex: none; width: 1.6em; font-size: 1.15rem; line-height: 1;
+  text-align: center; font-variant-emoji: emoji;
+}
+.combo__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.combo__empty { padding: 12px 11px; color: var(--text-dim); font-size: .9rem; }
 .field-row .btn { flex: none; white-space: nowrap; }
 
 .help { font-size: .8rem; color: var(--text-dim); margin-top: 5px; }

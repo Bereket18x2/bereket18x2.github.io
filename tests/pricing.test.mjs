@@ -11,9 +11,10 @@
 
 import {
   PRICING, priceFor, priceToAddSubjects, termMonthsFor, addMonths,
-  REGION_IDS, COUNTRIES, countryByCode, approxLocal, FX
+  REGION_IDS, COUNTRIES, countryByCode, approxLocal, FX, flagEmoji, searchCountries
 } from '../assets/js/config.js';
 import { subjectsFor } from '../assets/js/lessons.js';
+import { readFileSync } from 'node:fs';
 import { TRACKS, ROLES, isStaff, REGISTERABLE_ROLES, validateComment,
          COMMENT_MAX_CHARS, enrollableTracks, validateTrack, validateCountry }
   from '../assets/js/validators.js';
@@ -144,13 +145,113 @@ check('country codes are unique',
   new Set(COUNTRIES.map(c => c.code)).size, COUNTRIES.length);
 check('every code is ISO 3166-1 alpha-2 shaped',
   COUNTRIES.filter(c => !/^[A-Z]{2}$/.test(c.code)).map(c => c.code), []);
-check('every country is named in both languages',
-  COUNTRIES.filter(c => !c.am || !c.en).map(c => c.code), []);
+check('every country has an English name — what the combobox shows',
+  COUNTRIES.filter(c => !c.en || !c.en.trim()).map(c => c.code), []);
+/* `am` is optional now that the list is every country rather than the
+   forty-odd that were translated by hand. The escape hatch is the one
+   row that MUST carry Amharic, because "Another country" is a message to
+   a parent rather than the name of a place. */
+check('the escape hatch is named in Amharic', countryByCode('ZZ').am, 'ሌላ አገር');
+check('a currency is three uppercase letters, or nothing at all',
+  COUNTRIES.filter(c => c.currency !== null && !/^[A-Z]{3}$/.test(c.currency)).map(c => c.code), []);
+/* Both directions. A currency typed wrong in COUNTRIES shows no local
+   figure and nobody notices; a rate keyed to a currency no country uses
+   is dead weight that looks maintained. */
+check('every rate in the FX table belongs to a country on the list',
+  Object.keys(FX.perUSD).filter(cur => !COUNTRIES.some(c => c.currency === cur)), []);
 check('Ethiopia is its own region', countryByCode('ET').region, 'ETHIOPIA');
 // a family whose country is not listed must still be able to register
 check('there is an escape hatch', countryByCode('ZZ').region, 'OTHER');
 check('and it claims no currency', countryByCode('ZZ').currency, null);
+check('and it stays at the bottom of the unfiltered list',
+  COUNTRIES[COUNTRIES.length - 1].code, 'ZZ');
 check('an unknown code resolves to nothing, not a guess', countryByCode('QQ'), null);
+
+/* ACCEPTANCE 3 for the combobox. THE LOAD-BEARING ONE for this list.
+
+   A country whose region came back undefined would fall silently out of
+   regional pricing — priceFor() would hand it the base price and nothing
+   anywhere would say a mapping was missing. The list is 248 long and was
+   generated, so "somebody will notice" is not a plan. */
+check('EVERY country maps to one of the six regions, with none left over',
+  COUNTRIES.filter(c => !REGION_IDS.includes(c.region)).length, 0);
+check('and no region is empty, which would mean a bucket nobody is in',
+  REGION_IDS.filter(r => !COUNTRIES.some(c => c.region === r)), []);
+// the list is the whole world, not a shortlist that quietly shrank
+check('it is the full ISO list rather than a handful', COUNTRIES.length > 240, true);
+
+console.log('\nacceptance 4: flags come from the code, not from image files');
+check('Ethiopia', flagEmoji('ET'), '\u{1F1EA}\u{1F1F9}');
+check('the United States', flagEmoji('US'), '\u{1F1FA}\u{1F1F8}');
+check('lowercase works too, since a code may arrive either way', flagEmoji('gb'), flagEmoji('GB'));
+// ZZ is not a place, so it has no flag; the row shows its name alone
+check('the escape hatch has no flag', flagEmoji('ZZ'), '');
+check('nonsense gets nothing rather than a broken glyph', flagEmoji('QQQ'), '');
+check('so does a missing code', flagEmoji(null), '');
+check('every country produces a two-codepoint flag, or none',
+  COUNTRIES.filter(c => c.code !== 'ZZ' && [...flagEmoji(c.code)].length !== 2).map(c => c.code), []);
+// each half is a regional indicator, which is the whole trick
+check('a flag is built from regional indicators only',
+  [...flagEmoji('ET')].every(ch => ch.codePointAt(0) >= 0x1F1E6 && ch.codePointAt(0) <= 0x1F1FF), true);
+
+console.log('\nacceptance 1: what a parent types finds what they meant');
+check('"eth" puts Ethiopia first', searchCountries('eth')[0].code, 'ET');
+check('"united" finds all three',
+  searchCountries('united').map(c => c.code).sort(), ['AE', 'GB', 'US']);
+check('"germ" finds Germany', searchCountries('germ').map(c => c.code), ['DE']);
+// a prefix must outrank a substring, or the picker feels broken
+check('"in" offers India before Argentina', searchCountries('in')[0].code, 'IN');
+/* Accent folding, so a phone keyboard is enough. CLDR is correct and a
+   parent is not wrong — both spellings have to work. */
+check('"turkiye" finds Türkiye', searchCountries('turkiye').map(c => c.code), ['TR']);
+check('"turkey" finds it too', searchCountries('turkey').map(c => c.code), ['TR']);
+check('"cote" finds Côte d\u2019Ivoire', searchCountries('cote')[0].code, 'CI');
+check('"ivory coast" finds it as well', searchCountries('ivory coast').map(c => c.code), ['CI']);
+check('the code itself works', searchCountries('et')[0].code, 'ET');
+check('case does not matter', searchCountries('ETHIOPIA')[0].code, 'ET');
+check('an empty query shows everything', searchCountries('').length, COUNTRIES.length);
+check('and so does whitespace', searchCountries('   ').length, COUNTRIES.length);
+check('nothing matches nonsense, and it does not throw',
+  searchCountries('zzzzqqq'), []);
+
+/* ---- and the same assertions against the markup that actually ships ----
+
+   The combobox is only worth having if the page really carries one.
+   These read register.html as a file, the way tests/landing.test.mjs
+   reads index.html, so a refactor that quietly reverts the control fails
+   here rather than in front of a parent. */
+console.log('\nacceptance 2, 4, 6, 7: the control register.html actually ships');
+{
+  const REG = readFileSync(new URL('../register.html', import.meta.url), 'utf8');
+  const field = REG.slice(REG.indexOf('id="countryCombo"') - 900,
+                          REG.indexOf('id="countryMsg"') + 60);
+
+  check('the field is a combobox', /role="combobox"/.test(field), true);
+  check('with a listbox it controls', /role="listbox"/.test(field), true);
+  check('and it says which one', /aria-controls="countryList"/.test(field), true);
+  check('it announces whether it is open', /aria-expanded="false"/.test(field), true);
+  check('and that the list is what completes it', /aria-autocomplete="list"/.test(field), true);
+  // acceptance 7: nothing preselected, and the stored value starts empty
+  check('the visible input carries no value', /id="country"[^>]*\svalue=/.test(field), false);
+  check('and the stored code starts empty', /id="countryCode" value=""/.test(field), true);
+  // the <select> it replaced must not still be lurking
+  check('there is no country <select> left', /<select[^>]*id="country/.test(REG), false);
+  check('nor the old filter box', /countryFilter/.test(REG), false);
+  // acceptance 4, stated against the shipped page rather than the module
+  check('no flag image file is referenced anywhere on the page',
+    /flags?[-/][a-z]{2}\.(png|svg|gif|webp)|flagcdn|flagpedia/i.test(REG), false);
+  // acceptance 6 + the Amharic requirement
+  check('the empty-results message is in Amharic', REG.includes('አገር አልተገኘም'), true);
+  check('and the escape hatch is reachable from the list', REG.includes("countryByCode(row.dataset.code)"), true);
+  // acceptance 2: every key the spec names is handled
+  for (const key of ['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab']) {
+    check(`${key} is handled`, REG.includes(`'${key}'`), true);
+  }
+  /* The list scrolls, the page does not. `block: 'nearest'` is the line
+     that keeps that promise — anything else drags the form out from
+     under a thumb on a phone. */
+  check("the highlight scrolls the list, not the page", REG.includes("block: 'nearest'"), true);
+}
 
 console.log('\ncountry validation');
 check('a real country passes', validateCountry(countryByCode('US')).ok, true);

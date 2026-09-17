@@ -114,64 +114,353 @@ export const REGIONS = {
 
 export const REGION_IDS = Object.keys(REGIONS);
 
-/* ISO 3166-1 alpha-2, the region it belongs to, and the local currency
-   used only for the approximate figure below. `ZZ` is deliberate: a
-   family whose country is not listed must still be able to register, and
-   a school does not turn a child away over a dropdown. */
+/* ---------------- the country list ----------------
+
+   Every country with an ISO 3166-1 alpha-2 code, plus `ZZ`. Generated
+   from CLDR's English names rather than typed by hand, then committed as
+   plain data — there is no build step here and there is not going to be
+   one.
+
+   FIELDS
+     code      ISO 3166-1 alpha-2. This is what is stored on the account.
+     region    one of REGION_IDS. Every country has one; a country that
+               mapped to undefined would fall out of regional pricing
+               silently, so tests/pricing.test.mjs asserts none does.
+     currency  ISO 4217, used ONLY for the approximate local figure. A
+               code with no rate in FX simply shows nothing, so an entry
+               here is harmless until somebody adds a rate for it.
+     en        what the combobox shows and what a parent types. English on
+               purpose: it is what a parent types and what every other
+               site they use shows them.
+     am        OPTIONAL, and present only on the forty-odd countries whose
+               Amharic names were written by hand before the list was
+               expanded. Nothing renders it today. It is kept rather than
+               deleted because the parish may one day want an Amharic-first
+               list, and re-translating by hand is the expensive half.
+     alt       OPTIONAL extra search terms, lowercase. CLDR is correct and
+               a parent is not wrong: somebody looking for Turkey types
+               "turkey", not "Türkiye", and somebody in Abidjan may well
+               type "ivory coast". Matching is accent-folded (see
+               searchCountries), so "turkiye" and "cote" already work —
+               `alt` is for the names that are genuinely different.
+
+   REGIONS. Africa, Europe and Asia follow the usual continental lines;
+   Turkey, the Caucasus and the Gulf sit in ASIA. NORTH_AMERICA is the
+   CONTINENT — the US, Canada, Mexico, Central America and the Caribbean —
+   rather than the UN's narrower "Northern America", because a treasurer
+   reading the region table should find the continent they expect. OTHER
+   holds South America, Oceania and the Antarctic territories, which is
+   honest about what it is: the bucket for everywhere the school has not
+   yet had a reason to name.
+
+   `ZZ` is deliberate and stays last. A family whose country is not listed
+   must still be able to register — a school does not turn a child away
+   over a dropdown. */
 export const COUNTRIES = [
-  { code: 'ET', region: 'ETHIOPIA', currency: 'ETB', am: 'ኢትዮጵያ', en: 'Ethiopia' },
-
-  { code: 'KE', region: 'AFRICA', currency: 'KES', am: 'ኬንያ', en: 'Kenya' },
-  { code: 'SD', region: 'AFRICA', currency: 'SDG', am: 'ሱዳን', en: 'Sudan' },
-  { code: 'SS', region: 'AFRICA', currency: 'SSP', am: 'ደቡብ ሱዳን', en: 'South Sudan' },
-  { code: 'DJ', region: 'AFRICA', currency: 'DJF', am: 'ጅቡቲ', en: 'Djibouti' },
-  { code: 'SO', region: 'AFRICA', currency: 'SOS', am: 'ሶማሊያ', en: 'Somalia' },
-  { code: 'ER', region: 'AFRICA', currency: 'ERN', am: 'ኤርትራ', en: 'Eritrea' },
-  { code: 'EG', region: 'AFRICA', currency: 'EGP', am: 'ግብጽ', en: 'Egypt' },
-  { code: 'ZA', region: 'AFRICA', currency: 'ZAR', am: 'ደቡብ አፍሪካ', en: 'South Africa' },
-  { code: 'TZ', region: 'AFRICA', currency: 'TZS', am: 'ታንዛኒያ', en: 'Tanzania' },
-  { code: 'UG', region: 'AFRICA', currency: 'UGX', am: 'ኡጋንዳ', en: 'Uganda' },
-
-  { code: 'US', region: 'NORTH_AMERICA', currency: 'USD', am: 'አሜሪካ', en: 'United States' },
-  { code: 'CA', region: 'NORTH_AMERICA', currency: 'CAD', am: 'ካናዳ', en: 'Canada' },
-  { code: 'MX', region: 'NORTH_AMERICA', currency: 'MXN', am: 'ሜክሲኮ', en: 'Mexico' },
-
-  { code: 'GB', region: 'EUROPE', currency: 'GBP', am: 'እንግሊዝ', en: 'United Kingdom' },
-  { code: 'DE', region: 'EUROPE', currency: 'EUR', am: 'ጀርመን', en: 'Germany' },
-  { code: 'SE', region: 'EUROPE', currency: 'SEK', am: 'ስዊድን', en: 'Sweden' },
-  { code: 'NO', region: 'EUROPE', currency: 'NOK', am: 'ኖርዌይ', en: 'Norway' },
-  { code: 'DK', region: 'EUROPE', currency: 'DKK', am: 'ዴንማርክ', en: 'Denmark' },
-  { code: 'FI', region: 'EUROPE', currency: 'EUR', am: 'ፊንላንድ', en: 'Finland' },
-  { code: 'NL', region: 'EUROPE', currency: 'EUR', am: 'ኔዘርላንድ', en: 'Netherlands' },
-  { code: 'BE', region: 'EUROPE', currency: 'EUR', am: 'ቤልጂየም', en: 'Belgium' },
-  { code: 'FR', region: 'EUROPE', currency: 'EUR', am: 'ፈረንሳይ', en: 'France' },
-  { code: 'IT', region: 'EUROPE', currency: 'EUR', am: 'ጣሊያን', en: 'Italy' },
-  { code: 'ES', region: 'EUROPE', currency: 'EUR', am: 'ስፔን', en: 'Spain' },
-  { code: 'GR', region: 'EUROPE', currency: 'EUR', am: 'ግሪክ', en: 'Greece' },
-  { code: 'IE', region: 'EUROPE', currency: 'EUR', am: 'አየርላንድ', en: 'Ireland' },
-  { code: 'AT', region: 'EUROPE', currency: 'EUR', am: 'ኦስትሪያ', en: 'Austria' },
-  { code: 'CH', region: 'EUROPE', currency: 'CHF', am: 'ስዊዘርላንድ', en: 'Switzerland' },
-
-  { code: 'AE', region: 'ASIA', currency: 'AED', am: 'የተባበሩት ዓረብ ኤምሬትስ', en: 'United Arab Emirates' },
-  { code: 'SA', region: 'ASIA', currency: 'SAR', am: 'ሳዑዲ ዓረቢያ', en: 'Saudi Arabia' },
-  { code: 'QA', region: 'ASIA', currency: 'QAR', am: 'ቀጠር', en: 'Qatar' },
-  { code: 'KW', region: 'ASIA', currency: 'KWD', am: 'ኩዌት', en: 'Kuwait' },
-  { code: 'BH', region: 'ASIA', currency: 'BHD', am: 'ባህሬን', en: 'Bahrain' },
-  { code: 'OM', region: 'ASIA', currency: 'OMR', am: 'ኦማን', en: 'Oman' },
-  { code: 'LB', region: 'ASIA', currency: 'LBP', am: 'ሊባኖስ', en: 'Lebanon' },
-  { code: 'JO', region: 'ASIA', currency: 'JOD', am: 'ዮርዳኖስ', en: 'Jordan' },
-  { code: 'IL', region: 'ASIA', currency: 'ILS', am: 'እስራኤል', en: 'Israel' },
-  { code: 'IN', region: 'ASIA', currency: 'INR', am: 'ሕንድ', en: 'India' },
-  { code: 'JP', region: 'ASIA', currency: 'JPY', am: 'ጃፓን', en: 'Japan' },
-
-  { code: 'AU', region: 'OTHER', currency: 'AUD', am: 'አውስትራሊያ', en: 'Australia' },
-  { code: 'NZ', region: 'OTHER', currency: 'NZD', am: 'ኒውዚላንድ', en: 'New Zealand' },
-  { code: 'BR', region: 'OTHER', currency: 'BRL', am: 'ብራዚል', en: 'Brazil' },
-  { code: 'ZZ', region: 'OTHER', currency: null,  am: 'ሌላ አገር', en: 'Another country' }
+  { code: 'ET', region: 'ETHIOPIA', currency: 'ETB', en: 'Ethiopia', am: 'ኢትዮጵያ' },
+  { code: 'AF', region: 'ASIA', currency: 'AFN', en: 'Afghanistan' },
+  { code: 'AX', region: 'EUROPE', currency: 'EUR', en: 'Åland Islands' },
+  { code: 'AL', region: 'EUROPE', currency: 'ALL', en: 'Albania' },
+  { code: 'DZ', region: 'AFRICA', currency: 'DZD', en: 'Algeria' },
+  { code: 'AS', region: 'OTHER', currency: 'USD', en: 'American Samoa' },
+  { code: 'AD', region: 'EUROPE', currency: 'EUR', en: 'Andorra' },
+  { code: 'AO', region: 'AFRICA', currency: 'AOA', en: 'Angola' },
+  { code: 'AI', region: 'NORTH_AMERICA', currency: 'XCD', en: 'Anguilla' },
+  { code: 'AQ', region: 'OTHER', currency: null, en: 'Antarctica' },
+  { code: 'AG', region: 'NORTH_AMERICA', currency: 'XCD', en: 'Antigua & Barbuda' },
+  { code: 'AR', region: 'OTHER', currency: 'ARS', en: 'Argentina' },
+  { code: 'AM', region: 'ASIA', currency: 'AMD', en: 'Armenia' },
+  { code: 'AW', region: 'NORTH_AMERICA', currency: 'AWG', en: 'Aruba' },
+  { code: 'AU', region: 'OTHER', currency: 'AUD', en: 'Australia', am: 'አውስትራሊያ' },
+  { code: 'AT', region: 'EUROPE', currency: 'EUR', en: 'Austria', am: 'ኦስትሪያ' },
+  { code: 'AZ', region: 'ASIA', currency: 'AZN', en: 'Azerbaijan' },
+  { code: 'BS', region: 'NORTH_AMERICA', currency: 'BSD', en: 'Bahamas' },
+  { code: 'BH', region: 'ASIA', currency: 'BHD', en: 'Bahrain', am: 'ባህሬን' },
+  { code: 'BD', region: 'ASIA', currency: 'BDT', en: 'Bangladesh' },
+  { code: 'BB', region: 'NORTH_AMERICA', currency: 'BBD', en: 'Barbados' },
+  { code: 'BY', region: 'EUROPE', currency: 'BYN', en: 'Belarus' },
+  { code: 'BE', region: 'EUROPE', currency: 'EUR', en: 'Belgium', am: 'ቤልጂየም' },
+  { code: 'BZ', region: 'NORTH_AMERICA', currency: 'BZD', en: 'Belize' },
+  { code: 'BJ', region: 'AFRICA', currency: 'XOF', en: 'Benin' },
+  { code: 'BM', region: 'NORTH_AMERICA', currency: 'BMD', en: 'Bermuda' },
+  { code: 'BT', region: 'ASIA', currency: 'BTN', en: 'Bhutan' },
+  { code: 'BO', region: 'OTHER', currency: 'BOB', en: 'Bolivia' },
+  { code: 'BA', region: 'EUROPE', currency: 'BAM', en: 'Bosnia & Herzegovina' },
+  { code: 'BW', region: 'AFRICA', currency: 'BWP', en: 'Botswana' },
+  { code: 'BV', region: 'OTHER', currency: 'NOK', en: 'Bouvet Island' },
+  { code: 'BR', region: 'OTHER', currency: 'BRL', en: 'Brazil', am: 'ብራዚል' },
+  { code: 'IO', region: 'OTHER', currency: 'USD', en: 'British Indian Ocean Territory' },
+  { code: 'VG', region: 'NORTH_AMERICA', currency: 'USD', en: 'British Virgin Islands' },
+  { code: 'BN', region: 'ASIA', currency: 'BND', en: 'Brunei' },
+  { code: 'BG', region: 'EUROPE', currency: 'BGN', en: 'Bulgaria' },
+  { code: 'BF', region: 'AFRICA', currency: 'XOF', en: 'Burkina Faso' },
+  { code: 'BI', region: 'AFRICA', currency: 'BIF', en: 'Burundi' },
+  { code: 'KH', region: 'ASIA', currency: 'KHR', en: 'Cambodia' },
+  { code: 'CM', region: 'AFRICA', currency: 'XAF', en: 'Cameroon' },
+  { code: 'CA', region: 'NORTH_AMERICA', currency: 'CAD', en: 'Canada', am: 'ካናዳ' },
+  { code: 'CV', region: 'AFRICA', currency: 'CVE', en: 'Cape Verde', alt: ['cabo verde'] },
+  { code: 'BQ', region: 'NORTH_AMERICA', currency: 'USD', en: 'Caribbean Netherlands' },
+  { code: 'KY', region: 'NORTH_AMERICA', currency: 'KYD', en: 'Cayman Islands' },
+  { code: 'CF', region: 'AFRICA', currency: 'XAF', en: 'Central African Republic' },
+  { code: 'TD', region: 'AFRICA', currency: 'XAF', en: 'Chad' },
+  { code: 'CL', region: 'OTHER', currency: 'CLP', en: 'Chile' },
+  { code: 'CN', region: 'ASIA', currency: 'CNY', en: 'China' },
+  { code: 'CO', region: 'OTHER', currency: 'COP', en: 'Colombia' },
+  { code: 'KM', region: 'AFRICA', currency: 'KMF', en: 'Comoros' },
+  { code: 'CG', region: 'AFRICA', currency: 'XAF', en: 'Congo - Brazzaville', alt: ['republic of the congo'] },
+  { code: 'CD', region: 'AFRICA', currency: 'CDF', en: 'Congo - Kinshasa', alt: ['drc', 'democratic republic of the congo', 'zaire'] },
+  { code: 'CK', region: 'OTHER', currency: 'NZD', en: 'Cook Islands' },
+  { code: 'CR', region: 'NORTH_AMERICA', currency: 'CRC', en: 'Costa Rica' },
+  { code: 'CI', region: 'AFRICA', currency: 'XOF', en: 'Côte d’Ivoire', alt: ['ivory coast'] },
+  { code: 'HR', region: 'EUROPE', currency: 'EUR', en: 'Croatia' },
+  { code: 'CU', region: 'NORTH_AMERICA', currency: 'CUP', en: 'Cuba' },
+  { code: 'CW', region: 'NORTH_AMERICA', currency: 'XCG', en: 'Curaçao' },
+  { code: 'CY', region: 'EUROPE', currency: 'EUR', en: 'Cyprus' },
+  { code: 'CZ', region: 'EUROPE', currency: 'CZK', en: 'Czechia', alt: ['czech republic'] },
+  { code: 'DK', region: 'EUROPE', currency: 'DKK', en: 'Denmark', am: 'ዴንማርክ' },
+  { code: 'DJ', region: 'AFRICA', currency: 'DJF', en: 'Djibouti', am: 'ጅቡቲ' },
+  { code: 'DM', region: 'NORTH_AMERICA', currency: 'XCD', en: 'Dominica' },
+  { code: 'DO', region: 'NORTH_AMERICA', currency: 'DOP', en: 'Dominican Republic' },
+  { code: 'EC', region: 'OTHER', currency: 'USD', en: 'Ecuador' },
+  { code: 'EG', region: 'AFRICA', currency: 'EGP', en: 'Egypt', am: 'ግብጽ' },
+  { code: 'SV', region: 'NORTH_AMERICA', currency: 'USD', en: 'El Salvador' },
+  { code: 'GQ', region: 'AFRICA', currency: 'XAF', en: 'Equatorial Guinea' },
+  { code: 'ER', region: 'AFRICA', currency: 'ERN', en: 'Eritrea', am: 'ኤርትራ' },
+  { code: 'EE', region: 'EUROPE', currency: 'EUR', en: 'Estonia' },
+  { code: 'SZ', region: 'AFRICA', currency: 'SZL', en: 'Eswatini', alt: ['swaziland'] },
+  { code: 'FK', region: 'OTHER', currency: 'FKP', en: 'Falkland Islands' },
+  { code: 'FO', region: 'EUROPE', currency: 'DKK', en: 'Faroe Islands' },
+  { code: 'FJ', region: 'OTHER', currency: 'FJD', en: 'Fiji' },
+  { code: 'FI', region: 'EUROPE', currency: 'EUR', en: 'Finland', am: 'ፊንላንድ' },
+  { code: 'FR', region: 'EUROPE', currency: 'EUR', en: 'France', am: 'ፈረንሳይ' },
+  { code: 'GF', region: 'OTHER', currency: 'EUR', en: 'French Guiana' },
+  { code: 'PF', region: 'OTHER', currency: 'XPF', en: 'French Polynesia' },
+  { code: 'TF', region: 'OTHER', currency: 'EUR', en: 'French Southern Territories' },
+  { code: 'GA', region: 'AFRICA', currency: 'XAF', en: 'Gabon' },
+  { code: 'GM', region: 'AFRICA', currency: 'GMD', en: 'Gambia' },
+  { code: 'GE', region: 'ASIA', currency: 'GEL', en: 'Georgia' },
+  { code: 'DE', region: 'EUROPE', currency: 'EUR', en: 'Germany', am: 'ጀርመን' },
+  { code: 'GH', region: 'AFRICA', currency: 'GHS', en: 'Ghana' },
+  { code: 'GI', region: 'EUROPE', currency: 'GIP', en: 'Gibraltar' },
+  { code: 'GR', region: 'EUROPE', currency: 'EUR', en: 'Greece', am: 'ግሪክ' },
+  { code: 'GL', region: 'NORTH_AMERICA', currency: 'DKK', en: 'Greenland' },
+  { code: 'GD', region: 'NORTH_AMERICA', currency: 'XCD', en: 'Grenada' },
+  { code: 'GP', region: 'NORTH_AMERICA', currency: 'EUR', en: 'Guadeloupe' },
+  { code: 'GU', region: 'OTHER', currency: 'USD', en: 'Guam' },
+  { code: 'GT', region: 'NORTH_AMERICA', currency: 'GTQ', en: 'Guatemala' },
+  { code: 'GG', region: 'EUROPE', currency: 'GBP', en: 'Guernsey' },
+  { code: 'GN', region: 'AFRICA', currency: 'GNF', en: 'Guinea' },
+  { code: 'GW', region: 'AFRICA', currency: 'XOF', en: 'Guinea-Bissau' },
+  { code: 'GY', region: 'OTHER', currency: 'GYD', en: 'Guyana' },
+  { code: 'HT', region: 'NORTH_AMERICA', currency: 'HTG', en: 'Haiti' },
+  { code: 'HM', region: 'OTHER', currency: 'AUD', en: 'Heard & McDonald Islands' },
+  { code: 'HN', region: 'NORTH_AMERICA', currency: 'HNL', en: 'Honduras' },
+  { code: 'HK', region: 'ASIA', currency: 'HKD', en: 'Hong Kong SAR China' },
+  { code: 'HU', region: 'EUROPE', currency: 'HUF', en: 'Hungary' },
+  { code: 'IS', region: 'EUROPE', currency: 'ISK', en: 'Iceland' },
+  { code: 'IN', region: 'ASIA', currency: 'INR', en: 'India', am: 'ሕንድ' },
+  { code: 'ID', region: 'ASIA', currency: 'IDR', en: 'Indonesia' },
+  { code: 'IR', region: 'ASIA', currency: 'IRR', en: 'Iran' },
+  { code: 'IQ', region: 'ASIA', currency: 'IQD', en: 'Iraq' },
+  { code: 'IE', region: 'EUROPE', currency: 'EUR', en: 'Ireland', am: 'አየርላንድ', alt: ['eire'] },
+  { code: 'IM', region: 'EUROPE', currency: 'GBP', en: 'Isle of Man' },
+  { code: 'IL', region: 'ASIA', currency: 'ILS', en: 'Israel', am: 'እስራኤል' },
+  { code: 'IT', region: 'EUROPE', currency: 'EUR', en: 'Italy', am: 'ጣሊያን' },
+  { code: 'JM', region: 'NORTH_AMERICA', currency: 'JMD', en: 'Jamaica' },
+  { code: 'JP', region: 'ASIA', currency: 'JPY', en: 'Japan', am: 'ጃፓን' },
+  { code: 'JE', region: 'EUROPE', currency: 'GBP', en: 'Jersey' },
+  { code: 'JO', region: 'ASIA', currency: 'JOD', en: 'Jordan', am: 'ዮርዳኖስ' },
+  { code: 'KZ', region: 'ASIA', currency: 'KZT', en: 'Kazakhstan' },
+  { code: 'KE', region: 'AFRICA', currency: 'KES', en: 'Kenya', am: 'ኬንያ' },
+  { code: 'KI', region: 'OTHER', currency: 'AUD', en: 'Kiribati' },
+  { code: 'KW', region: 'ASIA', currency: 'KWD', en: 'Kuwait', am: 'ኩዌት' },
+  { code: 'KG', region: 'ASIA', currency: 'KGS', en: 'Kyrgyzstan' },
+  { code: 'LA', region: 'ASIA', currency: 'LAK', en: 'Laos', alt: ['lao'] },
+  { code: 'LV', region: 'EUROPE', currency: 'EUR', en: 'Latvia' },
+  { code: 'LB', region: 'ASIA', currency: 'LBP', en: 'Lebanon', am: 'ሊባኖስ' },
+  { code: 'LS', region: 'AFRICA', currency: 'LSL', en: 'Lesotho' },
+  { code: 'LR', region: 'AFRICA', currency: 'LRD', en: 'Liberia' },
+  { code: 'LY', region: 'AFRICA', currency: 'LYD', en: 'Libya' },
+  { code: 'LI', region: 'EUROPE', currency: 'CHF', en: 'Liechtenstein' },
+  { code: 'LT', region: 'EUROPE', currency: 'EUR', en: 'Lithuania' },
+  { code: 'LU', region: 'EUROPE', currency: 'EUR', en: 'Luxembourg' },
+  { code: 'MO', region: 'ASIA', currency: 'MOP', en: 'Macao SAR China' },
+  { code: 'MG', region: 'AFRICA', currency: 'MGA', en: 'Madagascar' },
+  { code: 'MW', region: 'AFRICA', currency: 'MWK', en: 'Malawi' },
+  { code: 'MY', region: 'ASIA', currency: 'MYR', en: 'Malaysia' },
+  { code: 'MV', region: 'ASIA', currency: 'MVR', en: 'Maldives' },
+  { code: 'ML', region: 'AFRICA', currency: 'XOF', en: 'Mali' },
+  { code: 'MT', region: 'EUROPE', currency: 'EUR', en: 'Malta' },
+  { code: 'MH', region: 'OTHER', currency: 'USD', en: 'Marshall Islands' },
+  { code: 'MQ', region: 'NORTH_AMERICA', currency: 'EUR', en: 'Martinique' },
+  { code: 'MR', region: 'AFRICA', currency: 'MRU', en: 'Mauritania' },
+  { code: 'MU', region: 'AFRICA', currency: 'MUR', en: 'Mauritius' },
+  { code: 'YT', region: 'AFRICA', currency: 'EUR', en: 'Mayotte' },
+  { code: 'MX', region: 'NORTH_AMERICA', currency: 'MXN', en: 'Mexico', am: 'ሜክሲኮ' },
+  { code: 'FM', region: 'OTHER', currency: 'USD', en: 'Micronesia' },
+  { code: 'MD', region: 'EUROPE', currency: 'MDL', en: 'Moldova' },
+  { code: 'MC', region: 'EUROPE', currency: 'EUR', en: 'Monaco' },
+  { code: 'MN', region: 'ASIA', currency: 'MNT', en: 'Mongolia' },
+  { code: 'ME', region: 'EUROPE', currency: 'EUR', en: 'Montenegro' },
+  { code: 'MS', region: 'NORTH_AMERICA', currency: 'XCD', en: 'Montserrat' },
+  { code: 'MA', region: 'AFRICA', currency: 'MAD', en: 'Morocco' },
+  { code: 'MZ', region: 'AFRICA', currency: 'MZN', en: 'Mozambique' },
+  { code: 'MM', region: 'ASIA', currency: 'MMK', en: 'Myanmar (Burma)', alt: ['burma'] },
+  { code: 'NA', region: 'AFRICA', currency: 'NAD', en: 'Namibia' },
+  { code: 'NR', region: 'OTHER', currency: 'AUD', en: 'Nauru' },
+  { code: 'NP', region: 'ASIA', currency: 'NPR', en: 'Nepal' },
+  { code: 'NL', region: 'EUROPE', currency: 'EUR', en: 'Netherlands', am: 'ኔዘርላንድ', alt: ['holland'] },
+  { code: 'NC', region: 'OTHER', currency: 'XPF', en: 'New Caledonia' },
+  { code: 'NZ', region: 'OTHER', currency: 'NZD', en: 'New Zealand', am: 'ኒውዚላንድ', alt: ['aotearoa'] },
+  { code: 'NI', region: 'NORTH_AMERICA', currency: 'NIO', en: 'Nicaragua' },
+  { code: 'NE', region: 'AFRICA', currency: 'XOF', en: 'Niger' },
+  { code: 'NG', region: 'AFRICA', currency: 'NGN', en: 'Nigeria' },
+  { code: 'NU', region: 'OTHER', currency: 'NZD', en: 'Niue' },
+  { code: 'NF', region: 'OTHER', currency: 'AUD', en: 'Norfolk Island' },
+  { code: 'KP', region: 'ASIA', currency: 'KPW', en: 'North Korea' },
+  { code: 'MK', region: 'EUROPE', currency: 'MKD', en: 'North Macedonia', alt: ['macedonia'] },
+  { code: 'MP', region: 'OTHER', currency: 'USD', en: 'Northern Mariana Islands' },
+  { code: 'NO', region: 'EUROPE', currency: 'NOK', en: 'Norway', am: 'ኖርዌይ' },
+  { code: 'OM', region: 'ASIA', currency: 'OMR', en: 'Oman', am: 'ኦማን' },
+  { code: 'PK', region: 'ASIA', currency: 'PKR', en: 'Pakistan' },
+  { code: 'PW', region: 'OTHER', currency: 'USD', en: 'Palau' },
+  { code: 'PS', region: 'ASIA', currency: 'ILS', en: 'Palestinian Territories', alt: ['palestine'] },
+  { code: 'PA', region: 'NORTH_AMERICA', currency: 'PAB', en: 'Panama' },
+  { code: 'PG', region: 'OTHER', currency: 'PGK', en: 'Papua New Guinea' },
+  { code: 'PY', region: 'OTHER', currency: 'PYG', en: 'Paraguay' },
+  { code: 'PE', region: 'OTHER', currency: 'PEN', en: 'Peru' },
+  { code: 'PH', region: 'ASIA', currency: 'PHP', en: 'Philippines' },
+  { code: 'PN', region: 'OTHER', currency: 'NZD', en: 'Pitcairn Islands' },
+  { code: 'PL', region: 'EUROPE', currency: 'PLN', en: 'Poland' },
+  { code: 'PT', region: 'EUROPE', currency: 'EUR', en: 'Portugal' },
+  { code: 'PR', region: 'NORTH_AMERICA', currency: 'USD', en: 'Puerto Rico' },
+  { code: 'QA', region: 'ASIA', currency: 'QAR', en: 'Qatar', am: 'ቀጠር' },
+  { code: 'RE', region: 'AFRICA', currency: 'EUR', en: 'Réunion' },
+  { code: 'RO', region: 'EUROPE', currency: 'RON', en: 'Romania' },
+  { code: 'RU', region: 'EUROPE', currency: 'RUB', en: 'Russia' },
+  { code: 'RW', region: 'AFRICA', currency: 'RWF', en: 'Rwanda' },
+  { code: 'WS', region: 'OTHER', currency: 'WST', en: 'Samoa' },
+  { code: 'SM', region: 'EUROPE', currency: 'EUR', en: 'San Marino' },
+  { code: 'ST', region: 'AFRICA', currency: 'STN', en: 'São Tomé & Príncipe' },
+  { code: 'SA', region: 'ASIA', currency: 'SAR', en: 'Saudi Arabia', am: 'ሳዑዲ ዓረቢያ' },
+  { code: 'SN', region: 'AFRICA', currency: 'XOF', en: 'Senegal' },
+  { code: 'RS', region: 'EUROPE', currency: 'RSD', en: 'Serbia' },
+  { code: 'SC', region: 'AFRICA', currency: 'SCR', en: 'Seychelles' },
+  { code: 'SL', region: 'AFRICA', currency: 'SLE', en: 'Sierra Leone' },
+  { code: 'SG', region: 'ASIA', currency: 'SGD', en: 'Singapore' },
+  { code: 'SX', region: 'NORTH_AMERICA', currency: 'XCG', en: 'Sint Maarten' },
+  { code: 'SK', region: 'EUROPE', currency: 'EUR', en: 'Slovakia' },
+  { code: 'SI', region: 'EUROPE', currency: 'EUR', en: 'Slovenia' },
+  { code: 'SB', region: 'OTHER', currency: 'SBD', en: 'Solomon Islands' },
+  { code: 'SO', region: 'AFRICA', currency: 'SOS', en: 'Somalia', am: 'ሶማሊያ' },
+  { code: 'ZA', region: 'AFRICA', currency: 'ZAR', en: 'South Africa', am: 'ደቡብ አፍሪካ' },
+  { code: 'GS', region: 'OTHER', currency: 'GBP', en: 'South Georgia & South Sandwich Islands' },
+  { code: 'KR', region: 'ASIA', currency: 'KRW', en: 'South Korea', alt: ['korea'] },
+  { code: 'SS', region: 'AFRICA', currency: 'SSP', en: 'South Sudan', am: 'ደቡብ ሱዳን' },
+  { code: 'ES', region: 'EUROPE', currency: 'EUR', en: 'Spain', am: 'ስፔን' },
+  { code: 'LK', region: 'ASIA', currency: 'LKR', en: 'Sri Lanka' },
+  { code: 'BL', region: 'NORTH_AMERICA', currency: 'EUR', en: 'St. Barthélemy' },
+  { code: 'SH', region: 'AFRICA', currency: 'SHP', en: 'St. Helena' },
+  { code: 'KN', region: 'NORTH_AMERICA', currency: 'XCD', en: 'St. Kitts & Nevis' },
+  { code: 'LC', region: 'NORTH_AMERICA', currency: 'XCD', en: 'St. Lucia' },
+  { code: 'MF', region: 'NORTH_AMERICA', currency: 'EUR', en: 'St. Martin' },
+  { code: 'PM', region: 'NORTH_AMERICA', currency: 'EUR', en: 'St. Pierre & Miquelon' },
+  { code: 'VC', region: 'NORTH_AMERICA', currency: 'XCD', en: 'St. Vincent & Grenadines' },
+  { code: 'SD', region: 'AFRICA', currency: 'SDG', en: 'Sudan', am: 'ሱዳን' },
+  { code: 'SR', region: 'OTHER', currency: 'SRD', en: 'Suriname' },
+  { code: 'SJ', region: 'EUROPE', currency: 'NOK', en: 'Svalbard & Jan Mayen' },
+  { code: 'SE', region: 'EUROPE', currency: 'SEK', en: 'Sweden', am: 'ስዊድን' },
+  { code: 'CH', region: 'EUROPE', currency: 'CHF', en: 'Switzerland', am: 'ስዊዘርላንድ' },
+  { code: 'SY', region: 'ASIA', currency: 'SYP', en: 'Syria' },
+  { code: 'TW', region: 'ASIA', currency: 'TWD', en: 'Taiwan' },
+  { code: 'TJ', region: 'ASIA', currency: 'TJS', en: 'Tajikistan' },
+  { code: 'TZ', region: 'AFRICA', currency: 'TZS', en: 'Tanzania', am: 'ታንዛኒያ' },
+  { code: 'TH', region: 'ASIA', currency: 'THB', en: 'Thailand' },
+  { code: 'TL', region: 'ASIA', currency: 'USD', en: 'Timor-Leste', alt: ['east timor'] },
+  { code: 'TG', region: 'AFRICA', currency: 'XOF', en: 'Togo' },
+  { code: 'TK', region: 'OTHER', currency: 'NZD', en: 'Tokelau' },
+  { code: 'TO', region: 'OTHER', currency: 'TOP', en: 'Tonga' },
+  { code: 'TT', region: 'NORTH_AMERICA', currency: 'TTD', en: 'Trinidad & Tobago' },
+  { code: 'TN', region: 'AFRICA', currency: 'TND', en: 'Tunisia' },
+  { code: 'TR', region: 'ASIA', currency: 'TRY', en: 'Türkiye', alt: ['turkey'] },
+  { code: 'TM', region: 'ASIA', currency: 'TMT', en: 'Turkmenistan' },
+  { code: 'TC', region: 'NORTH_AMERICA', currency: 'USD', en: 'Turks & Caicos Islands' },
+  { code: 'TV', region: 'OTHER', currency: 'AUD', en: 'Tuvalu' },
+  { code: 'UM', region: 'OTHER', currency: 'USD', en: 'U.S. Outlying Islands' },
+  { code: 'VI', region: 'NORTH_AMERICA', currency: 'USD', en: 'U.S. Virgin Islands' },
+  { code: 'UG', region: 'AFRICA', currency: 'UGX', en: 'Uganda', am: 'ኡጋንዳ' },
+  { code: 'UA', region: 'EUROPE', currency: 'UAH', en: 'Ukraine' },
+  { code: 'AE', region: 'ASIA', currency: 'AED', en: 'United Arab Emirates', am: 'የተባበሩት ዓረብ ኤምሬትስ', alt: ['uae'] },
+  { code: 'GB', region: 'EUROPE', currency: 'GBP', en: 'United Kingdom', am: 'እንግሊዝ', alt: ['uk', 'britain', 'great britain', 'england', 'scotland', 'wales'] },
+  { code: 'US', region: 'NORTH_AMERICA', currency: 'USD', en: 'United States', am: 'አሜሪካ', alt: ['usa', 'america', 'united states of america'] },
+  { code: 'UY', region: 'OTHER', currency: 'UYU', en: 'Uruguay' },
+  { code: 'UZ', region: 'ASIA', currency: 'UZS', en: 'Uzbekistan' },
+  { code: 'VU', region: 'OTHER', currency: 'VUV', en: 'Vanuatu' },
+  { code: 'VA', region: 'EUROPE', currency: 'EUR', en: 'Vatican City', alt: ['holy see'] },
+  { code: 'VE', region: 'OTHER', currency: 'VES', en: 'Venezuela' },
+  { code: 'VN', region: 'ASIA', currency: 'VND', en: 'Vietnam' },
+  { code: 'WF', region: 'OTHER', currency: 'XPF', en: 'Wallis & Futuna' },
+  { code: 'EH', region: 'AFRICA', currency: 'MAD', en: 'Western Sahara' },
+  { code: 'YE', region: 'ASIA', currency: 'YER', en: 'Yemen' },
+  { code: 'ZM', region: 'AFRICA', currency: 'ZMW', en: 'Zambia' },
+  { code: 'ZW', region: 'AFRICA', currency: 'ZWG', en: 'Zimbabwe' },
+  /* Stays at the bottom of the unfiltered list, and carries no currency
+     because we do not know which one to show. */
+  { code: 'ZZ', region: 'OTHER', currency: null, en: 'Another country', am: 'ሌላ አገር', alt: ['other', 'not listed'] }
 ];
 
+/* The flag, from the country code and nothing else.
+
+   A regional-indicator symbol is U+1F1E6 + (letter - 'A'), so the two
+   letters of an ISO code ARE the flag — two characters of arithmetic, no
+   image files, no sprite sheet, no network request, nothing to maintain
+   when a flag changes.
+
+   SOME WINDOWS BROWSERS RENDER THESE AS LETTER PAIRS (a boxed "ET")
+   rather than a flag, because Windows ships no colour flag font. That is
+   acceptable: the country name is right beside it and carries the
+   meaning. It must NOT become a reason to add flag images to a site with
+   no build step — that trade is a few hundred network requests and a
+   maintenance burden in exchange for decoration.
+
+   ZZ has no flag; it is not a place. */
+export const flagEmoji = (code) => {
+  if (typeof code !== 'string' || !/^[A-Za-z]{2}$/.test(code) || code.toUpperCase() === 'ZZ') return '';
+  return [...code.toUpperCase()]
+    .map(ch => String.fromCodePoint(0x1F1E6 + ch.charCodeAt(0) - 65)).join('');
+};
+
+/* Accent-folded, lowercased, so "turkiye" finds Türkiye, "cote" finds
+   Côte d'Ivoire and "aland" finds Åland. A parent on a phone keyboard is
+   not going to reach for ü. */
+const fold = (s) => String(s ?? '').normalize('NFD')
+  .replace(/[̀-ͯ]/g, '').replace(/[’']/g, '').toLowerCase().trim();
+
+/* Filters the list for the combobox. Prefix matches come first, because
+   typing "in" should offer India before Argentina — a substring match
+   that outranks a prefix match is what makes a picker feel broken.
+
+   An empty query returns everything, ZZ included and last, which is what
+   the list shows before a parent has typed anything. */
+export function searchCountries(query) {
+  const q = fold(query);
+  if (!q) return COUNTRIES.slice();
+  const hits = [];
+  for (const c of COUNTRIES) {
+    const name = fold(c.en);
+    const terms = [name, ...(c.alt || []).map(fold), c.code.toLowerCase()];
+    let rank = -1;
+    for (const t of terms) {
+      if (t.startsWith(q)) { rank = 0; break; }
+      if (t.includes(q)) rank = 1;
+    }
+    if (rank >= 0) hits.push({ c, rank, name });
+  }
+  hits.sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
+  return hits.map(h => h.c);
+}
+
 export const countryByCode = (code) => COUNTRIES.find(c => c.code === code) || null;
-export const countriesInRegion = (region) => COUNTRIES.filter(c => c.region === region);
 
 /* ---------------- approximate local figures ----------------
 
