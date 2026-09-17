@@ -132,11 +132,9 @@ export const REGION_IDS = Object.keys(REGIONS);
      en        what the combobox shows and what a parent types. English on
                purpose: it is what a parent types and what every other
                site they use shows them.
-     am        OPTIONAL, and present only on the forty-odd countries whose
-               Amharic names were written by hand before the list was
-               expanded. Nothing renders it today. It is kept rather than
-               deleted because the parish may one day want an Amharic-first
-               list, and re-translating by hand is the expensive half.
+     am        OPTIONAL Amharic name. Nothing renders it today, and it is
+               NOT dead data — see the note below the list before removing
+               any of them.
      alt       OPTIONAL extra search terms, lowercase. CLDR is correct and
                a parent is not wrong: somebody looking for Turkey types
                "turkey", not "Türkiye", and somebody in Abidjan may well
@@ -408,6 +406,24 @@ export const COUNTRIES = [
      because we do not know which one to show. */
   { code: 'ZZ', region: 'OTHER', currency: null, en: 'Another country', am: 'ሌላ አገር', alt: ['other', 'not listed'] }
 ];
+
+/* ---------------- the `am` names are NOT dead data ----------------
+
+   Roughly forty countries above carry an `am` field and nothing on the
+   site reads it. That is deliberate, and it is not an oversight for a
+   later tidy-up to correct.
+
+   They are the Amharic names that were written BY HAND, one at a time,
+   back when this list was the forty-odd countries the diaspora actually
+   lives in. The combobox shows English because that is what a parent
+   types and what every other site shows them — but the day the parish
+   wants an Amharic-first list, these are the expensive half of the work,
+   already done. Deleting them costs nothing today and costs somebody an
+   evening of translation later.
+
+   A linter or a "remove unused fields" pass will flag them. The answer
+   is no. If the field ever does need to go, it is a decision somebody
+   writes down, not a cleanup. */
 
 /* The flag, from the country code and nothing else.
 
