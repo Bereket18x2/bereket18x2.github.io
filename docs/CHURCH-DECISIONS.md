@@ -26,7 +26,7 @@ now, and it is the kind of thing that is embarrassing later.
 |---|---|---|---|
 | 1 | Who owns the Stripe account | Parish council + treasurer | No card payments; every payment stays manual |
 | 2 | Who owns the Firebase project | Parish council | Children's records sit in one person's private Google account |
-| 3 | How long payment receipts are kept | Treasurer + accountant | We keep them forever by default, and the cheap option expires |
+| 3 | How long things are kept — receipts, and questions a child wrote | Treasurer + accountant; the second half is the parish's, not an accountant's | We keep everything forever by default; the cheap receipts option expires, and no one can ever remove a child's own words |
 | 4 | Whether the consent method is lawful | A lawyer, paid for by the parish | We should not enrol paying families |
 | 5 | Whose names, and which titles, go on a certificate | A መምህር + priest + parish council | Certificates go out unsigned, and unapproved titles are already on the public page |
 | 6 | Verifying the currency conversion table | Treasurer, ten minutes with a bank rate | Families abroad see no local figure at all, or eventually a stale one |
@@ -156,9 +156,9 @@ The move itself is straightforward and causes no interruption for families.
 
 ---
 
-## 3. How long payment receipts are kept
+## 3. How long things are kept — receipts, and a child's own words
 
-### The decision
+### The decision (a): payment receipts
 
 When a family pays, the system now writes a receipt: the parent's name, their
 email, the amount, and what it covered. These are kept separately from anything
@@ -182,6 +182,46 @@ receipts have accumulated, switching to totals means either discarding real
 records or doing a messy conversion. **This is the only item on this page with a
 deadline attached to the cheap option.**
 
+### The decision (b): questions a child wrote, which nobody can delete
+
+Added 2026-09-20. After a lesson, a child is invited to ask their teacher a
+question — "was there something you did not understand?" — in their own words.
+The teacher answers, and the parent reads both halves.
+
+These are stored on the child's record, and **nothing can delete one.** Not the
+child, not the teacher who answered, not the school administrator. That was
+built deliberately: a teacher who could erase an awkward exchange is exactly the
+risk the whole feature is shaped against, and a question a family has read
+should not be able to vanish.
+
+**But "immutable once answered" and "deletable by nobody, ever" are two
+different promises, and only the first one was asked for.** The second is what
+got built, because it is the safer default and because no one had decided
+otherwise. It should be a decision rather than a default, and it belongs to the
+parish, so here it is.
+
+What it means in practice: an eight-year-old writes, in their own words, that
+they did not understand something. That sentence is on their record when they
+are fourteen. If the family asks for everything to be deleted, the school's
+administrator can still remove it by hand — the refusal applies to the website,
+not to the console — but nothing expires on its own and nobody can remove a
+single question without removing the account.
+
+Three positions are available, and the parish should pick one:
+
+- **Keep it as it is.** Nothing is ever removed except by a full deletion
+  request. Simplest, safest against a teacher hiding something, hardest on a
+  family who wants one thing gone.
+- **Let the parent delete a question about their own child.** A parent can
+  already read every one; letting them remove one is consistent with that. The
+  risk is a parent erasing a record a teacher may need.
+- **Expire them on a clock** — end of term, end of year — the same question
+  `docs/RETENTION.md` raises about teachers' notes, and probably best answered
+  for both at once.
+
+There is no deadline attached and nothing is at risk today, because no child has
+asked a question yet. It gets harder to change once they have.
+
 ### Why it cannot be decided in code
 
 The right retention period comes from what the parish is actually required to
@@ -192,6 +232,12 @@ answer and hiding it in a settings file where nobody would ever find it again.
 The totals-versus-per-family question is likewise a bookkeeping question: it
 depends on what the treasurer needs to be able to show, and to whom.
 
+The children's-questions half is not a bookkeeping question at all, and it is
+the one place on this page where a developer has already made the choice by
+building something. That is precisely why it is written down: a default that
+nobody chose is still a default, and this one says a child can never take back
+something they wrote. Somebody should agree to that on purpose, or change it.
+
 ### If it is deferred
 
 Receipts accumulate indefinitely. Nothing breaks and no family is harmed, but
@@ -201,6 +247,10 @@ otherwise careful to avoid.
 
 And the totals-only option quietly stops being cheap.
 
+On the questions half, deferring means the current answer stands: nothing is
+ever deleted. That is a real position and possibly the right one — it is just
+nobody's decision yet.
+
 ### What changes once it is answered
 
 A stated period goes into the privacy policy, so parents are told. If the
@@ -208,7 +258,14 @@ totals-only route is chosen, the change is made before there is anything much to
 convert. A small routine to expire old receipts would then need building — that
 part is a developer job, but it cannot start until the period exists.
 
-*Technical detail: `docs/RETENTION.md` §6 and §7.*
+For the questions: if the answer is "keep it as it is", nothing changes but a
+recorded decision, and `privacy.html` can say plainly that a question is
+permanent. If it is either of the other two, it is a rules change and a small
+piece of interface — days, not weeks — and it is much cheaper now than after a
+year of questions exist.
+
+*Technical detail: `docs/RETENTION.md` §6 and §7 for the receipts, §2c for the
+questions. The deletion procedure is `docs/DELETION.md`.*
 
 ---
 

@@ -118,6 +118,13 @@ own that is sharper:
 
 Same subcollection problem: Firestore will **not** cascade-delete these either.
 
+**The no-deletion point is now put to the parish** as the second half of
+`docs/CHURCH-DECISIONS.md` §3, alongside receipt retention. The spec asked for
+immutable-once-answered; what was built is immutable-always, which is the safer
+default and a stricter promise than anybody chose. Three positions are laid out
+there — keep it, let the parent delete one, or expire them on a clock — and the
+last is probably best answered together with the same question about §2b.
+
 ## 3. Does progress survive the account?
 
 Teachers reasonably want to know how many students completed lesson 4, or where
