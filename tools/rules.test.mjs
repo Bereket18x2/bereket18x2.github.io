@@ -109,16 +109,18 @@ async function seed() {
        real client can and cannot do to them. */
     await setDoc(doc(db, 'users/student1/questions/q1'), {
       lessonId: 'l1', text: 'Why is it called that?', askedAt: new Date(),
-      answer: null, answeredBy: null, answeredAt: null, read: false
+      answer: null, answeredBy: null, answeredByName: null,
+      answeredAt: null, read: false
     });
     await setDoc(doc(db, 'users/student1/questions/q2'), {
       lessonId: 'l1', text: 'And this one?', askedAt: new Date(),
       answer: 'Because of the council.', answeredBy: 'teacher1',
-      answeredAt: new Date(), read: false
+      answeredByName: 'Memhir D', answeredAt: new Date(), read: false
     });
     await setDoc(doc(db, 'users/student2/questions/q1'), {
       lessonId: 'l1', text: 'Another child, another teacher.', askedAt: new Date(),
-      answer: null, answeredBy: null, answeredAt: null, read: false
+      answer: null, answeredBy: null, answeredByName: null,
+      answeredAt: null, read: false
     });
   });
 }
@@ -473,7 +475,14 @@ await seed();
 
 const NEWQ = () => ({
   lessonId: 'l1', text: 'What does this word mean?', askedAt: serverTimestamp(),
-  answer: null, answeredBy: null, answeredAt: null, read: false
+  answer: null, answeredBy: null, answeredByName: null,
+  answeredAt: null, read: false
+});
+
+// every answer now carries the teacher's name, the way a comment does
+const ANS = (by, name) => ({
+  answer: 'Because of the council.', answeredBy: by,
+  answeredByName: name, answeredAt: serverTimestamp()
 });
 
 // --- who may read
@@ -530,6 +539,12 @@ await t('ACCEPTANCE 4: a student cannot create a question that is already answer
 await t('ACCEPTANCE 4: nor name themselves the answerer', () =>
   assertFails(addDoc(collection(AS('student1'), 'users/student1/questions'),
     { ...NEWQ(), answeredBy: 'student1' })));
+await t('ACCEPTANCE 4: nor put a teacher\'s name on their own question', () =>
+  assertFails(addDoc(collection(AS('student1'), 'users/student1/questions'),
+    { ...NEWQ(), answeredByName: 'Memhir Daniel' })));
+await t('ACCEPTANCE 4: nor write a name onto an existing question', () =>
+  assertFails(updateDoc(doc(AS('student1'), 'users/student1/questions/q1'),
+    { answeredByName: 'Memhir Daniel' })));
 await t('ACCEPTANCE 4: nor stamp an answer time', () =>
   assertFails(addDoc(collection(AS('student1'), 'users/student1/questions'),
     { ...NEWQ(), answeredAt: serverTimestamp() })));
@@ -543,38 +558,57 @@ await t('ACCEPTANCE 4: nor start pre-marked as read', () =>
 // --- answering
 await t('the assigned teacher CAN answer', () =>
   assertSucceeds(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q1'),
-    { answer: 'Because of the council.', answeredBy: 'teacher1', answeredAt: serverTimestamp() })));
+    ANS('teacher1', 'Memhir Daniel'))));
 await seed();
 await t('an admin can answer', () =>
   assertSucceeds(updateDoc(doc(AS('admin1'), 'users/student1/questions/q1'),
-    { answer: 'Here is why.', answeredBy: 'admin1', answeredAt: serverTimestamp() })));
+    ANS('admin1', 'Bereket'))));
 await seed();
 await t('a teacher cannot answer a student who is not theirs', () =>
   assertFails(updateDoc(doc(AS('teacher1'), 'users/student2/questions/q1'),
-    { answer: 'x', answeredBy: 'teacher1', answeredAt: serverTimestamp() })));
+    ANS('teacher1', 'Memhir Daniel'))));
 await t('an answer cannot be attributed to another teacher', () =>
   assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q1'),
-    { answer: 'x', answeredBy: 'teacher2', answeredAt: serverTimestamp() })));
+    ANS('teacher2', 'Memhir S'))));
 await t('an answer cannot be backdated', () =>
   assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q1'),
-    { answer: 'x', answeredBy: 'teacher1', answeredAt: new Date('2020-01-01') })));
+    { ...ANS('teacher1', 'Memhir Daniel'), answeredAt: new Date('2020-01-01') })));
 await t('an empty answer is refused', () =>
   assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q1'),
-    { answer: '', answeredBy: 'teacher1', answeredAt: serverTimestamp() })));
+    { ...ANS('teacher1', 'Memhir Daniel'), answer: '' })));
+
+/* The name is how a child recognises the person who answered them, so an
+   answer that arrives without one would be the generic "መምህር" the whole
+   change was made to get rid of. */
+await t('an answer with no name is refused', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q1'),
+    { answer: 'x', answeredBy: 'teacher1', answeredAt: serverTimestamp() })));
+await t('an empty name is refused', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q1'),
+    ANS('teacher1', ''))));
+await t('a 121-character name is refused', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q1'),
+    ANS('teacher1', 'x'.repeat(121)))));
+await t('a non-string name is refused', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q1'),
+    ANS('teacher1', 42))));
 await t('a teacher cannot edit the child\'s question while answering', () =>
   assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q1'),
-    { answer: 'x', answeredBy: 'teacher1', answeredAt: serverTimestamp(),
-      text: 'a question they never asked' })));
+    { ...ANS('teacher1', 'Memhir Daniel'), text: 'a question they never asked' })));
 
 /* Immutable once answered. q2 already carries an answer a parent may
    have read, and nobody may change it — which is the same promise the
    comment rule makes, for the same reason. */
 await t('an answered question cannot be re-answered by the teacher', () =>
   assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q2'),
-    { answer: 'actually, never mind', answeredBy: 'teacher1', answeredAt: serverTimestamp() })));
+    ANS('teacher1', 'Memhir Daniel'))));
 await t('nor by an admin', () =>
   assertFails(updateDoc(doc(AS('admin1'), 'users/student1/questions/q2'),
-    { answer: 'changed', answeredBy: 'admin1', answeredAt: serverTimestamp() })));
+    ANS('admin1', 'Bereket'))));
+// including the name alone — the whole record is frozen, not just the text
+await t('and the name on a given answer cannot be changed afterwards', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q2'),
+    { answeredByName: 'somebody else' })));
 await t('and the student cannot edit their question afterwards', () =>
   assertFails(updateDoc(doc(AS('student1'), 'users/student1/questions/q2'), { text: 'different' })));
 

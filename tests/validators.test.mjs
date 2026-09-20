@@ -130,8 +130,14 @@ check('a question is shorter than a teacher note, deliberately',
 // import this file — so assert the two agree rather than hoping
 {
   const rules = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
-  const block = rules.slice(rules.indexOf('match /questions/'),
-                            rules.indexOf('match /questions/') + 3000);
+  /* The block, bounded by the NEXT sibling match rather than by a
+     character count — a fixed window silently stops covering the end of
+     the block the moment somebody adds a comment to it, which is exactly
+     how an assertion quietly stops asserting. */
+  const from = rules.indexOf('match /questions/');
+  const rest = rules.slice(from + 1);
+  const next = rest.indexOf('\n      match /');
+  const block = next === -1 ? rest : rest.slice(0, next);
   check('firestore.rules caps the question at the same number',
     block.includes(`text.size() <= ${QUESTION_MAX_CHARS}`), true);
   check('and caps the answer at the same number as a comment',
@@ -139,6 +145,13 @@ check('a question is shorter than a teacher note, deliberately',
   // the split that makes the whole feature safe
   check('the rules forbid a student writing an answer at create',
     block.includes('request.resource.data.answer == null'), true);
+  /* The name is the difference between being answered by a person and
+     being answered by an institution, so the rules require it rather
+     than leaving it to the client to remember. */
+  check('an answer must carry the teacher\'s name',
+    block.includes('request.resource.data.answeredByName.size() > 0'), true);
+  check('and the student cannot write that name either',
+    block.includes('request.resource.data.answeredByName == null'), true);
   check('and nobody deletes a question', /allow delete: if false;/.test(block), true);
 }
 
@@ -160,6 +173,8 @@ console.log('\nacceptance 7: the policy describes the feature, and the version m
   check('it says asking is not compulsory', privacy.includes('ግዴታ አይደለም'), true);
   check('it says the question cannot be edited once answered', privacy.includes('አይታረሙም'), true);
   check('it names who may read it', privacy.includes('የተመደበው መምህር ብቻ ነው'), true);
+  check('and says the teacher who answers is named to the child',
+    privacy.includes('የመምህሩ ስም'), true);
   // the version a parent agreed to has to move when the substance does
   check('CONSENT_VERSION is no longer the pre-questions text',
     CONSENT_VERSION !== '2026-09-15', true);

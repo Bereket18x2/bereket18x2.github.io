@@ -550,7 +550,9 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
         const head = document.createElement('p');
         head.className = 'muted small';
         head.style.margin = '0 0 4px';
-        head.textContent = 'መልስ ተሰጥቷል';
+        // named, because an admin reading this drawer is not necessarily
+        // the teacher who answered
+        head.textContent = (q.answeredByName || 'መምህር') + ' መለሱ';
         const ans = document.createElement('p');
         ans.style.cssText = 'margin:0;white-space:pre-wrap';
         ans.textContent = q.answer;

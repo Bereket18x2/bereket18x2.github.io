@@ -798,6 +798,7 @@ export const Store = {
         askedAt: serverTimestamp(),
         answer: null,
         answeredBy: null,
+        answeredByName: null,
         answeredAt: null,
         read: false
       });
@@ -830,6 +831,12 @@ export const Store = {
       await updateDoc(doc(db, 'users', uid, 'questions', questionId), {
         answer: String(text).trim(),
         answeredBy: me.uid,
+        /* The name the child reads, stored the same way a comment stores
+           `byName`. A child answered by "መምህር" is answered by an
+           institution; answered by መምህር Daniel they are answered by a
+           person who knows them, which is most of the point. The uid
+           beside it stays the authoritative record of who wrote it. */
+        answeredByName: me.fullName || me.guardianName || 'መምህር',
         answeredAt: serverTimestamp()
       });
     } catch (e) { fail(e); }

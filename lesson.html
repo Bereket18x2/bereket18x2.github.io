@@ -732,7 +732,11 @@ if (u && !L) {
         const who = document.createElement('p');
         who.className = 'muted small';
         who.style.margin = '0 0 4px';
-        who.textContent = 'ከመምህሩ የተሰጠ መልስ';
+        /* The teacher's own name, not "መምህር". A child answered by an
+           institution is answered by nobody; answered by መምህር Daniel
+           they are answered by the person who teaches them. Falls back
+           only if the name is somehow missing. */
+        who.textContent = (q.answeredByName || 'መምህር') + ' መለሱ';
         if (!q.read) {
           const dot = document.createElement('span');
           dot.className = 'pill pill--done';

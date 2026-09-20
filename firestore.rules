@@ -486,7 +486,11 @@ service cloud.firestore {
          `answer` starts null rather than absent. That is deliberate: it
          makes "unanswered" a value the rules can test on update, so the
          teacher's write is allowed exactly once, and an answer a parent
-         has already read cannot change underneath them.
+         has already read cannot change underneath them. The same is true
+         of `answeredByName`, which carries the teacher's name so a child
+         is answered by a person rather than by an institution — the same
+         pattern as `byName` on a comment, and readable by the parent for
+         the same reason.
 
          No delete, by anybody. A question a child asked and a teacher
          answered is part of what the family can see, and a teacher who
@@ -501,9 +505,11 @@ service cloud.firestore {
            false, and `askedAt` is the server clock. */
         allow create: if isOwner(uid)
           && request.resource.data.keys().hasOnly(
-               ['lessonId', 'text', 'askedAt', 'answer', 'answeredBy', 'answeredAt', 'read'])
+               ['lessonId', 'text', 'askedAt', 'answer', 'answeredBy',
+                'answeredByName', 'answeredAt', 'read'])
           && request.resource.data.keys().hasAll(
-               ['lessonId', 'text', 'askedAt', 'answer', 'answeredBy', 'answeredAt', 'read'])
+               ['lessonId', 'text', 'askedAt', 'answer', 'answeredBy',
+                'answeredByName', 'answeredAt', 'read'])
           && request.resource.data.lessonId is string
           && request.resource.data.lessonId.size() > 0
           && request.resource.data.lessonId.size() <= 100
@@ -515,6 +521,7 @@ service cloud.firestore {
           && request.resource.data.askedAt == request.time
           && request.resource.data.answer == null
           && request.resource.data.answeredBy == null
+          && request.resource.data.answeredByName == null
           && request.resource.data.answeredAt == null
           && request.resource.data.read == false;
 
@@ -534,11 +541,20 @@ service cloud.firestore {
           // (a) staff answers an unanswered question
           (
             resource.data.answer == null
-            && changed().hasOnly(['answer', 'answeredBy', 'answeredAt'])
+            && changed().hasOnly(['answer', 'answeredBy', 'answeredByName', 'answeredAt'])
             && request.resource.data.answer is string
             && request.resource.data.answer.size() > 0
             && request.resource.data.answer.size() <= 1000
             && request.resource.data.answeredBy == request.auth.uid
+            /* The name a child reads. Pinned to a string and bounded like
+               any other free text, but NOT verified against the teacher's
+               user document: that would cost a second get() on every
+               answer, and the uid beside it is the authoritative record of
+               who wrote it. The name is how a child recognises a person;
+               `answeredBy` is how the parish proves who it was. */
+            && request.resource.data.answeredByName is string
+            && request.resource.data.answeredByName.size() > 0
+            && request.resource.data.answeredByName.size() <= 120
             && request.resource.data.answeredAt == request.time
             && (isAdmin() || isMyStudentByGet(uid))
           )

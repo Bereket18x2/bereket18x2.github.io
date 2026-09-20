@@ -542,7 +542,8 @@ if (u) {
         const who = document.createElement('p');
         who.className = 'muted small';
         who.style.margin = '0 0 4px';
-        who.textContent = 'ከመምህሩ';
+        // named, exactly as a teacher's comment is named above
+        who.textContent = q.answeredByName || 'መምህር';
         if (!q.read) {
           const dot = document.createElement('span');
           dot.className = 'pill pill--done';
