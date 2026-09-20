@@ -30,12 +30,12 @@
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=9",
-    "@lessons":    "./assets/js/lessons.js?v=9",
-    "@validators": "./assets/js/validators.js?v=9",
-    "@coverage":   "./assets/js/coverage.js?v=9",
-    "@config":     "./assets/js/config.js?v=9",
-    "@certificate":"./assets/js/certificate.js?v=9"
+    "@store":      "./assets/js/store.js?v=10",
+    "@lessons":    "./assets/js/lessons.js?v=10",
+    "@validators": "./assets/js/validators.js?v=10",
+    "@coverage":   "./assets/js/coverage.js?v=10",
+    "@config":     "./assets/js/config.js?v=10",
+    "@certificate":"./assets/js/certificate.js?v=10"
   }
 }
 </script>
@@ -110,6 +110,45 @@
           <p class="muted small" id="verdict" style="margin:10px 0 16px"></p>
           <a class="btn btn--gold" href="dashboard.html">ወደ ትምህርቶች ተመለስ</a>
         </div>
+
+        <!-- ---------------- ask the teacher ----------------
+
+             AN INVITATION, NOT AN OBLIGATION. Shown only once a lesson is
+             genuinely finished, dismissed by one tap, and it never sits
+             between a child and anything they were doing. There is no
+             badge for asking and no mark for skipping: a child who never
+             asks a question has done nothing wrong, and the moment this
+             panel implies otherwise it is doing harm rather than good.
+
+             The ✕ says «አይ፣ ገብቶኛል» — "no, I understood" — rather than
+             "skip", because the honest reason to close it is that there
+             was nothing to ask. -->
+        <div id="askPanel" class="panel" style="display:none;margin-top:16px;border-inline-start:3px solid var(--accent)">
+          <div class="between" style="align-items:flex-start;margin-bottom:6px">
+            <p class="eyebrow" style="margin:0">ጥያቄ</p>
+            <button class="btn btn--ghost btn--sm" type="button" id="askDismiss">አይ፣ ገብቶኛል ✕</button>
+          </div>
+          <h3 style="margin:0 0 6px;font-size:1.05rem">ያልገባዎት ነገር አለ?</h3>
+          <p class="muted small" style="margin:0 0 12px">
+            በዚህ ትምህርት ላይ የሚጠይቁት ካለ በአጭሩ ይጻፉ። መምህሩ ይመልስልዎታል።
+            ጥያቄውንና መልሱን ወላጅዎም ያዩታል። መጠየቅ ግዴታ አይደለም።
+          </p>
+          <div class="field">
+            <textarea class="input" id="askText" rows="3" maxlength="300"
+                      placeholder="ለምሳሌ፡ ይህ ቃል ምን ማለት ነው?"></textarea>
+            <p class="help"><span id="askLeft"></span></p>
+          </div>
+          <p id="askMsg" class="note small" style="display:none"></p>
+          <button class="btn btn--gold btn--sm" type="button" id="askSend">ጥያቄ ላክ</button>
+        </div>
+
+        <!-- Questions already asked about THIS lesson, with the answer
+             when one has arrived. This is where a child comes back to
+             find out what the teacher said. -->
+        <div id="qaPanel" class="panel" style="display:none;margin-top:16px">
+          <p class="eyebrow">የጠየቁት</p>
+          <div id="qaList"></div>
+        </div>
       </div>
 
       <aside class="panel">
@@ -149,7 +188,7 @@
 <script type="module">
 import { Store, requireAuth } from '@store';
 import { findLesson, isFree, trackOfLesson, subjectById, FREE_PREVIEW_ID } from '@lessons';
-import { hasQuizzes } from '@validators';
+import { hasQuizzes, QUESTION_MAX_CHARS, validateQuestion } from '@validators';
 import { markBucket, coverageOf, isComplete, shortfallMessage, isSuspicious,
          restoreSeen, serializeSeen, tooManyBuckets, BUCKET_SECONDS } from '@coverage';
 
@@ -353,6 +392,12 @@ if (u && !L) {
     try {
       await Store.saveVideoCompletion(L.id, cov, sessionSeconds, suspicious);
     } catch (e) { /* the unlock above still stands locally */ }
+
+    /* A Zema lesson carries no quiz, so the video ending IS the whole
+       lesson and the invitation belongs here. On a Bible lesson it would
+       be premature — the quiz is still ahead — so that one waits for
+       finish(). ACCEPTANCE 1 turns on this line and that one. */
+    if (!quizzed) offerToAsk();
   }
 
   /* ---------- still watching? ---------- */
@@ -596,6 +641,128 @@ if (u && !L) {
     if (answers.every(a => a !== null)) finish();
   });
 
+  /* ---------------- ask the teacher ----------------
+
+     ACCEPTANCE 1 + 2. The panel is offered only from the two completion
+     paths above, and dismissing it is one tap that writes nothing
+     anywhere — no "declined to ask" field, because a record of a child's
+     silence is exactly the thing this feature must not create.
+
+     Dismissal is remembered per lesson in sessionStorage, so closing it
+     does not mean meeting it again on the next scroll. sessionStorage
+     rather than the database for the same reason: it is a UI preference,
+     not a fact about a child, and it does not belong on their record.
+     Wrapped in try/catch because a locked-down browser throws on access
+     and a thrown storage error must not take the lesson page with it. */
+  const askedKey = 'fy-asked-' + L.id;
+  const dismissed = () => {
+    try { return sessionStorage.getItem(askedKey) === 'skip'; } catch (e) { return false; }
+  };
+  const remember = () => {
+    try { sessionStorage.setItem(askedKey, 'skip'); } catch (e) { /* fine */ }
+  };
+
+  function offerToAsk() {
+    if (dismissed()) return;
+    $('askPanel').style.display = 'block';
+  }
+
+  const askLeft = () => {
+    const left = QUESTION_MAX_CHARS - $('askText').value.length;
+    $('askLeft').textContent = `${left} ፊደል ይቀራል`;
+  };
+  $('askText').addEventListener('input', askLeft);
+  askLeft();
+
+  $('askDismiss').addEventListener('click', () => {
+    $('askPanel').style.display = 'none';
+    remember();
+  });
+
+  $('askSend').addEventListener('click', async () => {
+    const msg = $('askMsg');
+    const show = (text, bad) => {
+      msg.textContent = text;
+      msg.className = 'note small' + (bad ? ' note--red' : '');
+      msg.style.display = 'block';
+    };
+    const check = validateQuestion($('askText').value);
+    if (!check.ok) { show(check.message, true); $('askText').focus(); return; }
+
+    $('askSend').disabled = true;
+    try {
+      await Store.askQuestion(L.id, $('askText').value);
+      $('askText').value = '';
+      askLeft();
+      $('askPanel').style.display = 'none';
+      /* Deliberately plain. No "well done for asking!" — praise for
+         asking is a penalty for not asking, worn backwards. */
+      await paintQuestions();
+      $('qaPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (e) {
+      show(e.message || 'ጥያቄው አልተላከም። እንደገና ይሞክሩ።', true);
+    } finally {
+      $('askSend').disabled = false;
+    }
+  });
+
+  /* What was asked about THIS lesson, and what came back.
+
+     Built as nodes with textContent rather than an innerHTML string:
+     both the question and the answer are text a person typed, and the
+     answer is written by somebody who is neither the family nor us. */
+  async function paintQuestions() {
+    const mine = (await Store.questionsFor(u.uid)).filter(q => q.lessonId === L.id);
+    const host = $('qaList');
+    host.textContent = '';
+    if (!mine.length) { $('qaPanel').style.display = 'none'; return; }
+    $('qaPanel').style.display = 'block';
+
+    for (const q of mine) {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'padding:12px 0;border-top:1px solid var(--line)';
+
+      const asked = document.createElement('p');
+      asked.style.cssText = 'margin:0 0 8px;white-space:pre-wrap';
+      asked.textContent = q.text || '';
+
+      wrap.append(asked);
+
+      if (q.answer) {
+        const who = document.createElement('p');
+        who.className = 'muted small';
+        who.style.margin = '0 0 4px';
+        who.textContent = 'ከመምህሩ የተሰጠ መልስ';
+        if (!q.read) {
+          const dot = document.createElement('span');
+          dot.className = 'pill pill--done';
+          dot.style.marginInlineStart = '8px';
+          dot.textContent = 'አዲስ';
+          who.appendChild(dot);
+        }
+        const ans = document.createElement('p');
+        ans.style.cssText = 'margin:0;white-space:pre-wrap';
+        ans.textContent = q.answer;
+        wrap.append(who, ans);
+
+        /* Seeing it IS reading it, so the marker clears itself. Nothing
+           is shown to a teacher about whether a child looked. */
+        if (!q.read) Store.markQuestionRead(q.id);
+      } else {
+        const waiting = document.createElement('p');
+        waiting.className = 'muted small';
+        waiting.style.margin = '0';
+        waiting.textContent = 'መምህሩ ገና አልመለሰም።';
+        wrap.append(waiting);
+      }
+      host.appendChild(wrap);
+    }
+  }
+
+  /* Painted on load, not only after asking: a child comes back to this
+     page precisely to find out what the teacher said. */
+  paintQuestions();
+
   async function finish() {
     stop();
     const score = answers.filter((a, i) => a === L.questions[i].answer).length;
@@ -608,6 +775,7 @@ if (u && !L) {
       : 'ትምህርቱን በድጋሚ ተመልክተው እንደገና ይሞክሩ።';
     $('result').style.display = 'block';
     $('result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    offerToAsk();
   }
 }
 </script>

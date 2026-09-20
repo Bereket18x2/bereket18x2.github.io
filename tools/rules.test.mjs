@@ -102,6 +102,24 @@ async function seed() {
     await setDoc(doc(db, 'users/student1/comments/c1'), {
       by: 'teacher1', byName: 'Memhir D', text: 'Doing well.', at: new Date()
     });
+    /* Two questions, because the rules turn on whether one is answered
+       yet: q1 is waiting, q2 already has an answer a parent may have
+       read. Seeded through the admin context, so these bypass the rules
+       on the way in — which is what lets the tests below assert what a
+       real client can and cannot do to them. */
+    await setDoc(doc(db, 'users/student1/questions/q1'), {
+      lessonId: 'l1', text: 'Why is it called that?', askedAt: new Date(),
+      answer: null, answeredBy: null, answeredAt: null, read: false
+    });
+    await setDoc(doc(db, 'users/student1/questions/q2'), {
+      lessonId: 'l1', text: 'And this one?', askedAt: new Date(),
+      answer: 'Because of the council.', answeredBy: 'teacher1',
+      answeredAt: new Date(), read: false
+    });
+    await setDoc(doc(db, 'users/student2/questions/q1'), {
+      lessonId: 'l1', text: 'Another child, another teacher.', askedAt: new Date(),
+      answer: null, answeredBy: null, answeredAt: null, read: false
+    });
   });
 }
 
@@ -444,6 +462,145 @@ await t('a parent cannot delete an inconvenient note', () =>
   assertFails(deleteDoc(doc(AS('student1'), 'users/student1/comments/c1'))));
 await t('the author CAN delete their own note', () =>
   assertSucceeds(deleteDoc(doc(AS('teacher1'), 'users/student1/comments/c1'))));
+
+/* A child's question is the mirror of a comment: free text about a
+   child's understanding, written BY the child. The same property makes
+   it defensible — the parent reads both halves — and a different one
+   carries the weight here: a student must never be able to write an
+   answer, or a parent could be shown a reply no teacher gave. */
+console.log('\n=== questions: the student asks, only staff answer ===');
+await seed();
+
+const NEWQ = () => ({
+  lessonId: 'l1', text: 'What does this word mean?', askedAt: serverTimestamp(),
+  answer: null, answeredBy: null, answeredAt: null, read: false
+});
+
+// --- who may read
+await t('the student reads their own questions', () =>
+  assertSucceeds(getDoc(doc(AS('student1'), 'users/student1/questions/q1'))));
+/* ACCEPTANCE 5. student2 belongs to teacher3, so teacher1 is simply not
+   their teacher — the same isMyStudentByGet gate the whole file turns on. */
+await t('ACCEPTANCE 5: a teacher cannot read a question from a student who is not theirs', () =>
+  assertFails(getDoc(doc(AS('teacher1'), 'users/student2/questions/q1'))));
+await t('the ASSIGNED teacher can read it', () =>
+  assertSucceeds(getDoc(doc(AS('teacher1'), 'users/student1/questions/q1'))));
+await t('an admin can read it', () =>
+  assertSucceeds(getDoc(doc(AS('admin1'), 'users/student1/questions/q1'))));
+await t('another parent cannot read a child\'s question', () =>
+  assertFails(getDoc(doc(AS('student2'), 'users/student1/questions/q1'))));
+await t('a pending teacher reads nothing', () =>
+  assertFails(getDoc(doc(AS('pending1'), 'users/student1/questions/q1'))));
+
+// --- asking
+await t('the student CAN ask a question', () =>
+  assertSucceeds(addDoc(collection(AS('student1'), 'users/student1/questions'), NEWQ())));
+await t('a student cannot ask on another child\'s record', () =>
+  assertFails(addDoc(collection(AS('student1'), 'users/student2/questions'), NEWQ())));
+await t('an empty question is refused', () =>
+  assertFails(addDoc(collection(AS('student1'), 'users/student1/questions'),
+    { ...NEWQ(), text: '' })));
+await t('a 301-character question is refused', () =>
+  assertFails(addDoc(collection(AS('student1'), 'users/student1/questions'),
+    { ...NEWQ(), text: 'x'.repeat(301) })));
+await t('300 is allowed — the cap is the cap', () =>
+  assertSucceeds(addDoc(collection(AS('student1'), 'users/student1/questions'),
+    { ...NEWQ(), text: 'x'.repeat(300) })));
+await t('a question cannot be backdated', () =>
+  assertFails(addDoc(collection(AS('student1'), 'users/student1/questions'),
+    { ...NEWQ(), askedAt: new Date('2020-01-01') })));
+await t('a question must name a lesson', () =>
+  assertFails(addDoc(collection(AS('student1'), 'users/student1/questions'),
+    { ...NEWQ(), lessonId: '' })));
+// hasOnly: creation is a write, and an extra key is a field nobody validates
+await t('an extra field at create is refused', () =>
+  assertFails(addDoc(collection(AS('student1'), 'users/student1/questions'),
+    { ...NEWQ(), urgent: true })));
+await t('a missing field at create is refused', () => {
+  const q = NEWQ(); delete q.read;
+  return assertFails(addDoc(collection(AS('student1'), 'users/student1/questions'), q));
+});
+
+/* ACCEPTANCE 4, and the reason this collection needed its own rule
+   rather than reusing the comment one. A child who could set `answer`
+   could show a parent a reply that no teacher ever wrote. */
+await t('ACCEPTANCE 4: a student cannot create a question that is already answered', () =>
+  assertFails(addDoc(collection(AS('student1'), 'users/student1/questions'),
+    { ...NEWQ(), answer: 'I answered myself' })));
+await t('ACCEPTANCE 4: nor name themselves the answerer', () =>
+  assertFails(addDoc(collection(AS('student1'), 'users/student1/questions'),
+    { ...NEWQ(), answeredBy: 'student1' })));
+await t('ACCEPTANCE 4: nor stamp an answer time', () =>
+  assertFails(addDoc(collection(AS('student1'), 'users/student1/questions'),
+    { ...NEWQ(), answeredAt: serverTimestamp() })));
+await t('ACCEPTANCE 4: nor write an answer onto an existing question', () =>
+  assertFails(updateDoc(doc(AS('student1'), 'users/student1/questions/q1'),
+    { answer: 'I answered myself', answeredBy: 'student1', answeredAt: serverTimestamp() })));
+await t('ACCEPTANCE 4: nor start pre-marked as read', () =>
+  assertFails(addDoc(collection(AS('student1'), 'users/student1/questions'),
+    { ...NEWQ(), read: true })));
+
+// --- answering
+await t('the assigned teacher CAN answer', () =>
+  assertSucceeds(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q1'),
+    { answer: 'Because of the council.', answeredBy: 'teacher1', answeredAt: serverTimestamp() })));
+await seed();
+await t('an admin can answer', () =>
+  assertSucceeds(updateDoc(doc(AS('admin1'), 'users/student1/questions/q1'),
+    { answer: 'Here is why.', answeredBy: 'admin1', answeredAt: serverTimestamp() })));
+await seed();
+await t('a teacher cannot answer a student who is not theirs', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student2/questions/q1'),
+    { answer: 'x', answeredBy: 'teacher1', answeredAt: serverTimestamp() })));
+await t('an answer cannot be attributed to another teacher', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q1'),
+    { answer: 'x', answeredBy: 'teacher2', answeredAt: serverTimestamp() })));
+await t('an answer cannot be backdated', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q1'),
+    { answer: 'x', answeredBy: 'teacher1', answeredAt: new Date('2020-01-01') })));
+await t('an empty answer is refused', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q1'),
+    { answer: '', answeredBy: 'teacher1', answeredAt: serverTimestamp() })));
+await t('a teacher cannot edit the child\'s question while answering', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q1'),
+    { answer: 'x', answeredBy: 'teacher1', answeredAt: serverTimestamp(),
+      text: 'a question they never asked' })));
+
+/* Immutable once answered. q2 already carries an answer a parent may
+   have read, and nobody may change it — which is the same promise the
+   comment rule makes, for the same reason. */
+await t('an answered question cannot be re-answered by the teacher', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q2'),
+    { answer: 'actually, never mind', answeredBy: 'teacher1', answeredAt: serverTimestamp() })));
+await t('nor by an admin', () =>
+  assertFails(updateDoc(doc(AS('admin1'), 'users/student1/questions/q2'),
+    { answer: 'changed', answeredBy: 'admin1', answeredAt: serverTimestamp() })));
+await t('and the student cannot edit their question afterwards', () =>
+  assertFails(updateDoc(doc(AS('student1'), 'users/student1/questions/q2'), { text: 'different' })));
+
+// --- the unread marker, which is the one thing that moves
+await t('the student CAN clear their own unread marker', () =>
+  assertSucceeds(updateDoc(doc(AS('student1'), 'users/student1/questions/q2'), { read: true })));
+await seed();
+await t('but not on a question nobody has answered yet', () =>
+  assertFails(updateDoc(doc(AS('student1'), 'users/student1/questions/q1'), { read: true })));
+await t('and it cannot be flipped back to unread', () =>
+  assertFails(updateDoc(doc(AS('student1'), 'users/student1/questions/q2'), { read: false })));
+/* A read-receipt on a child is not something worth recording, so the
+   teacher has no business writing this field at all. */
+await t('a teacher cannot mark a child\'s question read for them', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/questions/q2'), { read: true })));
+await t('the student cannot smuggle an answer in beside the read flag', () =>
+  assertFails(updateDoc(doc(AS('student1'), 'users/student1/questions/q2'),
+    { read: true, answer: 'mine now' })));
+
+// --- nobody deletes
+await t('the student cannot delete a question', () =>
+  assertFails(deleteDoc(doc(AS('student1'), 'users/student1/questions/q1'))));
+await t('the teacher cannot delete an awkward exchange', () =>
+  assertFails(deleteDoc(doc(AS('teacher1'), 'users/student1/questions/q2'))));
+await t('nor can an admin', () =>
+  assertFails(deleteDoc(doc(AS('admin1'), 'users/student1/questions/q2'))));
 
 console.log('\n=== adding a Zema subject is a REQUEST, not a purchase ===');
 await seed();

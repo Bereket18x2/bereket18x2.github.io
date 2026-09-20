@@ -60,10 +60,17 @@ So, in this order:
    free text in the database and the easiest to forget, because a child with no
    notes has no subcollection at all and a child with notes looks identical in
    the console listing.
-3. Then delete `users/{uid}` itself.
+3. Open `users/{uid}` → `questions` subcollection. Delete every document in it.
+   These are questions the CHILD wrote, in their own words, about what they did
+   not understand — plus the teacher's answers. Do not skip them because the
+   rules say `allow delete: if false`: that refusal is aimed at the browser, so
+   that no teacher can quietly erase an awkward exchange, and it does not apply
+   to you working in the console. It is the only route to erasure these have.
+4. Then delete `users/{uid}` itself.
 
-Confirm both subcollections are empty before deleting the parent document,
-because once the parent is gone they are harder to find in the console.
+Confirm all three of the subcollections above are empty before deleting the
+parent document, because once the parent is gone they are harder to find in
+the console.
 
 There is also a `consents` subcollection — one immutable document per policy
 version the parent agreed to. Delete it with the rest; it is a record about this

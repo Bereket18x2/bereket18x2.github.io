@@ -26,13 +26,13 @@
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=9",
-    "@lessons":    "./assets/js/lessons.js?v=9",
-    "@validators": "./assets/js/validators.js?v=9",
-    "@coverage":   "./assets/js/coverage.js?v=9",
-    "@stats":      "./assets/js/stats.js?v=9",
-    "@config":     "./assets/js/config.js?v=9",
-    "@certificate":"./assets/js/certificate.js?v=9"
+    "@store":      "./assets/js/store.js?v=10",
+    "@lessons":    "./assets/js/lessons.js?v=10",
+    "@validators": "./assets/js/validators.js?v=10",
+    "@coverage":   "./assets/js/coverage.js?v=10",
+    "@stats":      "./assets/js/stats.js?v=10",
+    "@config":     "./assets/js/config.js?v=10",
+    "@certificate":"./assets/js/certificate.js?v=10"
   }
 }
 </script>
@@ -165,6 +165,17 @@
 
   <div class="harag harag--thin" style="margin:18px 0"></div>
 
+  <!-- Questions first, and above the comment box on purpose: a child
+       who asked something and is waiting is the more urgent of the two
+       things a teacher can do in this drawer. -->
+  <p class="eyebrow">ከተማሪው የቀረቡ ጥያቄዎች</p>
+  <p class="muted small" style="margin:0 0 10px">
+    ተማሪው ከትምህርት በኋላ የጠየቀው። መልስዎ ለተማሪውና ለወላጁ ይታያል፤ ከተላከ በኋላ ማረም አይቻልም።
+  </p>
+  <div id="dQuestions" style="margin-bottom:6px"></div>
+
+  <div class="harag harag--thin" style="margin:18px 0"></div>
+
   <p class="eyebrow">አስተያየት</p>
   <p class="muted small" style="margin:0 0 10px">
     የሚጽፉት ለወላጅ ይታያል። ከተላከ በኋላ ማረም አይቻልም — ማረም ከፈለጉ ሰርዘው እንደገና ይጻፉ።
@@ -182,8 +193,9 @@
 <script type="module">
 import { Store, fmtHours, fmtAgo, toMillis, requireAuth,
          accessActive, accessExpired } from '@store';
-import { lessonsFor, subjectsFor, subjectById } from '@lessons';
-import { TRACKS, hasScores, COMMENT_MAX_CHARS } from '@validators';
+import { lessonsFor, subjectsFor, subjectById, findLesson } from '@lessons';
+import { TRACKS, hasScores, COMMENT_MAX_CHARS, ANSWER_MAX_CHARS,
+         validateAnswer } from '@validators';
 import { PRICING, priceFor, termMonthsFor, addMonths } from '@config';
 import { completedCount, averageScore, streakFrom, toDate } from '@stats';
 
@@ -222,6 +234,18 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
   let students = [];
   try {
     students = await Store.myStudents();
+    /* One subcollection read per assigned student, once per page load.
+       A teacher's roster is the students assigned to THEM, so this is
+       tens of reads and not thousands — and an unanswered question has
+       to reach the concern panel, which means it has to be loaded before
+       concernOf() runs rather than when a drawer happens to open.
+
+       If a roster ever grows past a few hundred, this is the line to
+       revisit: a collectionGroup query would do it in one, at the cost
+       of a rule that cannot see which student a question belongs to. */
+    await Promise.all(students.map(async (st) => {
+      st.questions = await Store.questionsFor(st.uid);
+    }));
   } catch (e) {
     $('rosterMsg').textContent = e.message;
     $('rosterMsg').className = 'note note--red small';
@@ -263,7 +287,18 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
     if (flagged) { score += 2; reasons.push(`${flagged} አጠራጣሪ`); }
     if (s.remedial === true) { score += 1; reasons.push('ተጨማሪ ድጋፍ'); }
 
-    return { score, reasons, done, total: lessons.length, avg, scored };
+    /* ACCEPTANCE 6. A child who asked something and got no reply is
+       exactly the quiet disengagement this panel exists to catch — and
+       unlike every other line above, this one is a fact about the
+       TEACHER, not the child. It is scored highest of the soft signals
+       because it is the only one the teacher can clear in a minute.
+
+       Nothing anywhere counts a child who has NOT asked. Silence is not
+       a signal; some children will never ask and that is fine. */
+    const unanswered = (s.questions || []).filter(q => !q.answer).length;
+    if (unanswered) { score += 3; reasons.push(`${unanswered} ያልተመለሰ ጥያቄ`); }
+
+    return { score, reasons, done, total: lessons.length, avg, scored, unanswered };
   }
 
   const enriched = () => students.map(s => ({ ...s, c: concernOf(s) }));
@@ -406,6 +441,7 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
     $('dComment').value = '';
     paintLeft();
     await paintReceipts();
+    await paintQuestions();
     await paintComments();
     $('drawer').scrollIntoView({ block: 'nearest' });
   }
@@ -464,6 +500,103 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
 
       row.append(left, subs);
       host.appendChild(row);
+    }
+  }
+
+  /* The student's questions, oldest concern first: unanswered at the
+     top, because that is the reason this section exists.
+
+     Nodes and textContent throughout — a question is text a CHILD typed,
+     which is the most important string on this page to not interpolate
+     into markup. */
+  async function paintQuestions() {
+    const host = $('dQuestions');
+    host.textContent = '';
+    const qs = await Store.questionsFor(open.uid);
+    // keep the roster's copy in step so the concern column does not go
+    // stale behind an answer the teacher just wrote
+    const row = students.find(st => st.uid === open.uid);
+    if (row) row.questions = qs;
+
+    if (!qs.length) {
+      const p = document.createElement('p');
+      p.className = 'muted small';
+      p.textContent = 'ገና ጥያቄ አልጠየቀም። መጠየቅ ግዴታ አይደለም።';
+      host.appendChild(p);
+      return;
+    }
+
+    const sorted = qs.slice().sort((x, y) => (x.answer ? 1 : 0) - (y.answer ? 1 : 0));
+    for (const q of sorted) {
+      const when = toDate(q.askedAt);
+      const lesson = findLesson(q.lessonId);
+
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'padding:12px 0;border-top:1px solid var(--line)';
+
+      const meta = document.createElement('p');
+      meta.className = 'muted small';
+      meta.style.margin = '0 0 6px';
+      // the lesson it came from, so a teacher answers in context
+      meta.textContent = (lesson ? lesson.title : q.lessonId || 'ትምህርት')
+        + (when ? ' · ' + when.toLocaleDateString() : '');
+
+      const asked = document.createElement('p');
+      asked.style.cssText = 'margin:0 0 10px;white-space:pre-wrap';
+      asked.textContent = q.text || '';
+      wrap.append(meta, asked);
+
+      if (q.answer) {
+        const head = document.createElement('p');
+        head.className = 'muted small';
+        head.style.margin = '0 0 4px';
+        head.textContent = 'መልስ ተሰጥቷል';
+        const ans = document.createElement('p');
+        ans.style.cssText = 'margin:0;white-space:pre-wrap';
+        ans.textContent = q.answer;
+        wrap.append(head, ans);
+      } else {
+        const box = document.createElement('textarea');
+        box.className = 'input';
+        box.rows = 3;
+        box.maxLength = ANSWER_MAX_CHARS;
+        box.placeholder = 'መልስዎን በአማርኛ ይጻፉ…';
+
+        const msg = document.createElement('p');
+        msg.className = 'note small';
+        msg.style.cssText = 'display:none;margin:8px 0 0';
+
+        const send = document.createElement('button');
+        send.className = 'btn btn--gold btn--sm';
+        send.type = 'button';
+        send.style.marginTop = '8px';
+        send.textContent = 'መልስ ላክ';
+        send.addEventListener('click', async () => {
+          const check = validateAnswer(box.value);
+          if (!check.ok) {
+            msg.textContent = check.message;
+            msg.className = 'note note--red small';
+            msg.style.display = 'block';
+            box.focus();
+            return;
+          }
+          // an answer cannot be edited afterwards, so it is confirmed once
+          if (!confirm('መልሱ ለተማሪውና ለወላጁ ይታያል። ከተላከ በኋላ ማረም አይቻልም።\n\nይላክ?')) return;
+          send.disabled = true;
+          try {
+            await Store.answerQuestion(open.uid, q.id, box.value);
+            await paintQuestions();
+            render();          // the concern column loses a reason
+          } catch (e) {
+            msg.textContent = e.message || 'መልሱ አልተላከም።';
+            msg.className = 'note note--red small';
+            msg.style.display = 'block';
+            send.disabled = false;
+          }
+        });
+        wrap.append(box, msg, send);
+      }
+      host.appendChild(wrap);
     }
   }
 

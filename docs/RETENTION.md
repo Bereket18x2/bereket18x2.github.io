@@ -92,6 +92,32 @@ The open questions are retention-shaped, not access-shaped:
 They are also a subcollection, so Firestore will **not** cascade-delete them —
 see the routine in "What would need to change in code" below.
 
+## 2c. Questions a child asked, and the teacher's answers
+
+Added 2026-09-20, at `users/{uid}/questions/{questionId}`: `lessonId`, `text`,
+`askedAt`, `answer`, `answeredBy`, `answeredAt`, `read`. Bounded at 300
+characters, readable by the parent, and immutable once answered. `privacy.html`
+describes it and `CONSENT_VERSION` moved to `2026-09-20` because it is a new
+category of information about a minor rather than a wording change.
+
+It is the mirror of §2b and inherits every open question there, plus one of its
+own that is sharper:
+
+- **This is a child writing about themselves.** A teacher's note is a
+  professional record; a question is an eight-year-old saying, in their own
+  words, what they did not understand. It is the most personal text in the
+  database and the least likely to have been written with any thought about who
+  would keep it. "Should comments expire?" is a reasonable question about §2b.
+  It is a more pressing one here.
+- Nothing may delete one — not the child, not the teacher, not an admin. That
+  is deliberate (a teacher who could erase an awkward exchange is the failure
+  mode the rules are shaped against) but it means the ONLY route to erasure is
+  the deletion routine below, which does not exist yet.
+- Unlike a comment, there is no author to ask. A departed teacher's note can at
+  least be deleted by an admin; a question can be deleted by nobody at all.
+
+Same subcollection problem: Firestore will **not** cascade-delete these either.
+
 ## 3. Does progress survive the account?
 
 Teachers reasonably want to know how many students completed lesson 4, or where
@@ -206,7 +232,8 @@ For whoever implements this later:
 2. A scheduled job. Spark has no scheduler; this needs Blaze Cloud Functions or
    an external cron hitting an endpoint.
 3. A deletion routine covering: the user document, the `progress` subcollection,
-   the `comments` subcollection (§2b), the `deletionRequests/{uid}` and
+   the `comments` subcollection (§2b), the `questions` subcollection (§2c), the
+   `consents` subcollection, the `deletionRequests/{uid}` and
    `subjectRequests/{uid}` documents — Firestore does **not** cascade, see
    `docs/DELETION.md` — the Auth account, the certificate decision from §2, and
    the export files from §4. It must **not** touch `payments/{uid}`: that record

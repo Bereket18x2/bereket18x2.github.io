@@ -31,7 +31,8 @@ import {
    the staleness the cache-bust exists to prevent. */
 import { firebaseConfig, CONSENT_VERSION, countryByCode } from '@config';
 import { validateName, validateAge, validateEnrollableTrack, validatePassword,
-         validateEmail, validateComment, validateCountry, TRACKS, isStaff }
+         validateEmail, validateComment, validateCountry, validateQuestion,
+         validateAnswer, TRACKS, isStaff }
   from '@validators';
 
 const app = initializeApp(firebaseConfig);
@@ -756,6 +757,95 @@ export const Store = {
     try { await deleteDoc(doc(db, 'users', uid, 'comments', commentId)); }
     catch (e) { fail(e); }
     return true;
+  },
+
+  /* ---------------- a child's question after a lesson ----------------
+
+     The mirror image of a comment. A comment is a teacher writing about
+     a child; this is a child writing about their own understanding, and
+     it carries the same three guarantees: bounded, parent-visible, and
+     immutable once answered.
+
+     WHAT THE STUDENT MAY WRITE is the whole point of the shape below.
+     `answer`, `answeredBy` and `answeredAt` are created as null and the
+     rules forbid the owner from ever setting them — a child cannot
+     answer their own question and show a parent a reply that no teacher
+     wrote. `askedAt` is the server clock, so it cannot be backdated.
+
+     `read` is the one field that moves afterwards, and only the student
+     may flip it, and only false -> true. It is the unread marker and
+     nothing else: it is not a receipt a teacher can check, because
+     whether a child re-opened a page is not something worth recording
+     about them.
+
+     NOTHING HERE IS SCORED. No badge for asking, no flag for not
+     asking. A child who never asks a question has done nothing wrong,
+     and the moment this feeds a number about them it stops being an
+     invitation. The only place an unanswered question surfaces is the
+     teacher's concern panel, where it counts against the TEACHER'S
+     attention, not the child's record. */
+  async askQuestion(lessonId, text) {
+    await ready();
+    const u = auth.currentUser;
+    if (!u) throw new Error('መጀመሪያ ይግቡ።');
+    const check = validateQuestion(text);
+    if (!check.ok) throw new Error(check.message);
+    if (typeof lessonId !== 'string' || !lessonId) throw new Error('ትምህርቱ አልታወቀም።');
+    try {
+      await addDoc(collection(db, 'users', u.uid, 'questions'), {
+        lessonId,
+        text: String(text).trim(),
+        askedAt: serverTimestamp(),
+        answer: null,
+        answeredBy: null,
+        answeredAt: null,
+        read: false
+      });
+    } catch (e) { fail(e); }
+    return true;
+  },
+
+  /* Newest first, like the comments list. Returns [] rather than
+     throwing: a question panel that cannot load must not take the
+     lesson page down with it. */
+  async questionsFor(uid) {
+    try {
+      const snaps = await getDocs(query(
+        collection(db, 'users', uid, 'questions'), orderBy('askedAt', 'desc')
+      ));
+      return snaps.docs.map(d => ({ ...d.data(), id: d.id }));
+    } catch (e) { return []; }
+  },
+
+  /* The assigned teacher, or an admin, answers — once. The rules refuse
+     a second write because `answer` is no longer null, which is what
+     keeps an answer a parent has already read from changing underneath
+     them. A correction is a new question, or a comment. */
+  async answerQuestion(uid, questionId, text) {
+    const me = await this.current();
+    if (!isStaff(me && me.role)) throw new Error('መልስ መጻፍ የሚችሉት መምህራን ብቻ ናቸው።');
+    const check = validateAnswer(text);
+    if (!check.ok) throw new Error(check.message);
+    try {
+      await updateDoc(doc(db, 'users', uid, 'questions', questionId), {
+        answer: String(text).trim(),
+        answeredBy: me.uid,
+        answeredAt: serverTimestamp()
+      });
+    } catch (e) { fail(e); }
+    return true;
+  },
+
+  /* Clears the unread marker. Silent on failure by design — a marker
+     that would not clear is not worth an error message to a child. */
+  async markQuestionRead(questionId) {
+    await ready();
+    const u = auth.currentUser;
+    if (!u) return false;
+    try {
+      await updateDoc(doc(db, 'users', u.uid, 'questions', questionId), { read: true });
+      return true;
+    } catch (e) { return false; }
   },
 
   /* ---------------- adding Zema subjects later ----------------

@@ -224,6 +224,52 @@ export function validateComment(text) {
   return { ok: true };
 }
 
+/* ---------------- a child's question, and the answer ----------------
+
+   The same category as a comment, pointed the other way: free text about
+   a child's own understanding, written by the child. Everything that
+   made a comment defensible has to hold here too, and one thing more.
+
+     it is bounded          — 300 characters. A comment gets 1000 because
+                              a teacher is writing a record; a question
+                              gets a couple of sentences, because an
+                              uncapped box stops being a question and
+                              becomes a file a child wrote about
+                              themselves.
+     the parent can read it — question AND answer, on their own
+                              dashboard. Nothing is written by or about a
+                              child that their parent cannot read.
+     it is not graded       — nothing here feeds a score, a badge or the
+                              concern number for the child's own sake.
+                              Asking must cost nothing and earn nothing,
+                              or it is not an invitation.
+
+   300 is a judgement, not a standard. It is long enough for "I did not
+   understand why Abba Selama is called that" and short enough that a
+   child who is upset writes it somewhere a person will actually read. */
+export const QUESTION_MAX_CHARS = 300;
+
+export function validateQuestion(text) {
+  const t = typeof text === 'string' ? text.trim() : '';
+  if (!t) return { ok: false, message: 'ጥያቄው ባዶ ነው።' };
+  if (t.length > QUESTION_MAX_CHARS) {
+    return { ok: false, message: `ጥያቄ ከ${QUESTION_MAX_CHARS} ፊደል መብለጥ አይችልም። በአጭሩ ይጻፉ።` };
+  }
+  return { ok: true };
+}
+
+/* An answer is a teacher writing, so it gets a comment's room. */
+export const ANSWER_MAX_CHARS = COMMENT_MAX_CHARS;
+
+export function validateAnswer(text) {
+  const t = typeof text === 'string' ? text.trim() : '';
+  if (!t) return { ok: false, message: 'መልሱ ባዶ ነው።' };
+  if (t.length > ANSWER_MAX_CHARS) {
+    return { ok: false, message: `መልስ ከ${ANSWER_MAX_CHARS} ፊደል መብለጥ አይችልም።` };
+  }
+  return { ok: true };
+}
+
 /* ---------------- country ----------------
 
    A code from the list, never free text. The list is in config.js, so

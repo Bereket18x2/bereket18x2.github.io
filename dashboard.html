@@ -29,13 +29,13 @@
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=9",
-    "@lessons":    "./assets/js/lessons.js?v=9",
-    "@validators": "./assets/js/validators.js?v=9",
-    "@coverage":   "./assets/js/coverage.js?v=9",
-    "@stats":      "./assets/js/stats.js?v=9",
-    "@config":     "./assets/js/config.js?v=9",
-    "@certificate":"./assets/js/certificate.js?v=9"
+    "@store":      "./assets/js/store.js?v=10",
+    "@lessons":    "./assets/js/lessons.js?v=10",
+    "@validators": "./assets/js/validators.js?v=10",
+    "@coverage":   "./assets/js/coverage.js?v=10",
+    "@stats":      "./assets/js/stats.js?v=10",
+    "@config":     "./assets/js/config.js?v=10",
+    "@certificate":"./assets/js/certificate.js?v=10"
   }
 }
 </script>
@@ -167,6 +167,20 @@
       <div id="commentList"></div>
     </div>
 
+    <!-- ---------------- questions the child asked ----------------
+         The same promise as the teacher's notes above, pointed the other
+         way: nothing is written BY a child about their own understanding
+         that their parent cannot read either. Question and answer sit
+         together, because one without the other tells a family nothing. -->
+    <div class="panel" id="questionsPanel" style="display:none;margin-top:26px">
+      <p class="eyebrow">ጥያቄዎችና መልሶች</p>
+      <p class="muted small" style="margin:0 0 14px">
+        ልጅዎ ከትምህርት በኋላ የጠየቀው ጥያቄና መምህሩ የመለሰው መልስ። መጠየቅ ግዴታ አይደለም —
+        አንዳንድ ልጆች አይጠይቁም፤ ያም ምንም ችግር የለውም።
+      </p>
+      <div id="questionList"></div>
+    </div>
+
     <!-- ---------------- data controls ---------------- -->
     <div class="panel" style="margin-top:26px">
       <p class="eyebrow">የመረጃ መብትዎ</p>
@@ -183,7 +197,7 @@
 
 <script type="module">
 import { Store, fmtHours, fmtAgo, requireAuth, accessActive, accessExpired } from '@store';
-import { subjectsFor, lessonsForSubject, lessonsFor, isFree } from '@lessons';
+import { subjectsFor, lessonsForSubject, lessonsFor, isFree, findLesson } from '@lessons';
 import { TRACKS, hasScores } from '@validators';
 import { PRICING, priceToAddSubjects } from '@config';
 import { certificateSVG, certificateFilename } from '@certificate';
@@ -484,6 +498,70 @@ if (u) {
 
       wrap.append(who, body);
       list.appendChild(wrap);
+    }
+  }
+
+  /* ---------------- what the child asked, and what came back ----------
+
+     ACCEPTANCE 3. A parent sees both halves. The question is the one
+     thing on this page written by the child themselves, and the answer
+     the one thing written by a teacher directly to them — a family that
+     could see neither would be told less about their child's learning
+     than the child's teacher is.
+
+     The unread marker is NOT cleared here. It belongs to the child, and
+     a parent reading the dashboard has not made their child read the
+     answer; clearing it would hide the reply from the person it was
+     written for. */
+  const questions = await Store.questionsFor(u.uid);
+  if (questions.length) {
+    $('questionsPanel').style.display = 'block';
+    const host = $('questionList');
+    // nodes and textContent, as with the comments above: every string
+    // here was typed by a person
+    for (const q of questions) {
+      const when = toDate(q.askedAt);
+      const lesson = findLesson(q.lessonId);
+
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'padding:14px 0;border-top:1px solid var(--line)';
+
+      const meta = document.createElement('p');
+      meta.className = 'muted small';
+      meta.style.margin = '0 0 6px';
+      meta.textContent = (lesson ? lesson.title : 'ትምህርት')
+        + (when ? ' · ' + when.toLocaleDateString() : '');
+
+      const asked = document.createElement('p');
+      asked.style.cssText = 'margin:0 0 10px;white-space:pre-wrap';
+      asked.textContent = q.text || '';
+
+      wrap.append(meta, asked);
+
+      if (q.answer) {
+        const who = document.createElement('p');
+        who.className = 'muted small';
+        who.style.margin = '0 0 4px';
+        who.textContent = 'ከመምህሩ';
+        if (!q.read) {
+          const dot = document.createElement('span');
+          dot.className = 'pill pill--done';
+          dot.style.marginInlineStart = '8px';
+          dot.textContent = 'አዲስ';
+          who.appendChild(dot);
+        }
+        const ans = document.createElement('p');
+        ans.style.cssText = 'margin:0;white-space:pre-wrap';
+        ans.textContent = q.answer;
+        wrap.append(who, ans);
+      } else {
+        const waiting = document.createElement('p');
+        waiting.className = 'muted small';
+        waiting.style.margin = '0';
+        waiting.textContent = 'መምህሩ ገና አልመለሰም።';
+        wrap.append(waiting);
+      }
+      host.appendChild(wrap);
     }
   }
 

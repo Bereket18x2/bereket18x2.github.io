@@ -600,7 +600,11 @@ export function addMonths(from, months) {
    obvious which text was in force. Change it when the substance of either
    document changes — not for a typo — and existing parents can then be asked
    to agree again, because the record will no longer match. */
-export const CONSENT_VERSION = '2026-09-15';
+/* Bumped 2026-09-20 for the lesson questions feature: a child may now
+   write free text about their own understanding, and a parent reads both
+   that and the teacher's answer. That is a new category of information
+   about a minor, so it is a new text to agree to rather than a typo fix. */
+export const CONSENT_VERSION = '2026-09-20';
 
 /* ---------------- certificate signatories — PARKED, UNUSED ----------------
 

@@ -470,6 +470,89 @@ service cloud.firestore {
           || (resource.data.by == request.auth.uid && myRole() == 'teacher');
       }
 
+      /* A child's question after a lesson, and the teacher's answer.
+
+         The mirror of a comment: free text about a child's understanding
+         written BY the child. The same property makes it defensible —
+         the parent reads every question and every answer on their own
+         dashboard — and the same one would destroy it if removed.
+
+         THE LOAD-BEARING SPLIT is who may write which field. A student
+         creates the question and may never touch `answer`, `answeredBy`
+         or `answeredAt`; staff write exactly those three and may never
+         touch `text`. Without that split a child could write themselves
+         an answer and show a parent a reply no teacher gave.
+
+         `answer` starts null rather than absent. That is deliberate: it
+         makes "unanswered" a value the rules can test on update, so the
+         teacher's write is allowed exactly once, and an answer a parent
+         has already read cannot change underneath them.
+
+         No delete, by anybody. A question a child asked and a teacher
+         answered is part of what the family can see, and a teacher who
+         could erase an awkward exchange is the failure mode this whole
+         category is shaped against. */
+      match /questions/{questionId} {
+
+        allow read: if isOwner(uid) || isAdmin() || isMyStudentByGet(uid);
+
+        /* Only the student, and only about themselves. Every field is
+           pinned: the three answer fields must be null, `read` must be
+           false, and `askedAt` is the server clock. */
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(
+               ['lessonId', 'text', 'askedAt', 'answer', 'answeredBy', 'answeredAt', 'read'])
+          && request.resource.data.keys().hasAll(
+               ['lessonId', 'text', 'askedAt', 'answer', 'answeredBy', 'answeredAt', 'read'])
+          && request.resource.data.lessonId is string
+          && request.resource.data.lessonId.size() > 0
+          && request.resource.data.lessonId.size() <= 100
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          // 300, matching QUESTION_MAX_CHARS in validators.js. A question
+          // is a couple of sentences; an uncapped box becomes a file.
+          && request.resource.data.text.size() <= 300
+          && request.resource.data.askedAt == request.time
+          && request.resource.data.answer == null
+          && request.resource.data.answeredBy == null
+          && request.resource.data.answeredAt == null
+          && request.resource.data.read == false;
+
+        /* Two updates exist, and nothing else does.
+
+           (a) THE ANSWER — the assigned teacher or an admin, once. Only
+               while `answer` is still null, only those three keys, and
+               `answeredBy` is pinned to the writer so an answer cannot
+               be attributed to another teacher or backdated.
+
+           (b) THE UNREAD MARKER — the student, false -> true, once an
+               answer exists. It is the child's own marker and nothing
+               more: it is not a read-receipt a teacher can inspect,
+               because whether a child re-opened a page is not worth
+               recording about them. */
+        allow update: if
+          // (a) staff answers an unanswered question
+          (
+            resource.data.answer == null
+            && changed().hasOnly(['answer', 'answeredBy', 'answeredAt'])
+            && request.resource.data.answer is string
+            && request.resource.data.answer.size() > 0
+            && request.resource.data.answer.size() <= 1000
+            && request.resource.data.answeredBy == request.auth.uid
+            && request.resource.data.answeredAt == request.time
+            && (isAdmin() || isMyStudentByGet(uid))
+          )
+          // (b) the student clears their own unread marker
+          || (
+            isOwner(uid)
+            && changed().hasOnly(['read'])
+            && request.resource.data.read == true
+            && resource.data.answer != null
+          );
+
+        allow delete: if false;
+      }
+
       /* The consent trail. One document per policy version, the document
          id IS the version, so a parent holds exactly one record per
          version and cannot flood the collection.
