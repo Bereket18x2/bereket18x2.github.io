@@ -6,16 +6,20 @@
    >=18.66px bold) needs 3:1. */
 
 import { readFileSync } from 'node:fs';
+import { braced } from './extract.mjs';
 
 const css = readFileSync(new URL('../assets/css/style.css', import.meta.url), 'utf8');
 
-/* Pull one theme's token block out of the stylesheet. */
+/* Pull one theme's token block out of the stylesheet.
+
+   Bounded by the rule's own braces rather than by `indexOf('\n}')`,
+   which assumed the closing brace is the first one sitting alone at the
+   start of a line — true today and quietly wrong the moment a token
+   block gains a nested rule. braced() also throws when the selector is
+   missing, where the old version would have thrown its own error only
+   for the selector and not for the brace. See tests/extract.mjs. */
 function tokens(selector) {
-  const start = css.indexOf(selector);
-  if (start === -1) throw new Error('missing block: ' + selector);
-  const open = css.indexOf('{', start);
-  const close = css.indexOf('\n}', open);
-  const block = css.slice(open, close);
+  const block = braced(css, selector, `the ${selector} token block`);
   const out = {};
   for (const m of block.matchAll(/(--[\w-]+):\s*([^;]+);/g)) out[m[1]] = m[2].trim();
   return out;

@@ -13,6 +13,7 @@ import {
 } from '../assets/js/validators.js';
 import { CONSENT_VERSION } from '../assets/js/config.js';
 import { readFileSync } from 'node:fs';
+import { braced } from './extract.mjs';
 
 let pass = 0, fail = 0;
 
@@ -130,14 +131,11 @@ check('a question is shorter than a teacher note, deliberately',
 // import this file — so assert the two agree rather than hoping
 {
   const rules = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
-  /* The block, bounded by the NEXT sibling match rather than by a
-     character count — a fixed window silently stops covering the end of
-     the block the moment somebody adds a comment to it, which is exactly
-     how an assertion quietly stops asserting. */
-  const from = rules.indexOf('match /questions/');
-  const rest = rules.slice(from + 1);
-  const next = rest.indexOf('\n      match /');
-  const block = next === -1 ? rest : rest.slice(0, next);
+  /* Bounded by the rules language's own braces, and it THROWS if the
+     match block is not found. This read used to be `slice(i, i + 3000)`,
+     and adding a comment pushed the delete rule past 3000 so the check
+     below passed against an empty string. See tests/extract.mjs. */
+  const block = braced(rules, 'match /questions/', 'the questions rules');
   check('firestore.rules caps the question at the same number',
     block.includes(`text.size() <= ${QUESTION_MAX_CHARS}`), true);
   check('and caps the answer at the same number as a comment',

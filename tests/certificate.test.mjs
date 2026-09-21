@@ -13,6 +13,7 @@ import { certificateSVG, certificateFilename } from '../assets/js/certificate.js
 import { CERTIFICATE_SIGNATORIES } from '../assets/js/config.js';
 import { SUBJECTS, subjectById, lessonsForSubject } from '../assets/js/lessons.js';
 import { readFileSync } from 'node:fs';
+import { after } from './extract.mjs';
 
 let pass = 0, fail = 0;
 const check = (label, actual, expected) => {
@@ -121,8 +122,17 @@ const forExpired = certificateSVG({
 check('an expired family gets a byte-identical certificate', forExpired, svg);
 const src = (await import('node:fs')).readFileSync(
   new URL('../assets/js/certificate.js', import.meta.url), 'utf8');
-// the comment block explains WHY; these assert the code kept the promise
-const body = src.slice(src.indexOf('export function certificateSVG'));
+/* The comment block explains WHY; these assert the code kept the
+   promise. Deliberately read to the END of the file rather than to the
+   end of the function: over-inclusive is the safe direction for a
+   negative assertion, because extra code can only make it fail.
+
+   It goes through after() so that RENAMING certificateSVG is a loud
+   failure. A bare indexOf returns -1, slice(-1) hands these three checks
+   the final character of the file, and all three pass having tested
+   nothing. See tests/extract.mjs. */
+const body = after(src, 'export function certificateSVG',
+                   'the certificate generator');
 check('the generator never reads paid', /\bpaid\b/.test(body), false);
 check('the generator never reads paidUntil', /paidUntil/.test(body), false);
 check('the generator never reads accessActive', /accessActive/.test(body), false);

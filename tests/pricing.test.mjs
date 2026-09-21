@@ -15,6 +15,7 @@ import {
 } from '../assets/js/config.js';
 import { subjectsFor } from '../assets/js/lessons.js';
 import { readFileSync } from 'node:fs';
+import { between } from './extract.mjs';
 import { TRACKS, ROLES, isStaff, REGISTERABLE_ROLES, validateComment,
          COMMENT_MAX_CHARS, enrollableTracks, validateTrack, validateCountry }
   from '../assets/js/validators.js';
@@ -223,8 +224,14 @@ check('nothing matches nonsense, and it does not throw',
 console.log('\nacceptance 2, 4, 6, 7: the control register.html actually ships');
 {
   const REG = readFileSync(new URL('../register.html', import.meta.url), 'utf8');
-  const field = REG.slice(REG.indexOf('id="countryCombo"') - 900,
-                          REG.indexOf('id="countryMsg"') + 60);
+  /* From the combobox to the field's own message line, bounded by those
+     two ids rather than by a count of characters either side. The
+     previous version reached back a magic 900 characters and forward 60,
+     which would have stopped covering the field the moment the markup
+     grew — silently, with every assertion below still green. Same bug
+     the questions-rules slice had. See tests/extract.mjs. */
+  const field = between(REG, 'id="countryCombo"', 'id="countryMsg"',
+                        'the country field in register.html');
 
   check('the field is a combobox', /role="combobox"/.test(field), true);
   check('with a listbox it controls', /role="listbox"/.test(field), true);
