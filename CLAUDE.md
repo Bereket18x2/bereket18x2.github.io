@@ -170,6 +170,32 @@ rules, not the key. Do not "fix" it by hiding it.
   numeral systems mid-sentence reads worse than the mix does. English strings keep
   Arabic throughout.
 
+## Tests
+
+**A test that locates content by offset is not a test.** Never read a region of
+a file with a character count, a line number, or a fixed window — `slice(i, i +
+3000)`, `slice(i - 900, j + 60)`, `split('
+')[42]`. Bound it by structure: the
+next sibling, a closing brace, a named marker. Helpers are in `tests/extract.mjs`
+(`between`, `after`, `braced`), and `tests/hygiene.test.mjs` enforces this.
+
+This is not style. `tests/validators.test.mjs` read the questions block out of
+`firestore.rules` with `slice(i, i + 3000)`; adding a comment pushed `allow
+delete: if false` past character 3000, and the assertion that nobody can erase a
+child's question started passing against an empty string. It was green. It was
+asserting nothing. It only surfaced because 3000 happened to be short enough
+that a neighbouring assertion flipped to FAILING first — a slightly longer
+window would have gone on lying indefinitely.
+
+**A test that cannot find what it is testing has FAILED.** An unguarded
+`indexOf` returns -1, `slice(-1)` returns the last character of the file, and a
+negative assertion against one character passes. Every extractor throws on a
+missing marker for exactly this reason. Do not catch it and carry on.
+
+Where over-inclusive and under-inclusive are both available, choose
+over-inclusive for a negative assertion ("this code never reads `paid`"): extra
+content can only make it fail, never pass wrongly.
+
 ## How to deliver changes
 
 - Small edits: edit in place.
