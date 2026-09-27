@@ -373,7 +373,28 @@ export const Store = {
 
      `scored` decides what "completed" means — a quiz answered for Bible,
      a video genuinely watched for Zema — and is passed in rather than
-     read here, so this stays ignorant of which courses exist. */
+     read here, so this stays ignorant of which courses exist.
+
+     WHERE THIS IS HEADED. Aggregates fix the read quota, not the wall
+     clock: three requests per student is 3,000 in flight at a thousand
+     students, and `npm run bench:roster` measures that roster taking
+     over twenty seconds even with no network in the way. It is fine at
+     the tens-to-couple-hundred this parish actually has, and it does
+     not stay fine.
+
+     The destination is a Cloud Function: a Firestore trigger on
+     users/{uid}/progress/{lessonId} that recomputes the summary and
+     writes lessonsCompleted / averageScore / lastActive onto the user
+     document with admin credentials. The roster then reads ONE document
+     per student and nothing else. Those three field names are already
+     reserved on lockedFields() in firestore.rules, so no browser could
+     write them even then — which is the property that makes the
+     denormalised version safe when a server writes it and unsafe when
+     the student's browser does.
+
+     It needs a Blaze account, which is put to the parish in
+     docs/CHURCH-DECISIONS.md §1 alongside Stripe: same card, almost
+     certainly $0 a month at this size. Until then, this. */
   async rosterStatsOf(uid, { scored = true } = {}) {
     const progress = collection(db, 'users', uid, 'progress');
     const doneField = scored ? 'done' : 'videoCompleted';
@@ -420,17 +441,40 @@ export const Store = {
 
   /* Fans rosterStatsOf() across a roster and returns uid -> stats.
 
+     AT MOST `limit` STUDENTS IN FLIGHT, which is three times that many
+     requests. Unbounded Promise.all was the obvious way to write this
+     and it is measurably worse: tools/bench-roster.mjs has the capped
+     version faster at every size it completed, and the uncapped one
+     took the Firestore emulator down at a thousand students. 64 is not
+     a tuned number — it is small enough to stay well inside what a
+     browser and the backend will schedule sensibly, and large enough
+     that a realistic roster is one or two waves.
+
      Never throws and never rejects a whole roster because one student's
      aggregate failed — a teacher losing the entire page because one
      child's read timed out is worse than a dash in one row. */
-  async rosterStats(students, trackIsScored) {
-    const pairs = await Promise.all((students || []).map(async (s) => {
-      const scored = trackIsScored ? !!trackIsScored(s.track) : true;
-      try { return [s.uid, await this.rosterStatsOf(s.uid, { scored })]; }
-      catch (e) { return [s.uid, { averagePercent: null, completed: null, flagged: null }]; }
-    }));
-    return new Map(pairs);
+  async rosterStats(students, trackIsScored, { limit = 64 } = {}) {
+    const list = students || [];
+    const out = new Map();
+    let next = 0;
+
+    const worker = async () => {
+      while (next < list.length) {
+        const s = list[next++];
+        const scored = trackIsScored ? !!trackIsScored(s.track) : true;
+        try { out.set(s.uid, await this.rosterStatsOf(s.uid, { scored })); }
+        catch (e) {
+          out.set(s.uid, { averagePercent: null, completed: null, flagged: null });
+        }
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(limit, list.length) }, worker)
+    );
+    return out;
   },
+
 
   /* Called with batched seconds, not every tick — see lesson.html.
      The rules cap a single bump at +120s so a tampered client cannot

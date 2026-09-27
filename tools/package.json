@@ -4,7 +4,8 @@
   "type": "module",
   "description": "Local operator scripts. NEVER imported by a page — see CLAUDE.md on the npm exception.",
   "scripts": {
-    "test:rules": "firebase emulators:exec --only firestore --project finote-yared \"node rules.test.mjs\""
+    "test:rules": "firebase emulators:exec --only firestore --project finote-yared \"node rules.test.mjs\"",
+    "bench:roster": "firebase emulators:exec --only firestore --project finote-yared \"node bench-roster.mjs\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^3.0.4",
