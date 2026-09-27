@@ -83,6 +83,21 @@ synchronously. Skip it and every refresh bounces a signed-in parent to sign-in.
 but writes only every 30s. Never make this write more often. Flush on stop,
 visibilitychange, and pagehide; a failed flush returns its seconds to `pending`.
 
+**Firestore bills per read too, and the roster is where that bites.** A teacher's
+roster reads ONE document per student. Its completed-count and average come from
+Firestore aggregates over the progress subcollection (`Store.rosterStatsOf`),
+computed server-side; per-lesson detail loads only when a teacher opens one
+student. Do not reintroduce a loop that fetches every student's progress — that
+was ~2,100 reads per page load at 100 students against a 50,000/day Spark quota,
+and `tests/stats.test.mjs` fails if `allUsers()` or `myStudents()` calls
+`progressOf()` again.
+
+Do not "optimise" this by denormalising `lessonsCompleted`/`averageScore` onto
+the user document either. There is no server — Spark, no Cloud Functions — so
+the writer would be the student's own browser, and a roster a child can edit
+cannot do the one job it has: showing a teacher who is NOT learning. Those field
+names are on `lockedFields()` in the rules to keep that door shut.
+
 **Study hours come from playback, not a stopwatch.** Seconds bank only while the player
 reports PLAYING. Never replace this with a timer that runs regardless.
 
