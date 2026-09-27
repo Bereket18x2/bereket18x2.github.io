@@ -47,46 +47,33 @@ export function streakFrom(progress, now = new Date()) {
   return streak;
 }
 
-/* Average as a percentage across answered quizzes. Lessons with a
-   watched video but no quiz yet are not counted — they would drag the
-   average down for work the student has not been marked on. */
+/* THE average. One definition, everywhere.
+
+   Total marks earned over total marks available — so a ten-mark quiz
+   counts for five times a two-mark one, which is both the fairer
+   reading and the only average Firestore can compute server-side.
+
+   IT USED TO BE THE MEAN OF PER-LESSON PERCENTAGES, which weighted a
+   two-mark quiz equally with a ten-mark one. When the teacher's roster
+   moved to aggregates it had to switch, because sum()/sum() is what an
+   aggregate can produce and a mean of ratios would need a stored ratio
+   — that is, a new field a student's browser would have to write. For
+   a short while the roster and the family's dashboard therefore showed
+   different figures for the same child: 75% on one page and 58% on the
+   other, for 2/2 and 5/10.
+
+   That is a conversation between a parent and a teacher that ends in
+   distrust, and the parent assumes the lower number is the true one. So
+   there is now one definition and both pages use it.
+
+   Lessons with a watched video but no quiz are still excluded — they
+   carry no score and no `of`, so they contribute to neither total,
+   which keeps unmarked work from dragging the average down.
+
+   tests/stats.test.mjs asserts the OLD mean-of-ratios figure is NOT
+   what this returns, so reinstating it fails loudly rather than
+   reintroducing the split. */
 export function averageScore(progress) {
-  const marked = Object.values(progress || {})
-    .filter(p => typeof p.score === 'number' && typeof p.of === 'number' && p.of > 0);
-  if (!marked.length) return 0;
-  const total = marked.reduce((sum, p) => sum + (p.score / p.of), 0);
-  return Math.round((total / marked.length) * 100);
-}
-
-/* The same figure, computed the way Firestore can compute it.
-
-   averageScore() above is the mean of PER-LESSON percentages: every
-   lesson counts once, whatever its quiz length. percentOf() is the
-   mean of MARKS: total correct over total available, so a ten-question
-   quiz weighs five times a two-question one.
-
-   THE TWO AGREE whenever quizzes are the same length, and diverge only
-   when they are not. The split exists because the teacher's roster gets
-   its numbers from Firestore aggregates (Store.rosterStatsOf) rather
-   than by reading every progress document, and sum()/sum() is the only
-   average an aggregate can produce — mean-of-ratios would need a stored
-   ratio, which would mean a new student-writable field.
-
-   So: the family's own dashboard keeps averageScore(), which is the
-   figure it has always shown, and the teacher's roster uses this one.
-   If the parish would rather have a single definition everywhere, this
-   is the one to keep — it is the fairer of the two — and averageScore()
-   is the call site to change. */
-export function percentOf(scored, possible) {
-  const s = Number(scored) || 0;
-  const p = Number(possible) || 0;
-  return p > 0 ? Math.round((s / p) * 100) : 0;
-}
-
-/* The roster's weighted average, computed from progress documents
-   rather than from an aggregate — so a teacher opening one student sees
-   the same number the roster showed them, not a second opinion. */
-export function weightedAverage(progress) {
   let scored = 0, possible = 0;
   for (const p of Object.values(progress || {})) {
     if (typeof p.score === 'number' && typeof p.of === 'number' && p.of > 0) {
@@ -95,6 +82,14 @@ export function weightedAverage(progress) {
     }
   }
   return percentOf(scored, possible);
+}
+
+/* The same arithmetic on totals that already come from an aggregate,
+   so Store.rosterStatsOf and averageScore() cannot drift apart. */
+export function percentOf(scored, possible) {
+  const s = Number(scored) || 0;
+  const p = Number(possible) || 0;
+  return p > 0 ? Math.round((s / p) * 100) : 0;
 }
 
 /* What "complete" means depends on the course.

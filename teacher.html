@@ -208,7 +208,7 @@ import { lessonsFor, subjectsFor, subjectById, findLesson } from '@lessons';
 import { TRACKS, hasScores, COMMENT_MAX_CHARS, ANSWER_MAX_CHARS,
          validateAnswer } from '@validators';
 import { PRICING, priceFor, termMonthsFor, addMonths } from '@config';
-import { completedCount, weightedAverage, streakFrom, toDate } from '@stats';
+import { completedCount, averageScore, streakFrom, toDate } from '@stats';
 
 const $ = id => document.getElementById(id);
 const me = await requireAuth();
@@ -523,7 +523,7 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
     const scored = hasScores(open.track);
     const lessons = lessonsFor(open.track);
     const done = completedCount(progress, lessons, { scored });
-    const avg = weightedAverage(progress);
+    const avg = averageScore(progress);
     const streak = streakFrom(progress);
 
     meta.textContent = [

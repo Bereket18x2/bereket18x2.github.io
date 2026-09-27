@@ -1,7 +1,7 @@
 /* node tests/stats.test.mjs */
 
 import { toDate, streakFrom, averageScore, completedCount, coverageOfLesson, toGeez,
-         percentOf, weightedAverage }
+         percentOf }
   from '../assets/js/stats.js';
 import { readFileSync } from 'node:fs';
 import { braced } from './extract.mjs';
@@ -46,6 +46,7 @@ check('completedAt is used when present', streakFrom({
 console.log('\naverage score');
 check('no quizzes is 0', averageScore({}), 0);
 check('3/3 is 100', averageScore({ a: { score: 3, of: 3 } }), 100);
+// equal-length quizzes, so this reads the same under either definition
 check('mixed rounds', averageScore({ a: { score: 3, of: 3 }, b: { score: 2, of: 3 } }), 83);
 check('video-only entries are excluded', averageScore({
   a: { score: 3, of: 3 }, b: { videoCompleted: true, coverage: 0.95 }
@@ -73,36 +74,54 @@ check('99', toGeez(99), '፺፱');
 check('0 falls through', toGeez(0), '0');
 check('100 falls through', toGeez(100), '100');
 
-console.log('\nthe weighted average the teacher roster shows');
-/* Total marks over total marks available — the only average a Firestore
-   aggregate can produce, because sum()/sum() is computable server-side
-   and a mean of per-lesson ratios is not. */
-check('no marks is 0', weightedAverage({}), 0);
-check('3/3 is 100', weightedAverage({ a: { score: 3, of: 3 } }), 100);
-check('video-only entries are excluded, same as averageScore',
-  weightedAverage({ a: { score: 3, of: 3 }, b: { videoCompleted: true } }), 100);
-check('of:0 is ignored', weightedAverage({ a: { score: 0, of: 0 } }), 0);
-check('percentOf is the same arithmetic the aggregate does',
-  percentOf(5, 6), 83);
+console.log('\nthe average is weighted, and the old mean is what must not come back');
+/* One definition now, used by the family's dashboard and the teacher's
+   roster alike: total marks over total marks available. They showed 75%
+   and 58% for the same child while there were two. */
+check('percentOf is the same arithmetic the aggregate does', percentOf(5, 6), 83);
 check('percentOf refuses to divide by zero', percentOf(0, 0), 0);
 check('and does not invent a figure from nothing', percentOf(null, null), 0);
 
-/* THE ONE THAT MATTERS. The two averages agree whenever quizzes are the
-   same length, and diverge when they are not — which is the whole
-   reason both exist rather than one. If a future change makes them
-   identical, these say so out loud instead of leaving two functions
-   where one would do. */
-const SAME_LENGTH = { a: { score: 3, of: 3 }, b: { score: 2, of: 3 } };
-check('with equal-length quizzes the two agree',
-  weightedAverage(SAME_LENGTH), averageScore(SAME_LENGTH));
+/* THE FLIPPED ONE. 2/2 and 5/10: by marks it is 7/12 = 58%. The old
+   per-lesson mean was (100 + 50) / 2 = 75%.
 
-// 2/2 and 5/10: per-lesson mean is (100 + 50) / 2 = 75; by marks it is
-// 7/12 = 58, because the ten-question quiz weighs five times the other
+   The assertion is written against BOTH numbers on purpose — the one it
+   must return and the one it must not. Reinstating the mean of ratios,
+   by any route, fails here and the failure names the figure it came
+   back as. */
 const MIXED = { a: { score: 2, of: 2 }, b: { score: 5, of: 10 } };
-check('with unequal quizzes the per-lesson mean is 75', averageScore(MIXED), 75);
-check('and the weighted one is 58', weightedAverage(MIXED), 58);
-check('so they are genuinely different metrics, not a duplicate',
-  weightedAverage(MIXED) === averageScore(MIXED), false);
+const unweightedMean = (progress) => {
+  const marked = Object.values(progress).filter(p => p.of > 0);
+  return Math.round(marked.reduce((t, p) => t + p.score / p.of, 0) / marked.length * 100);
+};
+check('an unequal pair weighs the ten-mark quiz more', averageScore(MIXED), 58);
+check('the per-lesson mean, which it must NOT be, is 75', unweightedMean(MIXED), 75);
+check('and averageScore does not return it',
+  averageScore(MIXED) === unweightedMean(MIXED), false);
+
+/* The two definitions agree whenever quizzes are the same length, which
+   is why the split went unnoticed until quiz lengths varied. Kept so
+   that the equal-length case is still pinned. */
+const SAME_LENGTH = { a: { score: 3, of: 3 }, b: { score: 2, of: 3 } };
+check('with equal-length quizzes both definitions give the same answer',
+  averageScore(SAME_LENGTH), unweightedMean(SAME_LENGTH));
+
+// and the exclusions the old one had are still the exclusions
+check('no marks is 0', averageScore({}), 0);
+check('video-only entries are excluded',
+  averageScore({ a: { score: 3, of: 3 }, b: { videoCompleted: true } }), 100);
+check('of:0 is ignored', averageScore({ a: { score: 0, of: 0 } }), 0);
+
+/* One definition means one call site shape: nothing may reintroduce a
+   second average function under another name. */
+{
+  const src = readFileSync(new URL('../assets/js/stats.js', import.meta.url), 'utf8');
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  check('stats.js exports exactly one average',
+    (code.match(/export function \w*[Aa]verage\w*/g) || []).length, 1);
+  check('and no weightedAverage survives beside it',
+    /weightedAverage/.test(code), false);
+}
 
 /* The roster's two numbers come from Store.rosterStatsOf, which cannot
    be exercised here without Firestore. What CAN be checked is that the
