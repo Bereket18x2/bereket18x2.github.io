@@ -58,6 +58,45 @@ export function averageScore(progress) {
   return Math.round((total / marked.length) * 100);
 }
 
+/* The same figure, computed the way Firestore can compute it.
+
+   averageScore() above is the mean of PER-LESSON percentages: every
+   lesson counts once, whatever its quiz length. percentOf() is the
+   mean of MARKS: total correct over total available, so a ten-question
+   quiz weighs five times a two-question one.
+
+   THE TWO AGREE whenever quizzes are the same length, and diverge only
+   when they are not. The split exists because the teacher's roster gets
+   its numbers from Firestore aggregates (Store.rosterStatsOf) rather
+   than by reading every progress document, and sum()/sum() is the only
+   average an aggregate can produce — mean-of-ratios would need a stored
+   ratio, which would mean a new student-writable field.
+
+   So: the family's own dashboard keeps averageScore(), which is the
+   figure it has always shown, and the teacher's roster uses this one.
+   If the parish would rather have a single definition everywhere, this
+   is the one to keep — it is the fairer of the two — and averageScore()
+   is the call site to change. */
+export function percentOf(scored, possible) {
+  const s = Number(scored) || 0;
+  const p = Number(possible) || 0;
+  return p > 0 ? Math.round((s / p) * 100) : 0;
+}
+
+/* The roster's weighted average, computed from progress documents
+   rather than from an aggregate — so a teacher opening one student sees
+   the same number the roster showed them, not a second opinion. */
+export function weightedAverage(progress) {
+  let scored = 0, possible = 0;
+  for (const p of Object.values(progress || {})) {
+    if (typeof p.score === 'number' && typeof p.of === 'number' && p.of > 0) {
+      scored += p.score;
+      possible += p.of;
+    }
+  }
+  return percentOf(scored, possible);
+}
+
 /* What "complete" means depends on the course.
 
    Bible: the quiz has been answered — `done`.

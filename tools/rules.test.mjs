@@ -16,7 +16,7 @@ import {
 } from '@firebase/rules-unit-testing';
 import {
   doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, getDocs,
-  query, where, serverTimestamp
+  query, where, serverTimestamp, getAggregateFromServer, count, sum
 } from 'firebase/firestore';
 
 let pass = 0, fail = 0;
@@ -470,6 +470,129 @@ await t('the author CAN delete their own note', () =>
    it defensible — the parent reads both halves — and a different one
    carries the weight here: a student must never be able to write an
    answer, or a parent could be shown a reply no teacher gave. */
+/* The roster summary fields do not exist, and the lock is what keeps
+   the forgeable version of them from being added later. A denormalised
+   lessonsCompleted/averageScore would have to be written by the
+   student's own browser — there is no server — and a roster a child can
+   edit cannot show a teacher who is not learning. */
+console.log('\n=== roster summary fields stay unwritable, like paid and role ===');
+await seed();
+for (const field of ['lessonsCompleted', 'averageScore', 'lastActive']) {
+  await t(`a student cannot write ${field}`, () =>
+    assertFails(updateDoc(doc(AS('student1'), 'users/student1'), { [field]: 99 })));
+}
+// not even alongside a change they ARE allowed to make
+await t('nor smuggle one in beside a legitimate write', () =>
+  assertFails(updateDoc(doc(AS('student1'), 'users/student1'),
+    { studySeconds: 60, lessonsCompleted: 99 })));
+// a teacher has a write whitelist on a student, and these are not on it
+await t('a teacher cannot write them either', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student1'), { averageScore: 100 })));
+
+/* The roster reads these numbers by AGGREGATING the progress
+   subcollection instead. Firestore evaluates an aggregate against the
+   same `allow read` as a list, so the read path has to keep working for
+   the assigned teacher and stay shut to everybody else. */
+await t('the assigned teacher can still read the progress they aggregate', () =>
+  assertSucceeds(getDocs(collection(AS('teacher1'), 'users/student1/progress'))));
+await t('another teacher cannot', () =>
+  assertFails(getDocs(collection(AS('teacher2'), 'users/student1/progress'))));
+await t('and neither can another parent', () =>
+  assertFails(getDocs(collection(AS('student2'), 'users/student1/progress'))));
+
+/* THE REFACTOR'S LOAD-BEARING CLAIM, run for real.
+
+   The roster stopped reading every progress document and now asks
+   Firestore to count and sum them server-side. Two things have to be
+   true for that to work, and neither is provable by reading the rules:
+
+     1. an aggregate is evaluated against `allow read` the way a list
+        is, so the assigned teacher may run one and nobody else may
+     2. the numbers it returns are the numbers the roster displays
+
+   This seeds known progress and checks both against the emulator,
+   rather than trusting that they hold. */
+console.log('\n=== roster aggregates: permitted, and correct ===');
+await seed();
+await env.withSecurityRulesDisabled(async (ctx) => {
+  const db = ctx.firestore();
+  /* seed() already wrote progress/l1 as 2/3, so these four make five
+     documents in total: four marked (2/3, 3/3, 2/4, 5/5) and one
+     video-only that is also flagged suspicious. */
+  await setDoc(doc(db, 'users/student1/progress/a1'), { done: true, score: 3, of: 3 });
+  await setDoc(doc(db, 'users/student1/progress/a2'), { done: true, score: 2, of: 4 });
+  await setDoc(doc(db, 'users/student1/progress/a3'), { done: true, score: 5, of: 5 });
+  await setDoc(doc(db, 'users/student1/progress/a4'),
+    { videoCompleted: true, coverage: 0.97, suspicious: true });
+});
+
+{
+  const prog = collection(AS('teacher1'), 'users/student1/progress');
+
+  await t('the assigned teacher may run an aggregate at all', () =>
+    assertSucceeds(getAggregateFromServer(prog, { n: count() })));
+  await t('an unassigned teacher may not', () =>
+    assertFails(getAggregateFromServer(
+      collection(AS('teacher2'), 'users/student1/progress'), { n: count() })));
+  await t('nor may another parent', () =>
+    assertFails(getAggregateFromServer(
+      collection(AS('student2'), 'users/student1/progress'), { n: count() })));
+
+  /* The unfiltered call the roster makes. sum() must ignore the
+     video-only document, which carries neither score nor of — that is
+     what makes an unmarked lesson stay out of the average instead of
+     dragging it to zero. */
+  const totals = (await getAggregateFromServer(prog, {
+    scored: sum('score'), possible: sum('of')
+  })).data();
+  await t('sum(score) ignores the unmarked lesson', () => {
+    if (totals.scored !== 12) throw new Error(`got ${totals.scored}, expected 12`);
+  });
+  await t('sum(of) ignores it too', () => {
+    if (totals.possible !== 15) throw new Error(`got ${totals.possible}, expected 15`);
+  });
+  // 12/15 = 80%, which is what the roster prints
+  await t('so the weighted average is 80%', () => {
+    const pct = Math.round(totals.scored / totals.possible * 100);
+    if (pct !== 80) throw new Error(`got ${pct}, expected 80`);
+  });
+
+  const done = (await getAggregateFromServer(
+    query(prog, where('done', '==', true)), { n: count() })).data();
+  await t('the completed count filters to done lessons', () => {
+    if (done.n !== 4) throw new Error(`got ${done.n}, expected 4`);
+  });
+
+  const flagged = (await getAggregateFromServer(
+    query(prog, where('suspicious', '==', true)), { n: count() })).data();
+  await t('and the suspicious count finds the one flagged lesson', () => {
+    if (flagged.n !== 1) throw new Error(`got ${flagged.n}, expected 1`);
+  });
+
+  /* THE SURPRISE, pinned so nobody rediscovers it in production.
+
+     A count() asked for in the SAME call as sum('score') does not
+     return the number of progress documents. There are five; it
+     returns four — the ones carrying the summed fields — because the
+     aggregate is served from those fields' indexes. The video-only
+     lesson is invisible to it.
+
+     store.js therefore asks for no count() beside its sums, and gets
+     the completed count from its own filtered call. If a later change
+     folds them back together to save a round-trip, this fails and says
+     why. */
+  const mixed = (await getAggregateFromServer(prog, {
+    n: count(), possible: sum('of')
+  })).data();
+  await t('count() beside a sum() counts only the summed documents', () => {
+    if (mixed.n !== 4) throw new Error(`got ${mixed.n}, expected 4 — not the 5 documents present`);
+  });
+  const bare = (await getAggregateFromServer(prog, { n: count() })).data();
+  await t('while count() on its own sees all five', () => {
+    if (bare.n !== 5) throw new Error(`got ${bare.n}, expected 5`);
+  });
+}
+
 console.log('\n=== questions: the student asks, only staff answer ===');
 await seed();
 

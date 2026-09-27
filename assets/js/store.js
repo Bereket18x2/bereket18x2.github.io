@@ -22,7 +22,8 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc,
-  collection, getDocs, query, where, orderBy, increment, serverTimestamp
+  collection, getDocs, query, where, orderBy, increment, serverTimestamp,
+  getAggregateFromServer, count, sum
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 /* Bare specifiers, resolved by the import map in each page's <head>.
@@ -331,20 +332,104 @@ export const Store = {
   },
 
   /* Admin only — the rules reject this for everyone else, which is the
-     point: otherwise it is a public list of children's names and emails. */
+     point: otherwise it is a public list of children's names and emails.
+
+     Returns the user documents and NOTHING ELSE. It used to fetch every
+     student's whole progress subcollection in a loop, which is one query
+     and M document reads per student — 100 students at 20 lessons was
+     ~2,100 reads for one page load, against a Spark quota of 50,000 a
+     day. A handful of roster refreshes could exhaust it.
+
+     The roster's computed columns now come from rosterStats() below, and
+     per-lesson detail loads only when a teacher opens one student. */
   async allUsers() {
     let snaps;
     try {
       snaps = await getDocs(query(collection(db, 'users'), where('role', '==', 'student')));
     } catch (e) { fail(e); }
+    return snaps.docs.map(d => ({ ...d.data(), uid: d.id }));
+  },
 
-    const users = [];
-    for (const d of snaps.docs) {
-      const data = d.data();
-      const progress = await this.progressOf(d.id).catch(() => ({}));
-      users.push({ ...data, uid: d.id, progress });
-    }
-    return users;
+  /* ---------------- roster numbers, without reading the rows ----------
+
+     WHY AGGREGATION RATHER THAN A SUMMARY FIELD. The obvious fix is to
+     denormalise lessonsCompleted/averageScore onto the user document.
+     The problem is who writes it: this project has no server — Spark
+     plan, no Cloud Functions, firebase.json declares Firestore alone —
+     so the only actor present when a lesson completes is the student's
+     own browser, and a field a student writes is a field a student can
+     forge. The roster is the instrument for noticing a child who is NOT
+     learning, so a forgeable roster defeats its own purpose.
+
+     Firestore computes these server-side instead. The progress documents
+     stay the single source of truth, nothing new becomes writable, and
+     an aggregate bills roughly one read however many lessons it spans.
+     100 students went from ~2,100 reads a load to ~400.
+
+     THREE QUERIES PER STUDENT, not one, because an aggregate call can
+     carry several aggregations but only one filter. They run in
+     parallel and each is cheap; rosterStats() below fans out across
+     students so the whole roster is one wave of requests.
+
+     `scored` decides what "completed" means — a quiz answered for Bible,
+     a video genuinely watched for Zema — and is passed in rather than
+     read here, so this stays ignorant of which courses exist. */
+  async rosterStatsOf(uid, { scored = true } = {}) {
+    const progress = collection(db, 'users', uid, 'progress');
+    const doneField = scored ? 'done' : 'videoCompleted';
+
+    const [totals, completed, flagged] = await Promise.all([
+      /* Unfiltered on purpose. sum() ignores documents where the field
+         is missing or non-numeric, so video-only entries contribute
+         nothing to either total — which is exactly what the average
+         should do with a lesson that has not been marked yet.
+
+         No count() here. A count() asked for alongside these sums does
+         NOT return the number of progress documents: the aggregate runs
+         off the indexes for the summed fields, so it counts only the
+         documents carrying score and of. Verified against the emulator
+         in tools/rules.test.mjs, which asserts that surprising number
+         rather than the intuitive one. The completed count below is a
+         separate call for this reason. */
+      getAggregateFromServer(progress, {
+        scored: sum('score'), possible: sum('of')
+      }).catch(() => null),
+      getAggregateFromServer(query(progress, where(doneField, '==', true)), {
+        n: count()
+      }).catch(() => null),
+      getAggregateFromServer(query(progress, where('suspicious', '==', true)), {
+        n: count()
+      }).catch(() => null)
+    ]);
+
+    /* null, not 0, when a query failed. A roster that silently prints
+       "0 completed" for a child whose read errored is telling a teacher
+       something false about a real student; the column shows a dash. */
+    const t = totals && totals.data();
+    const possible = t ? Number(t.possible) || 0 : 0;
+    return {
+      /* Weighted: total marks over total marks available. See the note
+         on percentOf() in stats.js for how this differs from the
+         per-lesson mean the family's own dashboard shows. */
+      averagePercent: !t ? null : possible > 0
+        ? Math.round((Number(t.scored) || 0) / possible * 100) : 0,
+      completed: completed ? Number(completed.data().n) || 0 : null,
+      flagged: flagged ? Number(flagged.data().n) || 0 : null
+    };
+  },
+
+  /* Fans rosterStatsOf() across a roster and returns uid -> stats.
+
+     Never throws and never rejects a whole roster because one student's
+     aggregate failed — a teacher losing the entire page because one
+     child's read timed out is worse than a dash in one row. */
+  async rosterStats(students, trackIsScored) {
+    const pairs = await Promise.all((students || []).map(async (s) => {
+      const scored = trackIsScored ? !!trackIsScored(s.track) : true;
+      try { return [s.uid, await this.rosterStatsOf(s.uid, { scored })]; }
+      catch (e) { return [s.uid, { averagePercent: null, completed: null, flagged: null }]; }
+    }));
+    return new Map(pairs);
   },
 
   /* Called with batched seconds, not every tick — see lesson.html.
@@ -516,9 +601,13 @@ export const Store = {
         where('assignedTeacher', '==', u.uid)
       ));
     } catch (e) { fail(e); }
+    /* User documents only — see allUsers() for why the progress
+       subcollections are no longer pulled here. The teacher's roster
+       fills its computed columns from rosterStats(), and progressOf()
+       runs when a teacher actually opens a student. */
     const out = [];
     for (const d of snaps.docs) {
-      out.push({ ...d.data(), uid: d.id, progress: await this.progressOf(d.id).catch(() => ({})) });
+      out.push({ ...d.data(), uid: d.id });
     }
     return out;
   },

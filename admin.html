@@ -186,7 +186,7 @@ import { Store, fmtHours, fmtAgo, toMillis, requireAuth, accessExpired } from '@
 import { lessonsFor, subjectById, SUBJECTS } from '@lessons';
 import { TRACKS, hasScores } from '@validators';
 import { PRICING, priceToAddSubjects } from '@config';
-import { completedCount, averageScore, toDate } from '@stats';
+import { toDate } from '@stats';
 
 const $ = id => document.getElementById(id);
 const me = await requireAuth();
@@ -414,6 +414,14 @@ if (me && me.role === 'admin') {
   });
 
   /* ---------------- students + assignment ---------------- */
+  /* uid -> aggregate stats, filled by a second wave after the first
+     paint. See Store.rosterStats: the admin roster used to pull every
+     student's whole progress subcollection, which is the read pattern
+     this replaced. `null` renders as "…" and never as a zero. */
+  let studentStats = new Map();
+  const statsFor = (uid) =>
+    studentStats.get(uid) || { completed: null, averagePercent: null };
+
   function renderStudents() {
     const week = Date.now() - 86400000 * 7;
     $('kTotal').textContent = students.length;
@@ -429,7 +437,7 @@ if (me && me.role === 'admin') {
       .map(u => {
         const scored = hasScores(u.track);
         const lessons = lessonsFor(u.track);
-        const done = completedCount(u.progress, lessons, { scored });
+        const st = statsFor(u.uid);
         const pay = accessExpired(u) ? '<span class="pill pill--locked">አልቋል</span>'
           : !u.verified ? '<span class="pill">አልተረጋገጠም</span>'
           : !u.paid ? '<span class="pill pill--locked">ክፍያ የለም</span>'
@@ -446,8 +454,8 @@ if (me && me.role === 'admin') {
           <td>${esc(TRACKS[u.track]?.am ?? '—')}</td>
           <td>${pay}${u.paidUntil ? `<br><span class="muted small">${esc(u.paidUntil)}</span>` : ''}</td>
           <td class="num">${fmtHours(u.studySeconds)}</td>
-          <td class="num">${done}/${lessons.length}</td>
-          <td class="num">${scored ? averageScore(u.progress) + '%' : '—'}</td>
+          <td class="num">${st.completed === null ? '…' : st.completed + '/' + lessons.length}</td>
+          <td class="num">${!scored ? '—' : st.averagePercent === null ? '…' : st.averagePercent + '%'}</td>
           <td class="muted">${fmtAgo(u.lastSeen)}</td>
           <td><select class="input" style="padding:6px 8px" data-assign="${esc(u.uid)}">${options}</select></td>
         </tr>`;
@@ -561,6 +569,13 @@ if (me && me.role === 'admin') {
     renderRequests(); renderRejected();
   }
   renderAll();
+
+  /* Second wave, exactly as the teacher roster does it: the page is
+     usable immediately from the user documents and the two computed
+     columns fill in when Firestore has counted them server-side. */
+  Store.rosterStats(students, hasScores)
+    .then((m) => { studentStats = m; renderStudents(); })
+    .catch(() => { /* the columns already render a dash for null */ });
 
   $('out').addEventListener('click', async (e) => {
     e.preventDefault();

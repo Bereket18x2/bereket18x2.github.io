@@ -158,6 +158,24 @@ service cloud.firestore {
         'unlockedLessons', 'remedial', 'remedialSince', 'remedialBy',
         'teachesSubjects', 'parish',
         'badges',
+        /* Roster summary fields. THEY DO NOT EXIST YET, and they are
+           locked so that the version of them a student could forge
+           cannot be added by accident.
+
+           The roster's completed-count and average come from Firestore
+           aggregates over the progress subcollection (see
+           Store.rosterStatsOf), which are computed server-side from
+           documents the rules already govern. The tempting alternative
+           is to denormalise them onto this document — but there is no
+           server to write them, so the writer would be the student's
+           own browser, and a roster a child can edit cannot do the one
+           job it exists for: showing a teacher who is NOT learning.
+
+           If a server ever exists (Blaze + a Firestore trigger), these
+           names are reserved and the trigger writes them with admin
+           credentials, which bypass rules. Nothing about that needs
+           this list to change. */
+        'lessonsCompleted', 'averageScore', 'lastActive',
         'email', 'uid', 'createdAt',
         'consentGivenAt',
         'approvedBy', 'approvedAt', 'rejectedReason'

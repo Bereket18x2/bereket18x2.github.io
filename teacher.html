@@ -96,7 +96,7 @@
           <thead>
             <tr>
               <th>ተማሪ</th><th>ዕድሜ</th><th>ክፍል</th><th>የጥናት ሰዓት</th>
-              <th>ትምህርት</th><th>አማካይ</th><th>ተከታታይ</th>
+              <th>ትምህርት</th><th>አማካይ</th>
               <th>መጨረሻ የታየበት</th><th>ሁኔታ</th><th></th>
             </tr>
           </thead>
@@ -121,6 +121,17 @@
   <p class="muted small" id="dMeta" style="margin:0 0 16px">…</p>
 
   <div class="harag harag--thin" style="margin:16px 0"></div>
+
+  <!-- ---------------- per-lesson detail, loaded on open ----------------
+       The roster deliberately does not carry this: it reads one cheap
+       server-side count per student instead of every progress document.
+       The full picture is here, fetched for ONE child when a teacher
+       actually asks for it. -->
+  <p class="eyebrow">የትምህርት ሂደት</p>
+  <p class="muted small" style="margin:0 0 10px" id="dProgressMeta">…</p>
+  <div id="dProgress"></div>
+
+  <div class="harag harag--thin" style="margin:18px 0"></div>
 
   <!-- payment: what was paid, for which subjects, until when -->
   <p class="eyebrow">ክፍያ አረጋግጥ</p>
@@ -197,7 +208,7 @@ import { lessonsFor, subjectsFor, subjectById, findLesson } from '@lessons';
 import { TRACKS, hasScores, COMMENT_MAX_CHARS, ANSWER_MAX_CHARS,
          validateAnswer } from '@validators';
 import { PRICING, priceFor, termMonthsFor, addMonths } from '@config';
-import { completedCount, averageScore, streakFrom, toDate } from '@stats';
+import { completedCount, weightedAverage, streakFrom, toDate } from '@stats';
 
 const $ = id => document.getElementById(id);
 const me = await requireAuth();
@@ -232,6 +243,11 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
   ].filter(Boolean).join(' · ') || 'የተመደቡ ትምህርቶች የሉም።';
 
   let students = [];
+  /* uid -> { completed, averagePercent, flagged } from Firestore
+     aggregates. Empty until the second wave lands, which is why every
+     read of it goes through statsFor() below. */
+  let stats = new Map();
+
   try {
     students = await Store.myStudents();
     /* One subcollection read per assigned student, once per page load.
@@ -262,14 +278,23 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
      a sentence a teacher would say out loud about a child. `reasons` is
      what the roster shows, because a score with no reason attached is
      something a teacher learns to ignore. */
+  /* Stats arrive after the first paint, so every reader goes through
+     this rather than indexing the Map directly. `null` means "not known
+     yet, or the read failed" and renders as a dash — never as a zero,
+     because "0 completed" about a real child is a false statement a
+     teacher would act on. */
+  const BLANK = { completed: null, averagePercent: null, flagged: null };
+  const statsFor = (uid) => stats.get(uid) || BLANK;
+
   function concernOf(s) {
     const scored = hasScores(s.track);
     const lessons = lessonsFor(s.track);
-    const done = completedCount(s.progress, lessons, { scored });
+    const st = statsFor(s.uid);
+    const done = st.completed;
     const seen = toMillis(s.lastSeen);
     const idle = seen ? Date.now() - seen : Infinity;
-    const avg = scored ? averageScore(s.progress) : null;
-    const flagged = Object.values(s.progress || {}).filter(p => p.suspicious).length;
+    const avg = scored ? st.averagePercent : null;
+    const flagged = st.flagged;
 
     let score = 0;
     const reasons = [];
@@ -282,6 +307,10 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
     else if (idle > WEEK * 2) { score += 3; reasons.push('ከ2 ሳምንት በላይ አልታየም'); }
     else if (idle > WEEK) { score += 2; reasons.push('ከሳምንት በላይ አልታየም'); }
 
+    /* `done === 0` and not `!done`: null means the aggregate has not
+       landed, and flagging every child as "finished nothing" for the
+       second before the numbers arrive would paint the whole roster red
+       on load. An unknown is not a concern. */
     if (lessons.length && done === 0) { score += 2; reasons.push('አንድም አልጨረሰም'); }
     if (scored && avg !== null && avg > 0 && avg < 50) { score += 2; reasons.push(`አማካይ ${avg}%`); }
     if (flagged) { score += 2; reasons.push(`${flagged} አጠራጣሪ`); }
@@ -307,7 +336,15 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
     concern:  (a, b) => b.c.score - a.c.score || toMillis(a.lastSeen) - toMillis(b.lastSeen),
     name:     (a, b) => String(a.studentName || '').localeCompare(String(b.studentName || ''), 'am'),
     seen:     (a, b) => toMillis(b.lastSeen) - toMillis(a.lastSeen),
-    progress: (a, b) => (a.c.done / (a.c.total || 1)) - (b.c.done / (b.c.total || 1))
+    /* A student whose aggregate has not landed sorts LAST rather than
+       first. `null / total` is 0 in JavaScript, which would have put
+       every unknown at the top of a "least progress" sort for the beat
+       before the numbers arrive — the same rows the teacher is meant to
+       act on, so a silent 0 there is worse than an explicit unknown. */
+    progress: (a, b) => {
+      const ratio = (c) => c.done === null ? Infinity : c.done / (c.total || 1);
+      return ratio(a.c) - ratio(b.c);
+    }
   };
 
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g,
@@ -322,7 +359,7 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
 
     if (!rows.length) {
       $('rows').innerHTML =
-        '<tr><td colspan="10" class="muted">ገና ተማሪ አልተመደበልዎትም። አስተዳዳሪው ተማሪ ሲመድብ እዚህ ይታያሉ።</td></tr>';
+        '<tr><td colspan="9" class="muted">ገና ተማሪ አልተመደበልዎትም። አስተዳዳሪው ተማሪ ሲመድብ እዚህ ይታያሉ።</td></tr>';
       return;
     }
 
@@ -343,9 +380,8 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
         <td class="num">${esc(s.age ?? '—')}</td>
         <td>${esc(TRACKS[s.track]?.am ?? '—')}</td>
         <td class="num">${fmtHours(s.studySeconds)}</td>
-        <td class="num">${c.done}/${c.total}</td>
-        <td class="num">${c.scored ? c.avg + '%' : '—'}</td>
-        <td class="num">${streakFrom(s.progress)}</td>
+        <td class="num">${c.done === null ? '…' : c.done + '/' + c.total}</td>
+        <td class="num">${!c.scored ? '—' : c.avg === null ? '…' : c.avg + '%'}</td>
         <td class="muted">${fmtAgo(s.lastSeen)}</td>
         <td>${status}</td>
         <td><button class="btn btn--ghost btn--sm" data-open="${esc(s.uid)}">ክፈት</button></td>
@@ -355,6 +391,19 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
 
   $('sortBy').addEventListener('change', render);
   render();
+
+  /* SECOND WAVE. The roster paints immediately from the user documents
+     — names, payment status, study hours, last seen — and the two
+     computed columns show "…" until Firestore has counted them.
+
+     This is the trade the aggregate approach makes: the numbers cost
+     one cheap server-side count each instead of reading every progress
+     document, but they are a second round-trip. Painting twice is
+     better than showing a teacher a blank page while several hundred
+     aggregates resolve. */
+  Store.rosterStats(students, hasScores)
+    .then((m) => { stats = m; render(); })
+    .catch(() => { /* every column already renders a dash for null */ });
 
   /* ---------------- CSV ----------------
 
@@ -375,12 +424,11 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
       return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     };
     const head = ['ተማሪ', 'ወላጅ', 'ኢሜይል', 'ዕድሜ', 'ክፍል', 'የጥናት ሰዓት',
-                  'የተጠናቀቀ', 'ጠቅላላ', 'አማካይ', 'ተከታታይ', 'ክፍያ', 'እስከ', 'መጨረሻ የታየበት'];
+                  'የተጠናቀቀ', 'ጠቅላላ', 'አማካይ', 'ክፍያ', 'እስከ', 'መጨረሻ የታየበት'];
     const body = enriched().sort(SORTS.concern).map(s => [
       s.studentName, s.guardianName, s.email, s.age, TRACKS[s.track]?.am ?? '',
       Math.round((s.studySeconds || 0) / 60) + ' ደቂቃ',
-      s.c.done, s.c.total, s.c.scored ? s.c.avg + '%' : '',
-      streakFrom(s.progress),
+      s.c.done ?? '', s.c.total, s.c.scored && s.c.avg !== null ? s.c.avg + '%' : '',
       accessActive(s) ? 'ንቁ' : (s.paid ? 'አልቋል' : 'የለም'),
       s.paidUntil || '', fmtAgo(s.lastSeen)
     ].map(cell).join(','));
@@ -440,10 +488,93 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
     $('dCommentMsg').style.display = 'none';
     $('dComment').value = '';
     paintLeft();
+    await paintProgress();
     await paintReceipts();
     await paintQuestions();
     await paintComments();
     $('drawer').scrollIntoView({ block: 'nearest' });
+  }
+
+  /* ONE student's progress subcollection, read only now that a teacher
+     has opened them. This is the read the roster used to do for every
+     student on every load.
+
+     It also shows the streak, which left the roster in the same change:
+     a streak is derived from the DATES on each progress document, and
+     there is no aggregate that can produce it — it needs the rows. One
+     student's rows are cheap; everyone's are not. */
+  async function paintProgress() {
+    const host = $('dProgress');
+    const meta = $('dProgressMeta');
+    host.textContent = '';
+    meta.textContent = 'እየተጫነ…';
+
+    const who = open.uid;
+    let progress;
+    try { progress = await Store.progressOf(who); }
+    catch (e) {
+      meta.textContent = 'የትምህርት ሂደቱን ማንበብ አልተቻለም።';
+      return;
+    }
+    // the drawer may have been closed, or another student opened, while
+    // this was in flight — do not paint one child's record over another
+    if (!open || open.uid !== who) return;
+
+    const scored = hasScores(open.track);
+    const lessons = lessonsFor(open.track);
+    const done = completedCount(progress, lessons, { scored });
+    const avg = weightedAverage(progress);
+    const streak = streakFrom(progress);
+
+    meta.textContent = [
+      `${done}/${lessons.length} ተጠናቋል`,
+      scored ? `አማካይ ${avg}%` : null,
+      `ተከታታይ ${streak} ቀን`
+    ].filter(Boolean).join(' · ');
+
+    if (!lessons.length) {
+      const p = document.createElement('p');
+      p.className = 'muted small';
+      p.textContent = 'ገና ትምህርት አልተጫነም።';
+      host.appendChild(p);
+      return;
+    }
+
+    for (const l of lessons) {
+      const entry = progress[l.id];
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:10px;align-items:baseline;' +
+        'padding:8px 0;border-top:1px solid var(--line)';
+
+      const name = document.createElement('span');
+      name.style.cssText = 'flex:1;min-width:0';
+      name.textContent = l.title;
+
+      const mark = document.createElement('span');
+      mark.className = 'muted small';
+      if (!entry) mark.textContent = 'አልተጀመረም';
+      else if (scored && typeof entry.score === 'number' && entry.of > 0) {
+        mark.textContent = `${entry.score}/${entry.of}`;
+      } else if (entry.videoCompleted) {
+        mark.textContent = 'ተመልክቷል';
+      } else if (typeof entry.coverage === 'number') {
+        mark.textContent = `${Math.round(entry.coverage * 100)}%`;
+      } else mark.textContent = '—';
+
+      row.append(name, mark);
+
+      /* Flagged, never accusing. isSuspicious is high coverage in
+         implausibly little time; a false positive costs a child an
+         unfair suspicion, so the row says what was measured rather
+         than what it concludes. */
+      if (entry && entry.suspicious) {
+        const flag = document.createElement('span');
+        flag.className = 'pill pill--locked';
+        flag.textContent = 'አጠራጣሪ';
+        row.appendChild(flag);
+      }
+      host.appendChild(row);
+    }
   }
 
   /* The receipts held in /payments/{uid}/entries. Built as nodes rather
