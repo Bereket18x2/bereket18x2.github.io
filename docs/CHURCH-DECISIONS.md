@@ -24,7 +24,7 @@ now, and it is the kind of thing that is embarrassing later.
 
 | # | Decision | Who answers it | If we defer it |
 |---|---|---|---|
-| 1 | Who owns the Stripe account | Parish council + treasurer | No card payments; every payment stays manual |
+| 1 | Who owns the Stripe account, **and the Firebase billing account** | Parish council + treasurer | No card payments, every payment stays manual, and the teachers' roster gets slower as the school grows |
 | 2 | Who owns the Firebase project | Parish council | Children's records sit in one person's private Google account |
 | 3 | How long things are kept — receipts, and questions a child wrote | Treasurer + accountant; the second half is the parish's, not an accountant's | We keep everything forever by default; the cheap receipts option expires, and no one can ever remove a child's own words |
 | 4 | Whether the consent method is lawful | A lawyer, paid for by the parish | We should not enrol paying families |
@@ -33,7 +33,7 @@ now, and it is the kind of thing that is embarrassing later.
 
 ---
 
-## 1. Who owns the Stripe account
+## 1. Who owns the Stripe account, and the Firebase billing
 
 ### The decision
 
@@ -70,10 +70,45 @@ families. At ten students it is trivial. At a hundred it is a job.
 ### What changes once it is answered
 
 Families can pay by card and their accounts open automatically instead of
-waiting on a teacher. It also needs somewhere for a small piece of server code
-to run, which is a separate small cost (roughly $0–25 a month depending on the
-option chosen) — that part *is* a developer decision and does not need the
-parish.
+waiting on a teacher. The small piece of server code that listens for the
+payment runs on Blaze, which is the same thing the roster and the deletion job
+need — so answering this one answers three.
+
+### The cheapest thing on this page, asked for at the same time
+
+**Firebase needs to move from the free plan to the pay-as-you-go one.** It is
+called Blaze. It takes the same card as Stripe, in the same sitting, and at this
+school's size it will almost certainly cost **nothing at all** — the free
+allowances do not go away on Blaze, they simply stop being a hard ceiling.
+
+This is a *developer* need rather than a parish one, and it is listed here only
+because the parish holds the card. Nothing about children's data or church
+policy turns on it.
+
+**What it is for.** The site has no server at all today. Everything happens in
+the family's browser, which is cheap and simple and has one real limit: some
+work cannot be trusted to a browser, and some cannot be done fast enough in one.
+Two things are already waiting on it:
+
+- **The teachers' roster.** To show how many lessons each child has finished,
+  the page currently asks the database to count them, one child at a time. That
+  is fine for the tens of students the school has. Measured at a thousand
+  students it takes over twenty seconds to draw, which is not a usable page. A
+  small piece of server code would keep a running total instead, and the roster
+  would open instantly at any size.
+- **Deleting a family's data properly.** `docs/DELETION.md` is a checklist a
+  person follows by hand in the console. A scheduled job could do it reliably,
+  which is what item 3 will need once a retention period exists.
+
+**If it is deferred:** nothing breaks. The roster stays fast enough for the
+school as it is, and deletions stay manual. This becomes urgent only if the
+school grows past a few hundred students, and it is here now because it costs
+one minute and one card while somebody is already entering card details.
+
+**One caution worth stating plainly.** Blaze means the bill *can* rise above
+zero, which the free plan makes impossible. The protection is a budget alert —
+set a cap (say $10 a month) when the account is created and Google will email
+before anything approaches it. Ask for that at the same time.
 
 ### A second question that arrives with the first
 

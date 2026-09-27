@@ -93,10 +93,16 @@ and `tests/stats.test.mjs` fails if `allUsers()` or `myStudents()` calls
 `progressOf()` again.
 
 Do not "optimise" this by denormalising `lessonsCompleted`/`averageScore` onto
-the user document either. There is no server — Spark, no Cloud Functions — so
-the writer would be the student's own browser, and a roster a child can edit
-cannot do the one job it has: showing a teacher who is NOT learning. Those field
-names are on `lockedFields()` in the rules to keep that door shut.
+the user document either — **until there is a server to write them.** With no
+server the writer would be the student's own browser, and a roster a child can
+edit cannot do the one job it has: showing a teacher who is NOT learning. Those
+field names are on `lockedFields()` in the rules to keep that door shut; admin
+credentials bypass rules, so a Cloud Function needs no change to that list.
+
+That Cloud Function is the destination, and `docs/PERFORMANCE.md` has the
+measurements that say when: the roster draws in ~2s at 200 students and ~24s at
+1,000, on localhost with no network. Fine now, not fine later. It needs a Blaze
+account, which is asked of the parish in `docs/CHURCH-DECISIONS.md` §1.
 
 **Study hours come from playback, not a stopwatch.** Seconds bank only while the player
 reports PLAYING. Never replace this with a timer that runs regardless.
