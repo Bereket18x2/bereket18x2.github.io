@@ -563,6 +563,24 @@ a  { color: var(--accent-text); }
   padding: 12px 15px; border-radius: var(--r);
   font-size: .88rem; color: var(--text-dim);
 }
+/* A note that has become more pressing — today, the expiry reminder in
+   its last two days.
+
+   DELIBERATELY NOT RED. Crimson is what this project uses for a child's
+   failure and for an error, and a family's money is neither; a parent
+   who cannot pay this week is not somebody to alarm, and the child is
+   often reading over their shoulder. So the escalation is more of the
+   same gold: a heavier rule and a deeper wash, which reads as "look at
+   this" rather than "something is wrong".
+
+   It exists because `.note` ALREADY carries a 3px gold border, so the
+   obvious escalation — adding one — changes nothing at all and the two
+   states render identically. */
+.note--soon {
+  border-inline-start-width: 6px;
+  background: rgb(var(--accent-rgb) / .14);
+  color: var(--text);
+}
 .note--red { border-inline-start-color: var(--danger-text); background: rgb(var(--danger-rgb) / .09); }
 
 /* ---------- video + quiz ---------- */

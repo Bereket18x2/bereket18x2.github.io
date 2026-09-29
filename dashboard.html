@@ -29,13 +29,13 @@
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=10",
-    "@lessons":    "./assets/js/lessons.js?v=10",
-    "@validators": "./assets/js/validators.js?v=10",
-    "@coverage":   "./assets/js/coverage.js?v=10",
-    "@stats":      "./assets/js/stats.js?v=10",
-    "@config":     "./assets/js/config.js?v=10",
-    "@certificate":"./assets/js/certificate.js?v=10"
+    "@store":      "./assets/js/store.js?v=11",
+    "@lessons":    "./assets/js/lessons.js?v=11",
+    "@validators": "./assets/js/validators.js?v=11",
+    "@coverage":   "./assets/js/coverage.js?v=11",
+    "@stats":      "./assets/js/stats.js?v=11",
+    "@config":     "./assets/js/config.js?v=11",
+    "@certificate":"./assets/js/certificate.js?v=11"
   }
 }
 </script>
@@ -71,6 +71,37 @@
     <div id="payNote" class="note note--red" style="display:none;margin-bottom:22px">
       ክፍያ አልተፈጸመም። ከመጀመሪያው ነጻ ትምህርት በስተቀር ሌሎቹ ተቆልፈዋል።
       <a href="billing.html" style="display:inline-block;margin-top:8px">ክፍያ ፈጽም →</a>
+    </div>
+
+    <!-- ---------------- the term is ending ----------------
+         A NOTE, NOT A DEMAND. It says how long is left, when it ends and
+         who to speak to, and it stops there. No red, no clock counting
+         down, no button that looks like a bill.
+
+         A parent who cannot pay this week is not somebody to pressure,
+         and the child is very often reading the screen over their
+         shoulder — which is why this sits below the greeting rather
+         than across the top of it, and why the wording addresses the
+         term rather than the money. Zema families never see it: they
+         paid once, flat, and there is nothing to renew. -->
+    <div id="expirySoon" class="note" style="display:none;margin-bottom:22px">
+      <div class="between" style="align-items:flex-start;gap:12px">
+        <div style="flex:1;min-width:0">
+          <b id="expirySoonLead"></b>
+          <span id="expirySoonWhen" class="muted small"></span>
+          <p class="muted small" style="margin:8px 0 0">
+            መቀጠል ከፈለጉ ክፍያውን ከትምህርት ቤቱ ጋር ያድሱ። ካላደሱም ልጅዎ እስካሁን
+            ያገኘው ውጤት፣ ባጅና የምስክር ወረቀት <b>አይጠፋም</b>።
+          </p>
+          <p class="small" style="margin:8px 0 0">
+            <b id="expiryContactName"></b> ·
+            <a id="expiryContactEmail" href="#"></a> ·
+            <span id="expiryContactPhone"></span>
+          </p>
+        </div>
+        <button class="btn btn--ghost btn--sm" type="button" id="expirySoonClose"
+                aria-label="ዝጋ">✕</button>
+      </div>
     </div>
 
     <!-- A finished term closes NEW lessons. It does not close the account,
@@ -196,10 +227,11 @@
 </main>
 
 <script type="module">
-import { Store, fmtHours, fmtAgo, requireAuth, accessActive, accessExpired } from '@store';
+import { Store, fmtHours, fmtAgo, requireAuth, accessActive, accessExpired,
+         daysUntilExpiry } from '@store';
 import { subjectsFor, lessonsForSubject, lessonsFor, isFree, findLesson } from '@lessons';
-import { TRACKS, hasScores } from '@validators';
-import { PRICING, priceToAddSubjects } from '@config';
+import { TRACKS, hasScores, renews } from '@validators';
+import { PRICING, priceToAddSubjects, CHURCH_CONTACT } from '@config';
 import { certificateSVG, certificateFilename } from '@certificate';
 import { streakFrom, averageScore, completedCount, subjectProgress,
          coverageOfLesson, toDate, toGeez } from '@stats';
@@ -252,6 +284,70 @@ if (u) {
   if (!u.paid) $('payNote').style.display = 'block';
   else if (expired) $('expiryPanel').style.display = 'block';
   if (expired && u.paidUntil) $('expiredWhen').textContent = `(${u.paidUntil} ላይ አብቅቷል።)`;
+
+  /* ---------------- the term is ending ----------------
+
+     Computed from paidUntil, which already exists and is locked by the
+     rules. No new field, and nothing is written anywhere by this.
+
+     THREE STATES, and the third is not this panel: five days is a calm
+     note, two days is the same note carrying a little more weight, and
+     an ended term is the expiryPanel above — which is a different
+     message, because "it is ending" and "it has ended" are different
+     things to tell a family.
+
+     The escalation is a left border in the school's gold, not a colour
+     change. Red is the colour this project uses for a child's failure
+     and for an error, and a family's money is neither. */
+  const ENDING_SOON = 5, ENDING_URGENT = 2;
+  const daysLeft = daysUntilExpiry(u);
+
+  /* Dismissal is keyed to the END DATE, not just to the session. A
+     parent who closes this and then renews gets a new paidUntil, so the
+     key changes and the panel is armed again for the next term instead
+     of staying silently closed forever. sessionStorage, like the lesson
+     question panel: it is a UI preference, not a fact about a family,
+     and it does not belong on their record. */
+  const expiryKey = `fy-expiry-seen-${u.paidUntil || ''}`;
+  const dismissed = () => {
+    try { return sessionStorage.getItem(expiryKey) === '1'; } catch (e) { return false; }
+  };
+
+  /* `renews` rather than a track id, so this file stays ignorant of
+     which courses exist — and so a Zema family, who paid once and flat,
+     is never told that something is about to run out. */
+  if (renews(u.track) && daysLeft !== null && daysLeft <= ENDING_SOON && !dismissed()) {
+    const panel = $('expirySoon');
+
+    /* Ge'ez numerals for the day count: it is a count in Amharic prose,
+       which is exactly the case CLAUDE.md reserves them for. No digits
+       ticking down. */
+    const lead = daysLeft === 0
+      ? 'የትምህርት ጊዜዎ ዛሬ ያበቃል።'
+      : daysLeft === 1
+        ? 'የትምህርት ጊዜዎ ነገ ያበቃል።'
+        : `የትምህርት ጊዜዎ በ${toGeez(daysLeft)} ቀናት ውስጥ ያበቃል።`;
+    $('expirySoonLead').textContent = lead;
+    $('expirySoonWhen').textContent = u.paidUntil ? ` (${u.paidUntil})` : '';
+
+    // one constant drives every mention of how to reach the school
+    $('expiryContactName').textContent = CHURCH_CONTACT.name;
+    $('expiryContactEmail').textContent = CHURCH_CONTACT.email;
+    $('expiryContactEmail').href = 'mailto:' + CHURCH_CONTACT.email;
+    $('expiryContactPhone').textContent = CHURCH_CONTACT.phone;
+
+    /* The only escalation: a heavier rule and a deeper wash in the same
+       gold. NOT a border added on top of `.note`, which already has one
+       — that was the first attempt and it rendered identically to the
+       calm state. Still no red, and still no clock. */
+    if (daysLeft <= ENDING_URGENT) panel.classList.add('note--soon');
+    panel.style.display = 'block';
+
+    $('expirySoonClose').addEventListener('click', () => {
+      panel.style.display = 'none';
+      try { sessionStorage.setItem(expiryKey, '1'); } catch (e) { /* fine */ }
+    });
+  }
 
   /* Remedial support, shown to the parent. A teacher's judgement that a
      child needs extra help is recorded on the child's record, so the

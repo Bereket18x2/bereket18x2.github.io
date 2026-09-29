@@ -37,6 +37,11 @@ export const TRACKS = {
     hasQuizzes: true,
     hasExams: true,
     hasScores: true,
+    /* A three-month term that ENDS and is chosen again — so a family
+       benefits from being told it is ending. Zema is one flat payment,
+       and a reminder that something is about to expire would be telling
+       a Zema parent about a bill that does not exist. */
+    renews: true,
     min: 7,
     max: 13,
     eligibilityAm: 'የቅዱሳት መጻሕፍት ትምህርት ዕድሜያቸው ከ፯ እስከ ፲፫ ዓመት ለሆኑ ልጆች ነው።',
@@ -65,6 +70,7 @@ export const TRACKS = {
     hasQuizzes: false,
     hasExams: false,
     hasScores: false,
+    renews: false,
     min: 7,
     max: null,
     eligibilityAm: 'የዜማ ትምህርት ቤት ከ፯ ዓመት ጀምሮ ለሁሉም ክፍት ነው።',
@@ -186,6 +192,9 @@ export const enrollableTracks = () => Object.values(TRACKS).filter(t => t.enroll
 export const hasScores = (trackId) => TRACKS[trackId]?.hasScores === true;
 export const hasQuizzes = (trackId) => TRACKS[trackId]?.hasQuizzes === true;
 export const hasExams = (trackId) => TRACKS[trackId]?.hasExams === true;
+/* Fails closed: an unknown track does not renew, so a bad track id
+   shows no expiry reminder rather than showing one nobody can act on. */
+export const renews = (trackId) => TRACKS[trackId]?.renews === true;
 
 /* Registration uses this rather than validateTrack: an existing zema
    student is perfectly valid, but a NEW enrolment into a course with no

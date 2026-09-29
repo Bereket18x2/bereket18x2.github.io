@@ -1272,6 +1272,29 @@ export function accessActive(user) {
 
 export const accessExpired = (user) => !!(user && user.paid && !accessActive(user));
 
+/* Whole days from now until access ends, for the reminder on the
+   dashboard. Returns null when there is nothing to count down to —
+   never paid, no end date recorded, an unreadable date, or a term that
+   has already finished (which is a different panel and a different
+   message).
+
+   COUNTED IN WHOLE DAYS, and deliberately not in hours. `paidUntil` is
+   a date, access runs to the end of it, and a parent reading "ends in 2
+   days" and one reading "ends in 38 hours" are being told the same
+   thing with different amounts of pressure. There is no clock here and
+   there should not be one. 0 means it ends today and access is still
+   live; the term has not expired until the day is over. */
+export function daysUntilExpiry(user, now = new Date()) {
+  if (!user || !user.paid || !user.paidUntil) return null;
+  const until = typeof user.paidUntil === 'string'
+    ? new Date(user.paidUntil + 'T23:59:59')
+    : new Date(toMillis(user.paidUntil));
+  if (isNaN(until)) return null;
+  const ms = until.getTime() - now.getTime();
+  if (ms < 0) return null;                       // already over
+  return Math.floor(ms / 86400000);
+}
+
 /* Shown when the policy a parent agreed to is no longer the policy in
    force. They read the new text and agree again, or they sign out —
    there is no third button, because carrying on silently under a policy
