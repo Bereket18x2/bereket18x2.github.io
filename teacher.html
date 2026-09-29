@@ -26,13 +26,13 @@
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=10",
-    "@lessons":    "./assets/js/lessons.js?v=10",
-    "@validators": "./assets/js/validators.js?v=10",
-    "@coverage":   "./assets/js/coverage.js?v=10",
-    "@stats":      "./assets/js/stats.js?v=10",
-    "@config":     "./assets/js/config.js?v=10",
-    "@certificate":"./assets/js/certificate.js?v=10"
+    "@store":      "./assets/js/store.js?v=11",
+    "@lessons":    "./assets/js/lessons.js?v=11",
+    "@validators": "./assets/js/validators.js?v=11",
+    "@coverage":   "./assets/js/coverage.js?v=11",
+    "@stats":      "./assets/js/stats.js?v=11",
+    "@config":     "./assets/js/config.js?v=11",
+    "@certificate":"./assets/js/certificate.js?v=11"
   }
 }
 </script>
@@ -69,6 +69,24 @@
       <div class="panel"><p class="eyebrow">የተመደቡ ተማሪዎች</p><div class="stat" id="kTotal">…</div></div>
       <div class="panel"><p class="eyebrow">በዚህ ሳምንት ገብተዋል</p><div class="stat" id="kActive">…</div></div>
       <div class="panel"><p class="eyebrow">ትኩረት የሚሹ</p><div class="stat" id="kConcern">…</div></div>
+    </div>
+
+    <!-- ---------------- terms ending this week ----------------
+         Named separately rather than left as one more line in the
+         concern column, because it is the one thing on this page a
+         teacher can act on by picking up the phone. A family who knows
+         their መምህር is far more likely to say "we cannot manage it this
+         month" to them than to a banner on a website.
+
+         Hidden entirely when nobody is expiring — an empty panel
+         headed "ending soon" reads as a warning every single week. -->
+    <div class="panel" id="expiringPanel" style="display:none;margin:22px 0;border-inline-start:3px solid var(--accent)">
+      <p class="eyebrow">ሊያበቃ ነው</p>
+      <p class="muted small" style="margin:0 0 12px">
+        በሚቀጥሉት ፯ ቀናት ውስጥ የትምህርት ጊዜያቸው የሚያበቃ ተማሪዎች። ቤተሰቡን የሚያውቁት
+        እርስዎ ነዎትና በአካል ማነጋገሩ ይሻላል። ጊዜው ቢያበቃም ልጁ ያገኘው ነገር አይጠፋም።
+      </p>
+      <div id="expiringList"></div>
     </div>
 
     <!-- Concern-first is the DEFAULT, not a filter someone has to find.
@@ -203,9 +221,9 @@
 
 <script type="module">
 import { Store, fmtHours, fmtAgo, toMillis, requireAuth,
-         accessActive, accessExpired } from '@store';
+         accessActive, accessExpired, daysUntilExpiry } from '@store';
 import { lessonsFor, subjectsFor, subjectById, findLesson } from '@lessons';
-import { TRACKS, hasScores, COMMENT_MAX_CHARS, ANSWER_MAX_CHARS,
+import { TRACKS, hasScores, renews, COMMENT_MAX_CHARS, ANSWER_MAX_CHARS,
          validateAnswer } from '@validators';
 import { PRICING, priceFor, termMonthsFor, addMonths } from '@config';
 import { completedCount, averageScore, streakFrom, toDate } from '@stats';
@@ -269,6 +287,10 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
   }
 
   const WEEK = 86400000 * 7;
+  // seven days: a week is how far ahead a teacher can usefully plan a
+  // conversation, and it is one day longer than the family's own
+  // reminder so a teacher hears about it first
+  const ENDING_WINDOW_DAYS = 7;
 
   /* ---------------- concern ----------------
 
@@ -316,6 +338,17 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
     if (flagged) { score += 2; reasons.push(`${flagged} አጠራጣሪ`); }
     if (s.remedial === true) { score += 1; reasons.push('ተጨማሪ ድጋፍ'); }
 
+    /* Worth ONE point, and no more. A term ending is not a child in
+       difficulty — it is a diary entry — and scoring it like one would
+       push families who are doing perfectly well above children who
+       have stopped turning up. It earns its place on the roster through
+       the panel above, not through this number. */
+    const endsIn = renews(s.track) ? daysUntilExpiry(s) : null;
+    if (endsIn !== null && endsIn <= ENDING_WINDOW_DAYS) {
+      score += 1;
+      reasons.push(endsIn === 0 ? 'ዛሬ ያበቃል' : `በ${endsIn} ቀን ያበቃል`);
+    }
+
     /* ACCEPTANCE 6. A child who asked something and got no reply is
        exactly the quiet disengagement this panel exists to catch — and
        unlike every other line above, this one is a fact about the
@@ -327,7 +360,7 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
     const unanswered = (s.questions || []).filter(q => !q.answer).length;
     if (unanswered) { score += 3; reasons.push(`${unanswered} ያልተመለሰ ጥያቄ`); }
 
-    return { score, reasons, done, total: lessons.length, avg, scored, unanswered };
+    return { score, reasons, done, total: lessons.length, avg, scored, unanswered, endsIn };
   }
 
   const enriched = () => students.map(s => ({ ...s, c: concernOf(s) }));
@@ -352,6 +385,8 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
 
   function render() {
     const rows = enriched().sort(SORTS[$('sortBy').value] || SORTS.concern);
+
+      paintExpiring(rows);
 
     $('kTotal').textContent = students.length;
     $('kActive').textContent = students.filter(s => toMillis(s.lastSeen) > Date.now() - WEEK).length;
@@ -387,6 +422,46 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
         <td><button class="btn btn--ghost btn--sm" data-open="${esc(s.uid)}">ክፈት</button></td>
       </tr>`;
     }).join('');
+  }
+
+  /* Soonest first, and only those actually inside the window. Built as
+     nodes rather than markup: a student's name is text a parent typed. */
+  function paintExpiring(rows) {
+    const due = rows
+      .filter(r => r.c.endsIn !== null && r.c.endsIn <= ENDING_WINDOW_DAYS)
+      .sort((a, b) => a.c.endsIn - b.c.endsIn);
+
+    const panel = $('expiringPanel');
+    const host = $('expiringList');
+    host.textContent = '';
+    if (!due.length) { panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+
+    for (const s of due) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:10px;align-items:baseline;' +
+        'padding:8px 0;border-top:1px solid var(--line)';
+
+      const name = document.createElement('b');
+      name.style.cssText = 'flex:1;min-width:0';
+      name.textContent = s.studentName || '—';
+
+      const when = document.createElement('span');
+      when.className = 'muted small';
+      when.textContent = (s.c.endsIn === 0 ? 'ዛሬ ያበቃል'
+        : s.c.endsIn === 1 ? 'ነገ ያበቃል'
+        : `በ${s.c.endsIn} ቀን ያበቃል`) + (s.paidUntil ? ` · ${s.paidUntil}` : '');
+
+      // straight into the drawer, where payment is confirmed
+      const open = document.createElement('button');
+      open.className = 'btn btn--ghost btn--sm';
+      open.type = 'button';
+      open.dataset.open = s.uid;
+      open.textContent = 'ክፈት';
+
+      row.append(name, when, open);
+      host.appendChild(row);
+    }
   }
 
   $('sortBy').addEventListener('change', render);
@@ -783,10 +858,16 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
   };
   $('dComment').addEventListener('input', paintLeft);
 
-  $('rows').addEventListener('click', (e) => {
+  /* Both lists open the drawer. The expiring panel has its own buttons,
+     and binding only to the table body would have left them dead —
+     which is the sort of thing that looks fine until a teacher clicks
+     one. */
+  const openFromClick = (e) => {
     const btn = e.target.closest('button[data-open]');
     if (btn) openStudent(btn.dataset.open);
-  });
+  };
+  $('rows').addEventListener('click', openFromClick);
+  $('expiringList').addEventListener('click', openFromClick);
   $('dClose').addEventListener('click', () => { $('drawer').style.display = 'none'; open = null; });
 
   $('dPay').addEventListener('click', async () => {
