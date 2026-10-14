@@ -141,5 +141,32 @@ console.log('\nevery page that has a nav loads nav.js');
   check('every brand link asks for the homepage explicitly', notHome, []);
 }
 
+/* GitHub Pages serves 404.html for any path it cannot resolve, at any
+   depth — /nonsense, /a/b/c, a mistyped lesson link. A relative asset
+   path would resolve against the URL that failed and find nothing, so
+   the error page would itself be broken. It is therefore entirely
+   self-contained, and these stop that being "tidied up" later. */
+console.log('\nthe 404 page stands on its own');
+{
+  const notFound = readFileSync(new URL('../404.html', import.meta.url), 'utf8');
+  check('it exists and says something', notFound.length > 400, true);
+  check('no stylesheet link', /<link[^>]+stylesheet/i.test(notFound), false);
+  check('no script at all', /<script/i.test(notFound), false);
+  check('no relative asset path to resolve wrongly',
+    /(src|href)="\.?\/?assets\//.test(notFound), false);
+  check('no external request of any kind',
+    /(src|href)="https?:/.test(notFound), false);
+  // the two ways out are root-absolute, which is correct for a user
+  // page and the only form that works from an unknown depth
+  check('home link is root-absolute', notFound.includes('href="/"'), true);
+  check('and so is the lessons link', notFound.includes('href="/dashboard.html"'), true);
+  check('it is in Amharic', /[ሀ-፿]/.test(notFound), true);
+  /* It says the site is being worked on rather than blaming the
+     visitor — most people here mistyped a link or followed an old one. */
+  check('it says the page is still being built', notFound.includes('በሥራ ላይ ነው'), true);
+  check('and that nothing of theirs is lost', notFound.includes('ምንም አልጠፋም'), true);
+  check('it is not indexed', /name="robots"[^>]*noindex/.test(notFound), true);
+}
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);
