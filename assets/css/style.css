@@ -798,6 +798,253 @@ td.num { font-family: var(--f-util); }
 .faq[open] summary::after { content: '–'; }
 .faq p { padding: 2px 16px 16px; margin: 0; color: var(--text-dim); font-size: .9rem; }
 
+/* ================= the 24-week journey map =================
+   Inserted ABOVE the blanket prefers-reduced-motion rule at the foot
+   of this file on purpose: that rule kills every animation declared
+   here, so none of the ambient motion below needs its own guard.
+   journey-anim.js handles the scripted animations separately, by not
+   creating them at all.
+
+   Only transform and opacity are animated. The one exception is the
+   road's stroke-dashoffset, which is the draw-on effect and has no
+   transform equivalent. Nothing here animates a layout property.
+   =========================================================== */
+
+/* Month region hues. Each is a tint of an existing token rather than a
+   new colour, so the six regions sit inside the manuscript palette
+   instead of beside it. Colour is never the only cue — every band
+   carries its emoji and its name, and every station its aria-label. */
+.jm-band { fill: rgb(var(--accent-rgb) / .05); stroke: rgb(var(--accent-rgb) / .16); }
+.jm-band--sprout { fill: rgb(var(--success-rgb) / .07); stroke: rgb(var(--success-rgb) / .22); }
+.jm-band--ember  { fill: rgb(var(--danger-rgb) / .06);  stroke: rgb(var(--danger-rgb) / .20); }
+.jm-band--star   { fill: rgb(var(--accent-rgb) / .09);  stroke: rgb(var(--accent-rgb) / .28); }
+.jm-band--scroll { fill: rgb(var(--accent-rgb) / .05);  stroke: rgb(var(--accent-rgb) / .18); }
+.jm-band--gem    { fill: rgb(var(--success-rgb) / .06); stroke: rgb(var(--success-rgb) / .20); }
+.jm-band--crown  { fill: rgb(var(--accent-rgb) / .11);  stroke: rgb(var(--accent-rgb) / .34); }
+
+.jm-band-label {
+  font-family: var(--f-body); font-size: 15px; font-weight: 600;
+  fill: var(--text-dim);
+}
+
+.jm-wrap { position: relative; overflow: hidden; padding: 10px; }
+.jm-map { position: relative; z-index: 1; }
+.jm-svg { display: block; width: 100%; height: auto; }
+
+/* ---- the road ---- */
+.jm-road { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+/* The road ahead. Was var(--line), which is a hairline colour meant
+   for borders and all but vanished on the dark ground — a child could
+   not see where the journey went. Now a visible dashed track: present
+   enough to read as "the way ahead", dashed so it still reads as
+   not-yet-walked without relying on brightness alone. */
+.jm-road--base {
+  stroke: var(--text-dim); stroke-width: 9; opacity: .5;
+  stroke-dasharray: 2 16; stroke-linecap: round;
+}
+.jm-road--walked { stroke: var(--accent); stroke-width: 10; opacity: .9; }
+
+/* ---- stations ---- */
+.jm-station { cursor: pointer; }
+.jm-disc { fill: var(--surface-2); stroke: var(--line); stroke-width: 2; }
+.jm-station.is-done .jm-disc {
+  fill: rgb(var(--success-rgb) / .9); stroke: var(--success-text);
+}
+.jm-station.is-current .jm-disc { fill: var(--accent); stroke: var(--accent-hi); }
+.jm-station.is-exam .jm-disc { stroke-width: 3; }
+
+.jm-check { fill: none; stroke: var(--accent-ink); stroke-width: 3; stroke-linecap: round; }
+.jm-week-num {
+  font-family: var(--f-util); font-size: 15px; font-weight: 700;
+  fill: var(--accent-ink); text-anchor: middle;
+}
+/* A locked station must be clearly VISIBLE and clearly LOCKED. The
+   first version dimmed the whole thing to .55 opacity, which made it
+   invisible rather than locked. Now the disc keeps full opacity with a
+   dashed border — the padlock and the dashes carry "not yet", and the
+   contrast carries "here is what is coming". */
+.jm-lock { fill: none; stroke: var(--text); stroke-width: 1.8; opacity: .85; }
+.jm-shackle { fill: none; stroke: var(--text); stroke-width: 1.8; opacity: .85; }
+.jm-station:not(.is-done):not(.is-current) .jm-disc {
+  fill: var(--surface-2); stroke: var(--text-dim);
+  stroke-width: 2; stroke-dasharray: 4 3; opacity: 1;
+}
+
+/* The pennant lives in the flag lane journey-map.js reserves beneath
+   each card's label band, on the gutter side of its own station — so
+   it cannot reach a month title however the layout reflows. */
+.jm-flagpole { stroke: var(--text); stroke-width: 2.5; stroke-linecap: round; opacity: .9; }
+.jm-flag { fill: var(--danger); stroke: var(--danger-text); stroke-width: .5; }
+
+/* Keyboard focus only.
+
+   An SVG <g tabindex="0"> takes focus on mousedown in Chrome, and the
+   UA's default focus ring drew a white box on the first station as
+   soon as anyone clicked it. :focus-visible alone is not enough —
+   the default outline still paints — so :focus is explicitly cleared
+   first and the ring is put back only for :focus-visible. */
+.jm-station:focus { outline: none; }
+.jm-station:focus-visible {
+  outline: 2px solid var(--accent-text); outline-offset: 3px; border-radius: 50%;
+}
+
+/* ---- ambient motion ---- */
+.jm-pulse {
+  fill: none; stroke: var(--accent); stroke-width: 2; opacity: .5;
+  transform-box: fill-box; transform-origin: center;
+  animation: jm-pulse 2.2s ease-out infinite;
+}
+@keyframes jm-pulse {
+  0%   { transform: scale(.72); opacity: .6; }
+  70%  { transform: scale(1.18); opacity: 0; }
+  100% { transform: scale(1.18); opacity: 0; }
+}
+
+/* A four-point star set OUTSIDE the disc. The first version put a
+   2px gold circle on the rim of the green circle, which read as a
+   rendering artefact rather than as a mark of achievement. */
+.jm-star {
+  fill: var(--accent-hi);
+  transform-box: fill-box; transform-origin: center;
+  animation: jm-twinkle 3s ease-in-out infinite;
+}
+@keyframes jm-twinkle {
+  0%, 100% { opacity: .25; transform: scale(.7); }
+  50%      { opacity: 1;   transform: scale(1.15); }
+}
+
+/* ---- the traveller ---- */
+.jm-head { fill: var(--accent-hi); }
+.jm-body { fill: none; stroke: var(--accent-hi); stroke-width: 3; stroke-linecap: round; }
+.jm-lantern { fill: var(--accent); opacity: .95; }
+.jm-lantern-arm { stroke: var(--accent-hi); stroke-width: 2; stroke-linecap: round; }
+.jm-hair { fill: none; stroke: var(--accent-hi); stroke-width: 3; stroke-linecap: round; }
+.jm-skirt { fill: var(--accent-hi); }
+.jm-traveller.is-idling .jm-head,
+.jm-traveller.is-idling .jm-body,
+.jm-traveller.is-idling .jm-hair,
+.jm-traveller.is-idling .jm-skirt,
+.jm-traveller.is-idling .jm-lantern,
+.jm-traveller.is-idling .jm-lantern-arm { animation: jm-bob 2.6s ease-in-out infinite; }
+/* The bob is applied to the CHILDREN rather than the group, because the
+   group's transform is the traveller's position on the road and an
+   animation there would fight it. */
+@keyframes jm-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+/* ---- drifting clouds ---- */
+.jm-clouds { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.jm-clouds i {
+  position: absolute; display: block;
+  width: 120px; height: 36px; border-radius: 999px;
+  background: rgb(var(--sheen-rgb) / .04);
+  animation: jm-drift 48s linear infinite;
+}
+.jm-clouds i:nth-child(1) { top: 8%;  left: -30%; }
+.jm-clouds i:nth-child(2) { top: 44%; left: -45%; width: 180px; animation-duration: 67s; }
+.jm-clouds i:nth-child(3) { top: 76%; left: -35%; width: 90px;  animation-duration: 55s; }
+@keyframes jm-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(260%, 0, 0); }
+}
+
+/* ---- the summary panel ---- */
+.jm-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start;
+}
+.jm-bar {
+  margin-top: 10px; height: 10px; border-radius: 999px;
+  background: var(--surface-2); overflow: hidden;
+}
+.jm-bar > i { display: block; height: 100%; background: var(--accent); transform: scaleX(0); }
+
+.jm-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.jm-badge {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 1.15rem;
+  background: var(--surface-2); border: 1px solid var(--line);
+  /* A locked badge is greyed AND flattened, so it is not distinguished
+     from an earned one by colour alone. */
+  filter: grayscale(1); opacity: .45;
+}
+.jm-badge.is-earned {
+  filter: none; opacity: 1;
+  border-color: var(--accent); background: rgb(var(--accent-rgb) / .14);
+}
+
+.jm-cheer {
+  margin: 16px 0 0; font-family: var(--f-display); font-size: 1.05rem;
+  color: var(--accent-text);
+}
+
+.jm-topics { margin: 0; padding-inline-start: 20px; line-height: 1.9; }
+
+/* ---- confetti ---- */
+/* Starts below the first card's label band, so falling particles
+   never cross a month title. */
+.jm-confetti-host {
+  position: absolute; inset: 72px 0 0 0; pointer-events: none; z-index: 3; overflow: hidden;
+}
+.jm-confetti {
+  position: absolute; top: 0; display: block;
+  width: 8px; height: 12px; border-radius: 2px; opacity: 0;
+}
+.jm-confetti--c1 { background: var(--accent); }
+.jm-confetti--c2 { background: var(--danger); }
+.jm-confetti--c3 { background: var(--success); }
+.jm-confetti--c4 { background: var(--accent-hi); }
+
+/* The map link on the dashboard. A whole-panel anchor, so the tap
+   target is the card rather than three words inside it. */
+.jm-dash-link {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 18px; text-decoration: none; color: var(--text);
+  border-inline-start: 3px solid var(--accent);
+}
+.jm-dash-link:hover { background: rgb(var(--accent-rgb) / .07); }
+.jm-dash-link__icon { font-size: 1.6rem; flex: none; }
+.jm-dash-link__go { margin-inline-start: auto; color: var(--accent-text); font-size: 1.2rem; }
+
+/* ---- the continue button, Zema cards, the gender choice ---- */
+.jm-continue { border-inline-start: 3px solid var(--accent); }
+.jm-continue__btn { font-size: 1rem; padding: 13px 22px; white-space: nowrap; }
+
+/* A button for a video that does not exist yet. Looks like a button so
+   the shape of the page does not jump when the lesson lands, reads as
+   unavailable, and is not clickable. */
+.btn.is-disabled {
+  opacity: .6; cursor: not-allowed; pointer-events: none;
+  border-style: dashed;
+}
+
+.jm-zema-card { display: flex; flex-direction: column; align-items: flex-start; }
+.jm-gender { border-inline-start: 3px solid var(--accent); }
+
+/* ---- the finish line ---- */
+.jm-finish {
+  position: fixed; inset: 0; z-index: 60;
+  display: grid; place-items: center; padding: 24px;
+  background: rgb(var(--shadow-rgb) / .72);
+}
+.jm-finish__inner {
+  background: var(--surface); border: 1px solid var(--accent);
+  border-radius: 14px; padding: 32px 26px; text-align: center;
+  max-width: 420px; width: 100%;
+}
+.jm-finish__badge { font-size: 3.4rem; line-height: 1; margin-bottom: 10px; }
+
+/* ---- phones ---- */
+@media (max-width: 720px) {
+  .jm-stats { grid-template-columns: 1fr; gap: 16px; }
+  .jm-band-label { font-size: 13px; }
+  /* The vertical serpentine is taller than a screen; it scrolls inside
+     its own panel so the page around it does not grow a second
+     scrollbar. */
+  .jm-wrap { padding: 6px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }

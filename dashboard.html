@@ -29,13 +29,13 @@
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=11",
-    "@lessons":    "./assets/js/lessons.js?v=11",
-    "@validators": "./assets/js/validators.js?v=11",
-    "@coverage":   "./assets/js/coverage.js?v=11",
-    "@stats":      "./assets/js/stats.js?v=11",
-    "@config":     "./assets/js/config.js?v=11",
-    "@certificate":"./assets/js/certificate.js?v=11"
+    "@store":      "./assets/js/store.js?v=12",
+    "@lessons":    "./assets/js/lessons.js?v=12",
+    "@validators": "./assets/js/validators.js?v=12",
+    "@coverage":   "./assets/js/coverage.js?v=12",
+    "@stats":      "./assets/js/stats.js?v=12",
+    "@config":     "./assets/js/config.js?v=12",
+    "@certificate":"./assets/js/certificate.js?v=12"
   }
 }
 </script>
@@ -54,6 +54,7 @@
     </a>
     <div class="nav-links">
       <a href="dashboard.html" aria-current="page">ትምህርቶች</a>
+      <a href="journey.html">ጉዞዬ</a>
       <a href="admin.html" id="adminLink" style="display:none">አስተዳደር</a>
       <a href="#" id="out">ውጣ</a>
       <button class="theme-toggle" type="button" id="themeToggle" aria-label="ገጽታ ቀይር"></button>
@@ -157,6 +158,18 @@
         <p style="margin:0" id="seen">…</p>
       </div>
     </div>
+
+    <!-- The map, offered where a child is already looking. The nav
+         link alone is easy to miss on a phone, where the nav collapses
+         above the fold. -->
+    <a class="panel jm-dash-link" href="journey.html">
+      <span class="jm-dash-link__icon" aria-hidden="true">🗺️</span>
+      <span>
+        <b>ጉዞዬን ተመልከቱ</b>
+        <span class="muted small" style="display:block">እስካሁን የተጓዙትን መንገድና ያገኙትን ባጆች ይመልከቱ።</span>
+      </span>
+      <span class="jm-dash-link__go" aria-hidden="true">→</span>
+    </a>
 
     <div class="between" style="margin-bottom:14px">
       <h2 style="margin:0;font-size:1.25rem">ትምህርቶች</h2>

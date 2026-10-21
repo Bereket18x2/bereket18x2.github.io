@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ጉዞዬ — ፍኖተ ያሬድ</title>
+<script>
+  try {
+    var t = localStorage.getItem('eotc.theme');
+    if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'day' : 'night';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'night'); }
+</script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="shortcut icon" href="assets/favicon.svg">
+<meta property="og:title" content="ጉዞዬ — ፍኖተ ያሬድ">
+<meta property="og:description" content="የ፳፬ ሳምንት የትምህርት ጉዞ — እስካሁን የተጓዙትን ይመልከቱ።">
+<meta property="og:url" content="https://bereket18x2.github.io/journey.html">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="am_ET">
+<script type="importmap">
+{
+  "imports": {
+    "@store":        "./assets/js/store.js?v=12",
+    "@lessons":      "./assets/js/lessons.js?v=12",
+    "@validators":   "./assets/js/validators.js?v=12",
+    "@stats":        "./assets/js/stats.js?v=12",
+    "@config":       "./assets/js/config.js?v=12",
+    "@journey":      "./assets/js/journey.js?v=12",
+    "@journey-map":  "./assets/js/journey-map.js?v=12",
+    "@journey-anim": "./assets/js/journey-anim.js?v=12"
+  }
+}
+</script>
+</head>
+<body class="sky">
+<canvas id="sky"></canvas>
+
+<div class="harag"></div>
+<div class="shell">
+  <nav class="nav">
+    <a class="brand" href="index.html#home">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/><circle cx="12" cy="12" r="3.2"/>
+      </svg>
+      ፍኖተ ያሬድ
+    </a>
+    <div class="nav-links">
+      <a href="dashboard.html">ትምህርቶች</a>
+      <a href="journey.html" aria-current="page">ጉዞዬ</a>
+      <a href="admin.html" id="adminLink" style="display:none">አስተዳደር</a>
+      <a href="#" id="out">ውጣ</a>
+      <button class="theme-toggle" type="button" id="themeToggle" aria-label="ገጽታ ቀይር"></button>
+    </div>
+  </nav>
+</div>
+
+<main class="shell section">
+  <p class="eyebrow">የእኔ ጉዞ</p>
+  <h1 style="font-size:1.9rem;margin:0 0 6px" id="jmHeading">እስካሁን የተጓዝኩት</h1>
+  <p class="muted small" id="jmIntro" style="margin:0 0 22px">እየተጫነ…</p>
+
+  <div id="jmError" class="note note--red" style="display:none;margin-bottom:20px"></div>
+
+  <!-- ---------------- the Zema view ----------------
+       Shown instead of the road for a child learning chant. No weeks,
+       no percentage, no badges — see the note in the module script. -->
+  <div id="jmZema" style="display:none">
+    <div class="panel" style="margin-bottom:18px">
+      <p class="eyebrow">የእኔ የዜማ ትምህርቶች</p>
+      <p class="muted small" style="margin:0">
+        ዜማ በመስማትና በመድገም የሚማር ነው። የየራስዎን ፍጥነት ይከተሉ — ቸኩሎ መጨረስ አያስፈልግም።
+      </p>
+    </div>
+    <div id="jmZemaList" class="grid-2"></div>
+  </div>
+
+  <!-- ---------------- the Bible road ---------------- -->
+  <div id="jmBody" style="display:none">
+
+    <!-- The one button a child should never have to hunt for. -->
+    <div class="panel jm-continue" id="jmContinueWrap" style="margin-bottom:18px;display:none">
+      <div class="between" style="gap:14px">
+        <div style="min-width:0">
+          <p class="eyebrow" style="margin:0 0 4px" id="jmContinueEyebrow"></p>
+          <h2 style="margin:0;font-size:1.1rem" id="jmContinueTitle"></h2>
+        </div>
+        <span id="jmContinueSlot"></span>
+      </div>
+    </div>
+
+    <div class="panel" id="jmSummary" style="margin-bottom:20px">
+      <div class="jm-stats">
+        <div>
+          <p class="eyebrow" style="margin:0 0 6px">የተጠናቀቁ ሳምንታት</p>
+          <div class="stat"><span id="jmDone">0</span><small> / ፳፬</small></div>
+          <div class="jm-bar" role="progressbar" aria-valuemin="0" aria-valuemax="24"
+               aria-valuenow="0" id="jmBar" aria-label="የጉዞ እድገት">
+            <i id="jmBarFill"></i>
+          </div>
+          <p class="muted small" style="margin:8px 0 0"><span id="jmPct">0%</span> ተጠናቋል</p>
+        </div>
+        <div>
+          <p class="eyebrow" style="margin:0 0 6px">ባጆች</p>
+          <div class="jm-badges" id="jmBadges"></div>
+        </div>
+        <div>
+          <p class="eyebrow" style="margin:0 0 6px">ተከታታይ ቀናት</p>
+          <div class="stat" id="jmStreak">0</div>
+          <p class="muted small" style="margin:8px 0 0" id="jmStreakNote"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="between" style="margin-bottom:14px;gap:10px">
+      <h2 style="margin:0;font-size:1.15rem">የጉዞ ካርታ</h2>
+      <div class="row" style="min-width:0;flex:1;justify-content:flex-end">
+        <label class="muted small" for="jmSubject">እይታ፦</label>
+        <select class="input" id="jmSubject" style="width:auto;max-width:100%;padding:6px 10px">
+          <option value="">ጠቅላላ እድገት</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="panel jm-wrap">
+      <div class="jm-clouds" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div id="jmMap" class="jm-map"></div>
+      <div class="jm-confetti-host" id="jmConfetti" aria-hidden="true"></div>
+    </div>
+
+    <div class="panel" id="jmCard" style="display:none;margin-top:16px"
+         role="region" aria-live="polite" aria-label="የሳምንቱ ዝርዝር">
+      <div class="between" style="align-items:flex-start">
+        <div>
+          <p class="eyebrow" style="margin:0 0 4px" id="jmCardMonth"></p>
+          <h3 style="margin:0 0 6px;font-size:1.1rem" id="jmCardTitle"></h3>
+        </div>
+        <button class="btn btn--ghost btn--sm" type="button" id="jmCardClose" aria-label="ዝጋ">✕</button>
+      </div>
+      <p class="muted small" style="margin:0 0 10px" id="jmCardStatus"></p>
+      <div id="jmCardVideo" style="margin:0 0 14px"></div>
+      <ul class="muted small jm-topics" id="jmCardTopics"></ul>
+    </div>
+
+    <!-- The gender choice. Offered once, declinable, stored only on
+         this device — see the note in journey.js. -->
+    <div class="panel jm-gender" id="jmGender" style="display:none;margin-top:16px">
+      <p class="eyebrow" style="margin:0 0 6px">ሰላምታ</p>
+      <p class="muted small" style="margin:0 0 12px">
+        በትክክለኛው አነጋገር እንድናበረታታችሁ፣ የትኛው ይስማማል?
+      </p>
+      <div class="row">
+        <button class="btn btn--ghost btn--sm" type="button" data-gender="boy">ወንድ</button>
+        <button class="btn btn--ghost btn--sm" type="button" data-gender="girl">ሴት</button>
+        <button class="btn btn--ghost btn--sm" type="button" data-gender="neutral">አሁን አይደለም</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="jm-finish" id="jmFinish" hidden role="dialog" aria-modal="true"
+     aria-labelledby="jmFinishTitle">
+  <div class="jm-finish__inner">
+    <div class="jm-finish__badge" id="jmFinishBadge">🏆</div>
+    <p class="eyebrow">ጉዞው ተጠናቋል</p>
+    <h2 id="jmFinishTitle" style="font-size:1.8rem;margin:0 0 10px">ሙሉ መንፈሳዊ ጀግና</h2>
+    <p class="muted small" style="margin:0 0 18px" id="jmFinishLine"></p>
+    <div class="row" style="justify-content:center">
+      <a class="btn btn--gold" href="dashboard.html#earned">የምስክር ወረቀት</a>
+      <button class="btn btn--ghost" type="button" id="jmFinishClose">ዝጋ</button>
+    </div>
+  </div>
+</div>
+
+<div class="harag harag--thin"></div>
+<footer class="footer">
+  <div class="shell">ፍኖተ ያሬድ · <a href="privacy.html">የግላዊነት መመሪያ</a></div>
+</footer>
+
+<script type="module">
+import { Store, requireAuth } from '@store';
+import { SUBJECTS, subjectsFor, lessonsForSubject, findLesson } from '@lessons';
+import { hasScores } from '@validators';
+import { isLessonComplete, streakFrom } from '@stats';
+import {
+  WEEKS, MONTHS, TOTAL_WEEKS, GENDER_KEY,
+  monthOfWeek, isExamWeek, examLabel, weeksCompleted, completedSet,
+  currentWeek, badgesEarned, allComplete, celebrate, heroLine, imperative,
+  demoWeeks, demoCompletedSet
+} from '@journey';
+import { renderMap, pointOf, fractionOfWeek } from '@journey-map';
+import { drawRoad, walkAlong, idle, confetti, popBadge, countUp, growBar, reducedMotion }
+  from '@journey-anim';
+
+const $ = id => document.getElementById(id);
+const fail = (msg) => {
+  $('jmIntro').style.display = 'none';
+  $('jmError').textContent = msg;
+  $('jmError').style.display = 'block';
+};
+
+/* Demo mode is resolved before anything touches Firestore, and when it
+   is on, Firestore is never consulted. It cannot write anywhere. */
+const demo = demoWeeks(location.search);
+
+/* The gender form, read from this device only. There is no such field
+   on the account and this does not add one. */
+const readGender = () => {
+  try { return localStorage.getItem(GENDER_KEY) || ''; } catch (e) { return ''; }
+};
+let form = readGender() || 'neutral';
+
+let u = null;
+if (demo === null) {
+  u = await requireAuth();   // no requirePaid: an ended term keeps its record
+}
+
+if (demo !== null || u) {
+  try { await paint(); }
+  catch (e) { fail('ካርታውን መጫን አልተቻለም። ግንኙነትዎን አረጋግጠው ገጹን እንደገና ይክፈቱ።'); }
+}
+
+async function paint() {
+  let progress = {};
+  let streak = 0;
+  const track = demo === null ? u.track : 'bible';
+
+  if (demo === null) {
+    if (u.role === 'admin') $('adminLink').style.display = '';
+    Store.touch();
+    progress = await Store.progressOf(u.uid).catch(() => ({}));
+    streak = streakFrom(progress);
+  }
+
+  const scored = hasScores(track);
+  const complete = (entry) => isLessonComplete(entry, { scored });
+
+  /* ---------------- the video button ----------------
+
+     Links to lesson.html?id=…, the site's own player. Deliberate
+     rather than linking the YouTube URL directly: the player is what
+     records watch time and coverage, and a raw link would lose that
+     AND hand out the unlisted address. The video stays exactly where
+     it is hosted. */
+  function videoButton(lesson, { big = true } = {}) {
+    const live = !!(lesson && lesson.youtube);
+    const el = document.createElement(live ? 'a' : 'span');
+    el.className = 'btn ' + (live ? 'btn--gold' : 'btn--ghost is-disabled') +
+                   (big ? ' jm-continue__btn' : ' btn--sm');
+    if (live) {
+      el.href = `lesson.html?id=${encodeURIComponent(lesson.id)}`;
+      el.textContent = `▶ ቪዲዮ ${imperative('look', form)}`;
+    } else {
+      el.textContent = 'ቪዲዮ በቅርቡ ይመጣል';
+      el.setAttribute('aria-disabled', 'true');
+    }
+    return el;
+  }
+
+  /* ---------------- Zema ----------------
+
+     A chant student does not get the road, and that is a judgement
+     about the subject rather than about effort.
+
+     Zema is learned by listening and repeating, over as long as it
+     takes. Parents buy subjects individually at one flat price rather
+     than a dated term, so there is no 24-week schedule to measure
+     against — a weekly percentage would be measuring a child against a
+     calendar nobody agreed to. And the failure mode is not a wrong
+     number: it is a child who sings a little worse each week because
+     the page keeps implying they are behind.
+
+     So: their subjects, and a way back into each one. No weeks, no
+     percentage, no badges, no streak, nothing to lose. */
+  if (track === 'zema') {
+    $('jmHeading').textContent = 'የእኔ የዜማ ትምህርቶች';
+    $('jmIntro').textContent = 'የመረጧቸው ትምህርቶች እዚህ አሉ።';
+
+    const chosen = Array.isArray(u.selectedSubjects) ? u.selectedSubjects : [];
+    const mine = subjectsFor('zema').filter(s => chosen.includes(s.id));
+    const host = $('jmZemaList');
+    host.textContent = '';
+
+    if (!mine.length) {
+      const p = document.createElement('p');
+      p.className = 'muted small';
+      p.textContent = 'ገና ትምህርት አልተመረጠም። ትምህርት ለመጨመር ከትምህርት ቤቱ ጋር ይነጋገሩ።';
+      host.appendChild(p);
+    }
+    for (const s of mine) {
+      const lessons = lessonsForSubject(s.id);
+      const next = lessons.find(l => !complete(progress[l.id]));
+
+      const card = document.createElement('div');
+      card.className = 'panel jm-zema-card';
+      const h = document.createElement('h3');
+      h.style.cssText = 'margin:0 0 6px;font-size:1.05rem';
+      h.textContent = s.am;
+      const note = document.createElement('p');
+      note.className = 'muted small';
+      note.style.margin = '0 0 12px';
+      note.textContent = lessons.length
+        ? (next ? 'የሚቀጥለው ትምህርት ዝግጁ ነው።' : 'ሁሉንም ትምህርቶች አዳምጠዋል።')
+        : 'ትምህርቶቹ በቅርቡ ይጫናሉ።';
+      card.append(h, note, videoButton(next, { big: false }));
+      host.appendChild(card);
+    }
+    $('jmZema').style.display = 'block';
+    return;
+  }
+
+  let subjectId = '';
+  const subjectLessons = (id) => new Set(lessonsForSubject(id).map(l => l.id));
+
+  const computeState = () => {
+    if (demo !== null) return { done: demo, completed: demoCompletedSet(demo) };
+    if (!subjectId) {
+      return { done: weeksCompleted(progress, complete), completed: completedSet(progress, complete) };
+    }
+    const mine = subjectLessons(subjectId);
+    const okay = (w) => {
+      const ls = w.lessons.filter(id => mine.has(id));
+      return ls.length > 0 && ls.every(id => complete(progress[id]));
+    };
+    const set = new Set(WEEKS.filter(okay).map(w => w.week));
+    let run = 0;
+    for (const w of WEEKS) { if (!set.has(w.week)) break; run++; }
+    return { done: run, completed: set };
+  };
+
+  // the first unwatched lesson of a week, or its first lesson
+  const lessonForWeek = (week) => {
+    const w = WEEKS.find(x => x.week === week);
+    if (!w || !w.lessons.length) return null;
+    const unfinished = w.lessons.find(id => !complete(progress[id]));
+    return findLesson(unfinished || w.lessons[0]) || null;
+  };
+
+  const build = async (first) => {
+    const { done, completed } = computeState();
+    const cur = currentWeek(done);
+
+    $('jmIntro').textContent = demo !== null
+      ? `የሙከራ እይታ — ${done} ሳምንት እንደተጠናቀቀ ተደርጎ ይታያል።`
+      : 'እስካሁን የሄድከውን መንገድ እነሆ።';
+
+    $('jmBar').setAttribute('aria-valuenow', String(done));
+    $('jmBar').setAttribute('aria-valuetext', `${done} ከ ${TOTAL_WEEKS} ሳምንት`);
+    $('jmStreak').textContent = demo === null ? streak : '—';
+    $('jmStreakNote').textContent = streak > 0 ? 'በተከታታይ የተማሩባቸው ቀናት' : 'ዛሬ ትምህርት ይጀምሩ';
+
+    const nextLesson = lessonForWeek(cur);
+    $('jmContinueWrap').style.display = 'block';
+    $('jmContinueEyebrow').textContent = `ሳምንት ${cur}`;
+    $('jmContinueTitle').textContent = nextLesson ? nextLesson.title : 'የዚህ ሳምንት ትምህርት';
+    const slot = $('jmContinueSlot');
+    slot.textContent = '';
+    slot.appendChild(videoButton(nextLesson));
+
+    const host = $('jmBadges');
+    host.textContent = '';
+    const earned = new Set(badgesEarned(done));
+    for (const m of MONTHS) {
+      const got = earned.has(m.n);
+      const b = document.createElement('span');
+      b.className = 'jm-badge' + (got ? ' is-earned' : '');
+      b.title = `${m.am} — ${got ? 'ተገኝቷል' : 'ገና አልተገኘም'}`;
+      b.setAttribute('aria-label', b.title);
+      b.textContent = m.emoji;
+      host.appendChild(b);
+      if (got && first) popBadge(b);
+    }
+
+    const map = renderMap($('jmMap'), { completed, current: cur, avatar: form });
+    wireStations(map, completed, cur);
+
+    if (first) {
+      countUp($('jmDone'), done);
+      countUp($('jmPct'), Math.round(done / TOTAL_WEEKS * 100), { suffix: '%' });
+      growBar($('jmBarFill'), done / TOTAL_WEEKS);
+    } else {
+      $('jmDone').textContent = String(done);
+      $('jmPct').textContent = `${Math.round(done / TOTAL_WEEKS * 100)}%`;
+      $('jmBarFill').style.transform = `scaleX(${done / TOTAL_WEEKS})`;
+    }
+
+    /* Fractions measured on the drawn path, so the traveller lands ON
+       the road: the rows are straight and the turns are curved, so a
+       station's index does not track its distance along the line. */
+    const fracOf = (w) => fractionOfWeek(map.walked, map.pts, w);
+    await drawRoad(map.walked, fracOf(cur));
+
+    const seenKey = `fy-journey-seen-${demo !== null ? 'demo' : (u && u.uid) || ''}`;
+    let seen = 0;
+    try { seen = Number(localStorage.getItem(seenKey)) || 0; } catch (e) { /* fine */ }
+
+    if (first && done > seen && done > 0) {
+      walkAlong(map.avatar, map.walked, fracOf(Math.max(1, seen)), fracOf(cur))
+        .then(() => confetti($('jmConfetti')))
+        .then(() => idle(map.avatar));
+      $('jmIntro').textContent = celebrate(done, form);
+    } else {
+      const p = pointOf(map.pts, cur);
+      map.avatar.setAttribute('transform', `translate(${p.x} ${p.y})`);
+      idle(map.avatar);
+    }
+    try { localStorage.setItem(seenKey, String(done)); } catch (e) { /* fine */ }
+
+    if (allComplete(done) && first) showFinish();
+  };
+
+  function wireStations(map, completed, cur) {
+    const open = (week) => {
+      const w = WEEKS.find(x => x.week === week);
+      const m = monthOfWeek(week);
+      const isDone = completed.has(week);
+      const unlocked = isDone || week === cur;
+      $('jmCard').style.display = 'block';
+      $('jmCardMonth').textContent = m ? `${m.emoji} ${m.am}` : '';
+      $('jmCardTitle').textContent =
+        `ሳምንት ${week}` + (isExamWeek(week) ? ` — ${examLabel(week)}` : '');
+      $('jmCardStatus').textContent =
+        isDone ? '✓ ተጠናቋል' : week === cur ? '• አሁን ያሉበት' : '🔒 ገና አልተከፈተም';
+
+      // an unlocked week offers its video; a locked one says nothing,
+      // because a button a child cannot use is a tease
+      const vid = $('jmCardVideo');
+      vid.textContent = '';
+      if (unlocked) vid.appendChild(videoButton(lessonForWeek(week), { big: false }));
+
+      const list = $('jmCardTopics');
+      list.textContent = '';
+      for (const s of SUBJECTS.filter(x => x.track === 'bible')) {
+        const li = document.createElement('li');
+        const topic = (w && w.topics[s.id]) || '';
+        li.textContent = topic ? `${s.am} — ${topic}` : s.am;
+        list.appendChild(li);
+      }
+      $('jmCard').scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
+    };
+
+    for (const [week, el] of map.stationEls) {
+      el.addEventListener('click', () => open(week));
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(week); }
+      });
+    }
+  }
+
+  $('jmCardClose').addEventListener('click', () => { $('jmCard').style.display = 'none'; });
+
+  const sel = $('jmSubject');
+  for (const s of SUBJECTS.filter(x => x.track === 'bible')) {
+    const o = document.createElement('option');
+    o.value = s.id; o.textContent = s.am;
+    sel.appendChild(o);
+  }
+  sel.addEventListener('change', () => { subjectId = sel.value; build(false); });
+
+  /* The gender choice: offered once, declinable, never nagged. */
+  if (!readGender()) $('jmGender').style.display = 'block';
+  for (const b of $('jmGender').querySelectorAll('[data-gender]')) {
+    b.addEventListener('click', () => {
+      form = b.dataset.gender;
+      try { localStorage.setItem(GENDER_KEY, form); } catch (e) { /* fine */ }
+      $('jmGender').style.display = 'none';
+      build(false);
+    });
+  }
+
+  function showFinish() {
+    const once = 'fy-journey-finish';
+    try { if (sessionStorage.getItem(once) === '1') return; } catch (e) { /* fine */ }
+    $('jmFinishLine').textContent = heroLine(form);
+    $('jmFinish').hidden = false;
+    popBadge($('jmFinishBadge'));
+    confetti($('jmConfetti'), { count: 48 });
+    $('jmFinishClose').focus();
+    try { sessionStorage.setItem(once, '1'); } catch (e) { /* fine */ }
+  }
+  $('jmFinishClose').addEventListener('click', () => { $('jmFinish').hidden = true; });
+
+  let t = null;
+  addEventListener('resize', () => {
+    clearTimeout(t);
+    t = setTimeout(() => build(false), 180);
+  });
+
+  $('jmBody').style.display = 'block';
+  await build(true);
+}
+</script>
+<script src="assets/js/sky.js" defer></script>
+<script src="assets/js/theme.js" defer></script>
+<script src="assets/js/nav.js" defer></script>
+</body>
+</html>
