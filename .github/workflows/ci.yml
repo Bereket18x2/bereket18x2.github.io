@@ -1,0 +1,44 @@
+name: Verify website and Firestore security
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, improve/security-reliability-ui-2026-11]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  static-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run pure JavaScript regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in tests/*.test.mjs; do
+            echo "::group::$f"
+            node "$f"
+            echo "::endgroup::"
+          done
+  firestore-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install Firestore emulator test tools
+        working-directory: tools
+        run: npm install --no-audit --no-fund
+      - name: Verify Firestore permissions against emulator
+        working-directory: tools
+        run: npm run test:rules
