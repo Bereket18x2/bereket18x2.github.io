@@ -230,6 +230,12 @@ if (u && !L) {
   $('num').textContent = L.num;
   $('title').textContent = L.title;
   $('summary').textContent = L.summary;
+  if (L.draft === true) {
+    const draftNote = document.createElement('p');
+    draftNote.className = 'note small';
+    draftNote.textContent = 'ይህ ትምህርት ረቂቅ ነው፤ የመምህሩ ግምገማና የጥያቄዎች ማረጋገጫ ገና አልተጠናቀቀም።';
+    $('summary').insertAdjacentElement('afterend', draftNote);
+  }
   if (isFree(L.id)) $('freeBadge').style.display = 'inline-block';
 
   /* Zema is listen-and-learn: its lessons carry no questions at all, so the
