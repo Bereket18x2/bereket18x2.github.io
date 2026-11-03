@@ -41,6 +41,7 @@
 </script>
 </head>
 <body class="sky">
+<a class="skip-link" href="#main-content">ወደ ዋና ይዘት ይሂዱ / Skip to content</a>
 <canvas id="sky"></canvas>
 
 <div class="harag"></div>
@@ -62,7 +63,7 @@
   </nav>
 </div>
 
-<main class="shell section">
+<main id="main-content" class="shell section">
   <div id="authedContent" style="display:none">
 
     <p class="eyebrow">የተማሪ ገጽ</p>
@@ -135,6 +136,7 @@
       <div class="panel" id="avgPanel">
         <p class="eyebrow">አማካይ ውጤት</p>
         <div class="stat" id="avg">…<small>%</small></div>
+        <p class="muted small" style="margin:10px 0 0">ይህ የልምምድ ውጤት ነው፤ በመምህር አልተረጋገጠም።</p>
       </div>
       <div class="panel">
         <p class="eyebrow">አጠቃላይ የጥናት ሰዓት</p>
@@ -181,6 +183,11 @@
          Deliberately NOT gated on paid or paidUntil. A term that has
          finished closes new lessons; it never takes back a certificate
          that was earned. -->
+    <div class="panel" id="reviewPanel" style="display:none;margin-top:26px">
+      <p class="eyebrow">የመምህር የተለየ ግምገማ</p>
+      <h2 style="font-size:1.25rem">በመምህር የተረጋገጡ ትምህርቶች</h2>
+      <div id="reviewRows"></div>
+    </div>
     <div class="panel" id="earnedPanel" style="display:none;margin-top:26px">
       <p class="eyebrow">ያገኙት</p>
       <p class="muted small" style="margin:0 0 14px" id="earnedIntro"></p>
@@ -246,6 +253,7 @@ import { subjectsFor, lessonsForSubject, lessonsFor, isFree, findLesson } from '
 import { TRACKS, hasScores, renews } from '@validators';
 import { PRICING, priceToAddSubjects, CHURCH_CONTACT } from '@config';
 import { certificateSVG, certificateFilename } from '@certificate';
+import { verifiedSubject } from './assets/js/reviews.js';
 import { streakFrom, averageScore, completedCount, subjectProgress,
          coverageOfLesson, toDate, toGeez } from '@stats';
 
@@ -262,6 +270,28 @@ if (u) {
 
   const track = TRACKS[u.track];
   const progress = u.progress || {};
+  // A failed review read must never authorize a certificate download.
+  const reviews = await Store.reviewsOf(u.uid).catch(() => null);
+  if (reviews && Object.values(reviews).some(r => r?.verified === true)) {
+    $('reviewPanel').style.display = 'block';
+    const host = $('reviewRows');
+    const methods = {
+      oral: 'የቃል ጥያቄ',
+      'live-observation': 'ቀጥተኛ ምልከታ',
+      'work-reviewed': 'የተማሪ ሥራ ግምገማ'
+    };
+    for (const review of Object.values(reviews)) {
+      if (review?.verified !== true) continue;
+      const item = document.createElement('p');
+      item.className = 'muted small';
+      item.style.cssText = 'padding:12px 0;border-bottom:1px solid var(--line);margin:0';
+      const name = findLesson(review.lessonId)?.title || review.lessonId;
+      const grade = review.of > 0 ? ` · ${review.score}/${review.of}` : '';
+      const date = toDate(review.reviewedAt)?.toLocaleDateString() || '';
+      item.textContent = `${name} · ${review.reviewedByName || 'መምህር'} · ${methods[review.method] || 'ግምገማ'}${grade}${date ? ' · ' + date : ''}`;
+      host.append(item);
+    }
+  }
 
   /* What the parent actually enrolled in decides which subjects appear,
      and therefore which lessons are counted. An account created before
@@ -420,6 +450,7 @@ if (u) {
 
     const bits = [];
     if (isFree(l.id)) bits.push('ነጻ ቅምሻ');
+    if (l.draft === true) bits.push('ለግምገማ የቀረበ ረቂቅ');
     if (cov !== null) bits.push(`${cov}% ታይቷል`);
     if (when) bits.push(when.toLocaleDateString());
     const detail = bits.length ? ` · ${bits.join(' · ')}` : '';
@@ -469,17 +500,30 @@ if (u) {
      as an SVG. Nothing here consults `active` or `paidUntil`: a family
      whose term has ended keeps every certificate their child earned, and
      can still download it. That is the whole point of the panel. */
-  const earned = subjects
-    .map(s => ({ subject: s, sp: subjectProgress(progress, lessonsForSubject(s.id), opts) }))
-    .filter(e => e.sp.complete);
+  const subjectStates = subjects.map(s => {
+    const material = lessonsForSubject(s.id);
+    return {
+      subject: s,
+      sp: subjectProgress(progress, material, opts),
+      verified: reviews !== null && verifiedSubject(material, reviews, { scored })
+    };
+  });
+  const earned = subjectStates.filter(e => e.sp.complete && e.verified);
+  const awaitingReview = subjectStates.filter(e => e.sp.complete && !e.verified);
 
-  if (earned.length) {
+  if (earned.length || awaitingReview.length) {
     $('earnedPanel').style.display = 'block';
     $('earnedIntro').textContent = expired
       ? 'የትምህርት ጊዜው ቢጠናቀቅም ልጅዎ ያገኘው ይህ ነው። ማውረድና ማተም ይችላሉ።'
-      : 'ልጅዎ ያጠናቀቃቸው ትምህርቶች። የምስክር ወረቀቱን ማውረድና ማተም ይችላሉ።';
+      : 'በመምህር የተረጋገጡ ትምህርቶች። ማረጋገጫ የሚወርደው ከራሱ ግምገማ በኋላ ብቻ ነው።';
 
     const host = $('earnedList');
+    if (awaitingReview.length) {
+      const note = document.createElement('p');
+      note.className = 'note small';
+      note.textContent = 'ትምህርቱ ተጠናቋል። ማረጋገጫ የሚሰጠው መምህር በቀጥታ ከገመገመ በኋላ ብቻ ነው።';
+      host.append(note);
+    }
     for (const { subject, sp } of earned) {
       const row = document.createElement('div');
       row.className = 'between';

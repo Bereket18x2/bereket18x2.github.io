@@ -1,7 +1,11 @@
 # Payments
 
 Status: **card payment is not connected.** The billing UI is built, the gate
-is enforced, and `paid` is set by a teacher from `admin.html`. This document
+is enforced, and `paid` is set by authorized staff through the teacher or
+admin interface. In the current implementation, the payment access grant,
+receipt and running total are committed in a single Firestore batch; an
+individual batch is atomic, but external payment deduplication and reconciliation
+must still be performed manually. This document
 describes what automatic payment would take, and what is honestly true about
 the lock in the meantime.
 

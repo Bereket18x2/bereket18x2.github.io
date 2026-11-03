@@ -229,6 +229,31 @@ await t('a teacher request cannot arrive with a paid term', () =>
   assertFails(setDoc(doc(AS('newbie'), 'users/newbie'),
     { ...newTeacher, paidUntil: '2099-01-01' })));
 
+console.log('\n=== registration rejects forged eligibility and pricing region ===');
+for (const [label, patch] of [
+  ['underage Bible enrolment', { age: 6 }],
+  ['overage Bible enrolment', { age: 14 }],
+  ['underage Zema enrolment', { track: 'zema', age: 6, selectedSubjects: ['wudase'] }],
+  ['cross-track subject', { selectedSubjects: ['wudase'] }],
+  ['unknown subject', { selectedSubjects: ['amestu', 'not-a-subject'] }],
+  ['country-region mismatch', { country: 'US', region: 'ETHIOPIA' }],
+  ['invented country', { country: 'QQ', region: 'OTHER' }]
+]) {
+  await seed();
+  await t(label + ' is refused', () =>
+    assertFails(setDoc(doc(AS('newbie'), 'users/newbie'), { ...newStudent, ...patch })));
+}
+await seed();
+await t('valid Zema enrollment is accepted', () =>
+  assertSucceeds(setDoc(doc(AS('newbie'), 'users/newbie'), {
+    ...newStudent, age: 21, track: 'zema', selectedSubjects: ['wudase']
+  })));
+await seed();
+await t('a teacher cannot request a made-up subject', () =>
+  assertFails(setDoc(doc(AS('newbie'), 'users/newbie'), {
+    ...newTeacher, teachesSubjects: ['nonexistent']
+  })));
+
 console.log('\n=== acceptance 5: a student cannot buy themselves anything ===');
 await seed();
 for (const [field, value] of [
@@ -914,6 +939,12 @@ await t('a student cannot post a negative score', () =>
 await t('a valid score is accepted', () =>
   assertSucceeds(setDoc(doc(AS('student1'), 'users/student1/progress/l2'),
     { done: true, score: 3, of: 3 })));
+await t('a recorded score cannot be overwritten with a lower score', () =>
+  assertFails(setDoc(doc(AS('student1'), 'users/student1/progress/l1'),
+    { done: true, score: 1, of: 3 }, { merge: true })));
+await t('a zero-length quiz cannot be recorded', () =>
+  assertFails(setDoc(doc(AS('student1'), 'users/student1/progress/l5'),
+    { done: true, score: 0, of: 0 })));
 await t('coverage above 1 is refused', () =>
   assertFails(setDoc(doc(AS('student1'), 'users/student1/progress/l3'),
     { videoCompleted: true, coverage: 4 })));
@@ -926,17 +957,74 @@ await t('a student cannot write another student\'s progress', () =>
   assertFails(setDoc(doc(AS('student1'), 'users/student2/progress/l1'),
     { done: true, score: 3, of: 3 })));
 
+console.log('\n=== independent staff lesson reviews ===');
+await seed();
+const RE = (id, writer = 'teacher1') => ({
+  lessonId: id, verified: true, score: 3, of: 4, method: 'oral',
+  reviewedAt: serverTimestamp(), reviewedBy: writer, reviewedByName: 'Memhir D'
+});
+await t('student CANNOT create a staff review', () =>
+  assertFails(setDoc(doc(AS('student1'), 'users/student1/reviews/am1'), RE('am1'))));
+await t('unassigned teacher CANNOT review another student', () =>
+  assertFails(setDoc(doc(AS('teacher2'), 'users/student1/reviews/am1'), RE('am1', 'teacher2'))));
+await t('assigned teacher CAN record independent review', () =>
+  assertSucceeds(setDoc(doc(AS('teacher1'), 'users/student1/reviews/am1'), RE('am1'))));
+await t('parent CAN read the child review', () =>
+  assertSucceeds(getDoc(doc(AS('student1'), 'users/student1/reviews/am1'))));
+await t('another parent CANNOT read the review', () =>
+  assertFails(getDoc(doc(AS('student2'), 'users/student1/reviews/am1'))));
+await t('another teacher CANNOT read the review', () =>
+  assertFails(getDoc(doc(AS('teacher2'), 'users/student1/reviews/am1'))));
+await t('reviews cannot be rewritten by teachers', () =>
+  assertFails(updateDoc(doc(AS('teacher1'), 'users/student1/reviews/am1'), { score: 4 })));
+await t('review cannot be deleted by a parent', () =>
+  assertFails(deleteDoc(doc(AS('student1'), 'users/student1/reviews/am1'))));
+await t('reviewer UID is bound to Firebase auth', () =>
+  assertFails(setDoc(doc(AS('teacher1'), 'users/student1/reviews/am2'), RE('am2', 'admin1'))));
+await t('review timestamp is bound to server clock', () =>
+  assertFails(setDoc(doc(AS('teacher1'), 'users/student1/reviews/am2'), {
+    ...RE('am2'), reviewedAt: new Date('2020-01-01')
+  })));
+await t('review cannot include unsolicited child private data', () =>
+  assertFails(setDoc(doc(AS('teacher1'), 'users/student1/reviews/am2'), {
+    ...RE('am2'), homeAddress: 'unexpected'
+  })));
+await t('admin CAN record a review', () =>
+  assertSucceeds(setDoc(doc(AS('admin1'), 'users/student1/reviews/am3'),
+    RE('am3', 'admin1'))));
+
+console.log('\n=== privacy constraints on self-profile updates ===');
+await seed();
+await t('student owner cannot store arbitrary extra data', () =>
+  assertFails(updateDoc(doc(AS('student1'), 'users/student1'), { homeAddress: 'private' })));
+await t('student owner can still correct the child name', () =>
+  assertSucceeds(updateDoc(doc(AS('student1'), 'users/student1'), { studentName: 'New Name' })));
+await t('student owner cannot change age outside the track range', () =>
+  assertFails(updateDoc(doc(AS('student1'), 'users/student1'), { age: 18 })));
+await t('student owner cannot forge account last-seen timestamp', () =>
+  assertFails(updateDoc(doc(AS('student1'), 'users/student1'), { lastSeen: new Date('2020-01-01') })));
+
 console.log('\n=== deletion requests ===');
 await seed();
 await t('a parent can raise their own request', () =>
   assertSucceeds(setDoc(doc(AS('student1'), 'deletionRequests/student1'),
-    { uid: 'student1', status: 'pending', requestedAt: serverTimestamp() })));
+    { uid: 'student1', email: EMAIL('student1'), reason: '', status: 'pending', requestedAt: serverTimestamp() })));
 await t('a parent cannot pre-mark it handled', () =>
   assertFails(setDoc(doc(AS('student1'), 'deletionRequests/student1'),
-    { uid: 'student1', status: 'done', requestedAt: serverTimestamp() })));
+    { uid: 'student1', email: EMAIL('student1'), reason: '', status: 'done', requestedAt: serverTimestamp() })));
 await t('a parent cannot raise one for someone else', () =>
   assertFails(setDoc(doc(AS('student1'), 'deletionRequests/student2'),
-    { uid: 'student2', status: 'pending', requestedAt: serverTimestamp() })));
+    { uid: 'student2', email: EMAIL('student1'), reason: '', status: 'pending', requestedAt: serverTimestamp() })));
+await t('a parent CANNOT inject extra personal fields in a deletion request', () =>
+  assertFails(setDoc(doc(AS('student2'), 'deletionRequests/student2'), {
+    uid: 'student2', email: EMAIL('student2'), reason: '', status: 'pending',
+    requestedAt: serverTimestamp(), homeAddress: 'bad'
+  })));
+await t('a deletion request must use the signed-in parent email', () =>
+  assertFails(setDoc(doc(AS('student2'), 'deletionRequests/student2'), {
+    uid: 'student2', email: EMAIL('student1'), reason: '', status: 'pending',
+    requestedAt: serverTimestamp()
+  })));
 await t('a parent cannot mark their own request done', () =>
   assertFails(updateDoc(doc(AS('student1'), 'deletionRequests/student1'), { status: 'done' })));
 await t('an admin can mark it done', () =>
