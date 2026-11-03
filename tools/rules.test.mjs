@@ -997,7 +997,7 @@ console.log('\n=== privacy constraints on self-profile updates ===');
 await seed();
 await t('student owner cannot store arbitrary extra data', () =>
   assertFails(updateDoc(doc(AS('student1'), 'users/student1'), { homeAddress: 'private' })));
-await t('student owner can still correct their child's name', () =>
+await t('student owner can still correct the child name', () =>
   assertSucceeds(updateDoc(doc(AS('student1'), 'users/student1'), { studentName: 'New Name' })));
 await t('student owner cannot change age outside the track range', () =>
   assertFails(updateDoc(doc(AS('student1'), 'users/student1'), { age: 18 })));
