@@ -183,6 +183,11 @@
          Deliberately NOT gated on paid or paidUntil. A term that has
          finished closes new lessons; it never takes back a certificate
          that was earned. -->
+    <div class="panel" id="reviewPanel" style="display:none;margin-top:26px">
+      <p class="eyebrow">የመምህር የተለየ ግምገማ</p>
+      <h2 style="font-size:1.25rem">በመምህር የተረጋገጡ ትምህርቶች</h2>
+      <div id="reviewRows"></div>
+    </div>
     <div class="panel" id="earnedPanel" style="display:none;margin-top:26px">
       <p class="eyebrow">ያገኙት</p>
       <p class="muted small" style="margin:0 0 14px" id="earnedIntro"></p>
@@ -267,6 +272,26 @@ if (u) {
   const progress = u.progress || {};
   // A failed review read must never authorize a certificate download.
   const reviews = await Store.reviewsOf(u.uid).catch(() => null);
+  if (reviews && Object.values(reviews).some(r => r?.verified === true)) {
+    $('reviewPanel').style.display = 'block';
+    const host = $('reviewRows');
+    const methods = {
+      oral: 'የቃል ጥያቄ',
+      'live-observation': 'ቀጥተኛ ምልከታ',
+      'work-reviewed': 'የተማሪ ሥራ ግምገማ'
+    };
+    for (const review of Object.values(reviews)) {
+      if (review?.verified !== true) continue;
+      const item = document.createElement('p');
+      item.className = 'muted small';
+      item.style.cssText = 'padding:12px 0;border-bottom:1px solid var(--line);margin:0';
+      const name = findLesson(review.lessonId)?.title || review.lessonId;
+      const grade = review.of > 0 ? ` · ${review.score}/${review.of}` : '';
+      const date = toDate(review.reviewedAt)?.toLocaleDateString() || '';
+      item.textContent = `${name} · ${review.reviewedByName || 'መምህር'} · ${methods[review.method] || 'ግምገማ'}${grade}${date ? ' · ' + date : ''}`;
+      host.append(item);
+    }
+  }
 
   /* What the parent actually enrolled in decides which subjects appear,
      and therefore which lessons are counted. An account created before
