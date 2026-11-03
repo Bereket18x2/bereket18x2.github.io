@@ -229,6 +229,31 @@ await t('a teacher request cannot arrive with a paid term', () =>
   assertFails(setDoc(doc(AS('newbie'), 'users/newbie'),
     { ...newTeacher, paidUntil: '2099-01-01' })));
 
+console.log('\n=== registration rejects forged eligibility and pricing region ===');
+for (const [label, patch] of [
+  ['underage Bible enrolment', { age: 6 }],
+  ['overage Bible enrolment', { age: 14 }],
+  ['underage Zema enrolment', { track: 'zema', age: 6, selectedSubjects: ['wudase'] }],
+  ['cross-track subject', { selectedSubjects: ['wudase'] }],
+  ['unknown subject', { selectedSubjects: ['amestu', 'not-a-subject'] }],
+  ['country-region mismatch', { country: 'US', region: 'ETHIOPIA' }],
+  ['invented country', { country: 'ZZ', region: 'OTHER' }]
+]) {
+  await seed();
+  await t(label + ' is refused', () =>
+    assertFails(setDoc(doc(AS('newbie'), 'users/newbie'), { ...newStudent, ...patch })));
+}
+await seed();
+await t('valid Zema enrollment is accepted', () =>
+  assertSucceeds(setDoc(doc(AS('newbie'), 'users/newbie'), {
+    ...newStudent, age: 21, track: 'zema', selectedSubjects: ['wudase']
+  })));
+await seed();
+await t('a teacher cannot request a made-up subject', () =>
+  assertFails(setDoc(doc(AS('newbie'), 'users/newbie'), {
+    ...newTeacher, teachesSubjects: ['nonexistent']
+  })));
+
 console.log('\n=== acceptance 5: a student cannot buy themselves anything ===');
 await seed();
 for (const [field, value] of [
