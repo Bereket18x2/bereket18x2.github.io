@@ -939,6 +939,12 @@ await t('a student cannot post a negative score', () =>
 await t('a valid score is accepted', () =>
   assertSucceeds(setDoc(doc(AS('student1'), 'users/student1/progress/l2'),
     { done: true, score: 3, of: 3 })));
+await t('a recorded score cannot be overwritten with a lower score', () =>
+  assertFails(setDoc(doc(AS('student1'), 'users/student1/progress/l1'),
+    { done: true, score: 1, of: 3 }, { merge: true })));
+await t('a zero-length quiz cannot be recorded', () =>
+  assertFails(setDoc(doc(AS('student1'), 'users/student1/progress/l5'),
+    { done: true, score: 0, of: 0 })));
 await t('coverage above 1 is refused', () =>
   assertFails(setDoc(doc(AS('student1'), 'users/student1/progress/l3'),
     { videoCompleted: true, coverage: 4 })));
