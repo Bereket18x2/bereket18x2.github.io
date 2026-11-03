@@ -5,8 +5,8 @@
 ## 1. Verify the code changes
 
 - [ ] Review the complete diff against `main` and approve the UI, copy and workflow changes.
-- [ ] Run every `tests/*.test.mjs` suite in Node; fix all failures.
-- [ ] Run `cd tools && npm install && npm run test:rules`; fix every failed allow/deny assertion.
+- [ ] Confirm GitHub Actions `static-tests` succeeds on the final pull-request commit (including HTML syntax checks).
+- [ ] Confirm GitHub Actions `firestore-rules` succeeds on the final pull-request commit (including staff-review and privacy rules).
 - [ ] Confirm that registration accepts correct US/ET country and region pairs, Bible ages 7–13, Zema ages 7+, and only subjects within the chosen track.
 - [ ] Confirm browser-side changes cannot bypass Firestore eligibility checks, and teacher requests cannot assign unrecognized subjects.
 - [ ] Test failure to create the Firestore profile after Firebase Auth creation; verify clean rollback or a documented recovery path when rollback also fails.
@@ -30,13 +30,13 @@
 - [ ] Replace the draft instructor name, lesson description and questions with approved content written or reviewed by an actual teacher.
 - [ ] Publish enough lessons to match what the marketing and payment pages promise; do not sell empty courses.
 - [ ] Verify each uploaded recording, lesson duration and playback availability.
-- [ ] Decide how practice grades become staff-reviewed evidence before official certificates are issued.
+- [ ] Independently test the teacher-review form with permitted and forbidden accounts; only staff-reviewed, non-draft lessons may unlock participation certificates.
 - [ ] Secure parish approval for certificate wording, names and titles.
 
 ## 4. Children's data and operations — must be decided externally
 
 - [ ] Obtain qualified legal review of parental consent and children's privacy requirements where families reside.
-- [ ] Approve retention/deletion timelines and staff procedures for children's records, teacher comments, questions and receipts.
+- [ ] Approve retention/deletion timelines and staff procedures for children's records, staff reviews, comments, questions and receipts.
 - [ ] Confirm who controls the Firebase project and billing account, and who may act as administrator.
 - [ ] Decide payment ownership, reconciliation, refunds and whether a verified Stripe integration is appropriate.
 - [ ] Confirm the parish-approved regional pricing, displayed currency conversions, and current payment instructions.
