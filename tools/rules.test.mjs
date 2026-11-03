@@ -969,7 +969,7 @@ await t('unassigned teacher CANNOT review another student', () =>
   assertFails(setDoc(doc(AS('teacher2'), 'users/student1/reviews/am1'), RE('am1', 'teacher2'))));
 await t('assigned teacher CAN record independent review', () =>
   assertSucceeds(setDoc(doc(AS('teacher1'), 'users/student1/reviews/am1'), RE('am1'))));
-await t('parent CAN read their child's review', () =>
+await t('parent CAN read the child review', () =>
   assertSucceeds(getDoc(doc(AS('student1'), 'users/student1/reviews/am1'))));
 await t('another parent CANNOT read the review', () =>
   assertFails(getDoc(doc(AS('student2'), 'users/student1/reviews/am1'))));
