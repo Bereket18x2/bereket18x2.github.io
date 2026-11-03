@@ -31,7 +31,7 @@ import {
    a freshly-fetched store.js pull a stale config.js, which is exactly
    the staleness the cache-bust exists to prevent. */
 import { firebaseConfig, CONSENT_VERSION, countryByCode } from '@config';
-import { subjectsFor } from '@lessons';
+import { subjectsFor, findLesson } from '@lessons';
 import { validateName, validateAge, validateEnrollableTrack, validatePassword,
          validateEmail, validateComment, validateCountry, validateQuestion,
          validateAnswer, TRACKS, isStaff }
@@ -349,6 +349,49 @@ export const Store = {
     catch (e) { fail(e); }
     snaps.forEach((d) => { out[d.id] = d.data(); });
     return out;
+  },
+
+  /* Staff reviews are a distinct, tightly-scoped collection. Browser
+     practice scores NEVER count as staff-reviewed attainment. */
+  async reviewsOf(uid) {
+    const out = {};
+    let snaps;
+    try { snaps = await getDocs(collection(db, 'users', uid, 'reviews')); }
+    catch (e) { fail(e); }
+    snaps.forEach(d => { out[d.id] = d.data(); });
+    return out;
+  },
+
+  async recordReview(uid, lessonId, { score = 0, of = 0, method = 'live-observation' } = {}) {
+    const me = await this.current();
+    if (!isStaff(me && me.role)) {
+      throw new Error('የመምህር ግምገማ መመዝገብ ለተፈቀደላቸው መምህራን ብቻ ነው።');
+    }
+    const lesson = findLesson(lessonId);
+    if (!lesson || lesson.draft === true) {
+      throw new Error('ትምህርቱ አልተጠናቀቀም፤ የረቂቅ ትምህርት ግምገማ አይመዘገብም።');
+    }
+    if (!['oral', 'live-observation', 'work-reviewed'].includes(method)) {
+      throw new Error('ትክክለኛ የግምገማ መንገድ ይምረጡ።');
+    }
+    if (!Number.isInteger(score) || !Number.isInteger(of) || of < 0 ||
+        of > 100 || score < 0 || score > of ||
+        (lesson.questions?.length > 0 ? of === 0 : score !== 0 || of !== 0)) {
+      throw new Error('ትክክለኛ የመምህር ውጤት ይግቡ።');
+    }
+    const data = {
+      lessonId,
+      verified: true,
+      score,
+      of,
+      method,
+      reviewedAt: serverTimestamp(),
+      reviewedBy: me.uid,
+      reviewedByName: me.fullName || me.email || 'መምህር'
+    };
+    try { await setDoc(doc(db, 'users', uid, 'reviews', lessonId), data); }
+    catch (e) { fail(e); }
+    return true;
   },
 
   /* Admin only — the rules reject this for everyone else, which is the
