@@ -587,8 +587,10 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
     meta.textContent = 'እየተጫነ…';
 
     const who = open.uid;
-    let progress;
-    try { progress = await Store.progressOf(who); }
+    let progress, reviews;
+    try {
+      [progress, reviews] = await Promise.all([Store.progressOf(who), Store.reviewsOf(who)]);
+    }
     catch (e) {
       meta.textContent = 'የትምህርት ሂደቱን ማንበብ አልተቻለም።';
       return;
@@ -650,7 +652,97 @@ if (me && (me.role === 'teacher' || me.role === 'admin')) {
         flag.textContent = 'አጠራጣሪ';
         row.appendChild(flag);
       }
+      const review = reviews[l.id];
+      if (review?.verified === true) {
+        const tag = document.createElement('span');
+        tag.className = 'pill pill--done';
+        tag.textContent = scored
+          ? `መምህር: ${review.score}/${review.of}`
+          : 'በመምህር ተረጋግጧል';
+        row.appendChild(tag);
+      }
       host.appendChild(row);
+
+      if (!review?.verified && l.draft !== true) {
+        const details = document.createElement('details');
+        details.className = 'panel';
+        details.style.cssText = 'margin:8px 0 14px;padding:12px 16px';
+        const summary = document.createElement('summary');
+        summary.style.cursor = 'pointer';
+        summary.textContent = 'የመምህር የተለየ ግምገማ መዝግብ';
+        details.append(summary);
+        const form = document.createElement('form');
+        form.style.cssText = 'display:grid;gap:10px;padding-top:12px';
+        const explanation = document.createElement('p');
+        explanation.className = 'muted small';
+        explanation.textContent = 'የተማሪውን የአሳሽ ውጤት አይቅዱ። በራስዎ ግምገማ ከተረጋገጠ ብቻ ይመዝግቡ።';
+        form.append(explanation);
+
+        const methodLabel = document.createElement('label');
+        methodLabel.textContent = 'የግምገማ ዘዴ';
+        const method = document.createElement('select');
+        method.className = 'input';
+        for (const [value, label] of [
+          ['oral', 'የቃል ጥያቄ'],
+          ['live-observation', 'በቀጥታ ምልከታ'],
+          ['work-reviewed', 'የተማሪው ሥራ ግምገማ']
+        ]) {
+          const option = document.createElement('option');
+          option.value = value; option.textContent = label;
+          method.append(option);
+        }
+        methodLabel.append(method); form.append(methodLabel);
+
+        const scoredLesson = scored && Array.isArray(l.questions) && l.questions.length > 0;
+        const grade = [];
+        if (scoredLesson) {
+          for (const [labelText, val, min] of [
+            ['በመምህር የተሰጠ ነጥብ', '0', '0'],
+            ['ጠቅላላ ነጥብ', String(l.questions.length), '1']
+          ]) {
+            const label = document.createElement('label');
+            label.textContent = labelText;
+            const input = document.createElement('input');
+            input.className = 'input';
+            input.type = 'number'; input.min = min; input.max = '100';
+            input.step = '1'; input.required = true; input.value = val;
+            label.append(input); form.append(label); grade.push(input);
+          }
+        }
+
+        const confirmation = document.createElement('label');
+        confirmation.className = 'consent-row';
+        const checked = document.createElement('input');
+        checked.type = 'checkbox'; checked.required = true;
+        confirmation.append(checked, document.createTextNode('ራሴ ግምገማውን እንዳደረግሁ አረጋግጣለሁ።'));
+        form.append(confirmation);
+        const submit = document.createElement('button');
+        submit.type = 'submit'; submit.className = 'btn btn--gold btn--sm';
+        submit.textContent = 'ግምገማውን መዝግብ';
+        form.append(submit);
+        const message = document.createElement('p');
+        message.className = 'muted small';
+        message.setAttribute('role', 'status');
+        form.append(message);
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          if (!checked.checked || !confirm('ራስዎ ገምግመው አረጋግጠዋል? መዝገቡ በአሳሽ አይቀየርም።')) return;
+          submit.disabled = true;
+          try {
+            await Store.recordReview(who, l.id, {
+              score: scoredLesson ? Number(grade[0].value) : 0,
+              of: scoredLesson ? Number(grade[1].value) : 0,
+              method: method.value
+            });
+            message.textContent = 'ግምገማው ተመዝግቧል።';
+            await paintProgress();
+          } catch (error) {
+            message.textContent = error.message || 'ማረጋገጫው አልተመዘገበም።';
+            submit.disabled = false;
+          }
+        });
+        details.append(form); host.append(details);
+      }
     }
   }
 
