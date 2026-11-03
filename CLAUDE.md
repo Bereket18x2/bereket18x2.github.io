@@ -14,8 +14,9 @@ children in the US diaspora. Two tracks:
    (ግዕዝ, ዕዝል, አራራይ).
 
 **The curriculum lives in `assets/js/lessons.js` and nowhere else.** `SUBJECTS` is
-the source of truth for both tracks; `LESSONS` is currently empty while the
-sub-topics are written, which is a supported state every page handles. Adding a
+the source of truth for both tracks; `LESSONS` currently holds one draft
+Bible lesson while the remaining sub-topics are written. Empty subjects are
+a supported state every page handles. Adding a
 lesson is a data edit in that file alone — no page, test, or rules change. Do not
 restate the subject list in prose anywhere without a test that checks it: the
 homepage advertised ወንጌለ ዮሐንስ for a while after it stopped being a subject.
@@ -121,6 +122,14 @@ punitive. Unlisted YouTube, or Bunny/Cloudflare Stream later.
 **Payments:** Stripe does not support merchants in Ethiopia. The US parish holds the
 Stripe account; Payoneer moves the developer's share to Addis. Do not build anything
 that assumes an Ethiopian merchant account.
+
+## Current release gates
+
+Before accepting real families, follow `docs/RELEASE-CHECKLIST.md`. An
+unfinished draft lesson is not a completed curriculum, and the recorded quiz
+scores are client-submitted practice results, not independently certified
+marks. Payment access and receipts now commit atomically in `store.js`, but
+manual reconciliation remains necessary until verified payment IDs exist.
 
 ## Security — these are children's records
 
