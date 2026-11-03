@@ -282,8 +282,7 @@ service cloud.firestore {
                  && request.resource.data.age >= 7
                  && request.resource.data.age <= 13)
               || (request.resource.data.track == 'zema'
-                 && request.resource.data.age >= 7
-                 && request.resource.data.age <= 119))
+                 && request.resource.data.age >= 7))
             && request.resource.data.selectedSubjects is list
             && request.resource.data.selectedSubjects.size() > 0
             && ((request.resource.data.track == 'bible'
