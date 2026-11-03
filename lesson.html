@@ -614,12 +614,17 @@ if (u && !L) {
 
   /* ---------- quiz ---------- */
   const answers = quizzed ? new Array(L.questions.length).fill(null) : [];
+  // Protect the template even if lessons become editable by teachers.
+  const quizText = value => String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
   if (quizzed) $('quiz').innerHTML = L.questions.map((q, i) => `
     <div class="panel" data-q="${i}">
-      <p style="margin:0 0 14px"><b>${i + 1}.</b> ${q.q}</p>
+      <p style="margin:0 0 14px"><b>${i + 1}.</b> ${quizText(q.q)}</p>
       ${q.options.map((o, j) =>
-        `<button class="choice" data-i="${i}" data-j="${j}" disabled>${o}</button>`).join('')}
-      <p class="note small" data-why="${i}" style="display:none;margin-top:10px">${q.why}</p>
+        `<button class="choice" data-i="${i}" data-j="${j}" disabled>${quizText(o)}</button>`).join('')}
+      <p class="note small" data-why="${i}" style="display:none;margin-top:10px">${quizText(q.why)}</p>
     </div>`).join('');
 
   if (quizzed) $('quiz').addEventListener('click', (e) => {
