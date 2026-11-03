@@ -219,6 +219,17 @@ service cloud.firestore {
       return role in ['student', 'pending_teacher', 'teacher', 'rejected'];
     }
 
+    // Country/region is checked by Firestore, not just by the registration UI.
+    // Keep this list in sync with COUNTRIES in assets/js/config.js.
+    function countryMatchesRegion(d) {
+      return       (d.region == 'ETHIOPIA' && d.country in ['ET']) ||
+      (d.region == 'AFRICA' && d.country in ['DZ', 'AO', 'BJ', 'BW', 'BF', 'BI', 'CM', 'CV', 'CF', 'TD', 'KM', 'CG', 'CD', 'CI', 'DJ', 'EG', 'GQ', 'ER', 'SZ', 'GA', 'GM', 'GH', 'GN', 'GW', 'KE', 'LS', 'LR', 'LY', 'MG', 'MW', 'ML', 'MR', 'MU', 'YT', 'MA', 'MZ', 'NA', 'NE', 'NG', 'RE', 'RW', 'ST', 'SN', 'SC', 'SL', 'SO', 'ZA', 'SS', 'SH', 'SD', 'TZ', 'TG', 'TN', 'UG', 'EH', 'ZM', 'ZW']) ||
+      (d.region == 'NORTH_AMERICA' && d.country in ['AI', 'AG', 'AW', 'BS', 'BB', 'BZ', 'BM', 'VG', 'CA', 'BQ', 'KY', 'CR', 'CU', 'CW', 'DM', 'DO', 'SV', 'GL', 'GD', 'GP', 'GT', 'HT', 'HN', 'JM', 'MQ', 'MX', 'MS', 'NI', 'PA', 'PR', 'SX', 'BL', 'KN', 'LC', 'MF', 'PM', 'VC', 'TT', 'TC', 'VI', 'US']) ||
+      (d.region == 'EUROPE' && d.country in ['AX', 'AL', 'AD', 'AT', 'BY', 'BE', 'BA', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FO', 'FI', 'FR', 'DE', 'GI', 'GR', 'GG', 'HU', 'IS', 'IE', 'IM', 'IT', 'JE', 'LV', 'LI', 'LT', 'LU', 'MT', 'MD', 'MC', 'ME', 'NL', 'MK', 'NO', 'PL', 'PT', 'RO', 'RU', 'SM', 'RS', 'SK', 'SI', 'ES', 'SJ', 'SE', 'CH', 'UA', 'GB', 'VA']) ||
+      (d.region == 'ASIA' && d.country in ['AF', 'AM', 'AZ', 'BH', 'BD', 'BT', 'BN', 'KH', 'CN', 'GE', 'HK', 'IN', 'ID', 'IR', 'IQ', 'IL', 'JP', 'JO', 'KZ', 'KW', 'KG', 'LA', 'LB', 'MO', 'MY', 'MV', 'MN', 'MM', 'NP', 'KP', 'OM', 'PK', 'PS', 'PH', 'QA', 'SA', 'SG', 'KR', 'LK', 'SY', 'TW', 'TJ', 'TH', 'TL', 'TR', 'TM', 'AE', 'UZ', 'VN', 'YE']) ||
+      (d.region == 'OTHER' && d.country in ['AS', 'AQ', 'AR', 'AU', 'BO', 'BV', 'BR', 'IO', 'CL', 'CO', 'CK', 'EC', 'FK', 'FJ', 'GF', 'PF', 'TF', 'GU', 'GY', 'HM', 'KI', 'MH', 'FM', 'NR', 'NC', 'NZ', 'NU', 'NF', 'MP', 'PW', 'PG', 'PY', 'PE', 'PN', 'WS', 'SB', 'GS', 'SR', 'TK', 'TO', 'TV', 'UM', 'UY', 'VU', 'VE', 'WF', 'ZZ']);
+    }
+
     match /users/{uid} {
 
       // A student reads only their own row. A teacher reads their own
@@ -267,10 +278,23 @@ service cloud.firestore {
             && request.resource.data.studySeconds == 0
             && request.resource.data.track in ['bible', 'zema']
             && request.resource.data.age is int
-            && request.resource.data.age > 0
-            && request.resource.data.age < 120
+            && ((request.resource.data.track == 'bible'
+                 && request.resource.data.age >= 7
+                 && request.resource.data.age <= 13)
+              || (request.resource.data.track == 'zema'
+                 && request.resource.data.age >= 7
+                 && request.resource.data.age <= 119))
             && request.resource.data.selectedSubjects is list
             && request.resource.data.selectedSubjects.size() > 0
+            && ((request.resource.data.track == 'bible'
+                 && request.resource.data.selectedSubjects.hasOnly([
+                    'amestu', 'sirate', 'meshaftarik', 'betekrtarik', 'sinemigbar'
+                 ]))
+              || (request.resource.data.track == 'zema'
+                 && request.resource.data.selectedSubjects.hasOnly([
+                    'wudase', 'mezmur', 'aquaquam', 'tsomedigua',
+                    'miraf', 'kidase', 'zimare'
+                 ])))
             && request.resource.data.plan in ['monthly', 'term']
             /* ISO 3166-1 alpha-2, and one of the six regions the school
                uses. The list is duplicated from REGIONS in config.js,
@@ -279,8 +303,7 @@ service cloud.firestore {
                claiming a cheaper one, since it is frozen afterwards. */
             && request.resource.data.country is string
             && request.resource.data.country.size() == 2
-            && request.resource.data.region in
-                 ['ETHIOPIA', 'AFRICA', 'NORTH_AMERICA', 'EUROPE', 'ASIA', 'OTHER']
+            && countryMatchesRegion(request.resource.data)
           ) || (
             request.resource.data.role == 'pending_teacher'
             && request.resource.data.keys().hasOnly([
@@ -289,6 +312,11 @@ service cloud.firestore {
                  'createdAt', 'lastSeen', 'consentGivenAt', 'consentVersion'
                ])
             && request.resource.data.teachesSubjects is list
+            && request.resource.data.teachesSubjects.size() > 0
+            && request.resource.data.teachesSubjects.hasOnly([
+                 'amestu', 'sirate', 'meshaftarik', 'betekrtarik', 'sinemigbar',
+                 'wudase', 'mezmur', 'aquaquam', 'tsomedigua', 'miraf', 'kidase', 'zimare'
+               ])
             && request.resource.data.parish is string
           )
         );
@@ -428,10 +456,17 @@ service cloud.firestore {
             || (
               request.resource.data.score is int
               && request.resource.data.of is int
+              && request.resource.data.of > 0
+              && request.resource.data.of <= 100
               && request.resource.data.score >= 0
               && request.resource.data.score <= request.resource.data.of
+              && (resource == null
+                || !('score' in resource.data)
+                || request.resource.data.score >= resource.data.score)
             )
           )
+          && (!('done' in request.resource.data) || request.resource.data.done is bool)
+          && (!('videoCompleted' in request.resource.data) || request.resource.data.videoCompleted is bool)
           && (
             !('coverage' in request.resource.data)
             || (
