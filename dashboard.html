@@ -420,6 +420,7 @@ if (u) {
 
     const bits = [];
     if (isFree(l.id)) bits.push('ነጻ ቅምሻ');
+    if (l.draft === true) bits.push('ለግምገማ የቀረበ ረቂቅ');
     if (cov !== null) bits.push(`${cov}% ታይቷል`);
     if (when) bits.push(when.toLocaleDateString());
     const detail = bits.length ? ` · ${bits.join(' · ')}` : '';
