@@ -192,6 +192,36 @@ service cloud.firestore {
        here. It also means a teacher cannot rename a child, change their
        age, or inflate their study hours — none of which is a teacher's
        job, and all of which a blacklist quietly allowed. */
+    /* Browsers may maintain only these self-profile fields. They must
+       never be able to add free-form child data or unreviewed staff data. */
+    function ownerWritableFields() {
+      return [
+        'guardianName', 'studentName', 'age', 'fullName', 'phone',
+        'lastSeen', 'verified', 'studySeconds', 'consentVersion'
+      ];
+    }
+
+    function ageMatchesTrack(d) {
+      return d.age is int &&
+        ((d.track == 'bible' && d.age >= 7 && d.age <= 13)
+          || (d.track == 'zema' && d.age >= 7));
+    }
+
+    function boundedOwnerDetails() {
+      return (!('guardianName' in request.resource.data)
+          || (request.resource.data.guardianName is string
+              && request.resource.data.guardianName.size() <= 120))
+        && (!('studentName' in request.resource.data)
+          || (request.resource.data.studentName is string
+              && request.resource.data.studentName.size() <= 120))
+        && (!('fullName' in request.resource.data)
+          || (request.resource.data.fullName is string
+              && request.resource.data.fullName.size() <= 120))
+        && (!('phone' in request.resource.data)
+          || (request.resource.data.phone is string
+              && request.resource.data.phone.size() <= 50));
+    }
+
     function teacherWritableFields() {
       return [
         'paid', 'paidUntil',
@@ -340,7 +370,11 @@ service cloud.firestore {
          a delayed flush while making it useless for minting attendance. */
       allow update: if (
         isOwner(uid)
-        && !changed().hasAny(lockedFields())
+        && changed().hasOnly(ownerWritableFields())
+        && boundedOwnerDetails()
+        && (!changed().hasAny(['age']) || ageMatchesTrack(request.resource.data))
+        && (!changed().hasAny(['lastSeen'])
+          || request.resource.data.lastSeen == request.time)
         && (
           !changed().hasAny(['verified'])
           || request.resource.data.verified == request.auth.token.email_verified
@@ -488,6 +522,41 @@ service cloud.firestore {
           );
 
         allow delete: if false;
+      }
+
+      /* Independent staff assessment — not the browser's practice mark.
+         One document per lesson, immutable after the first staff sign-off.
+         No child/parent session can create an authenticated review, even
+         if it forges every field in its progress document. */
+      match /reviews/{lessonId} {
+        allow read: if isOwner(uid) || isAdmin() || isMyStudentByGet(uid);
+        allow create: if isStaffFor(uid)
+          && request.resource.data.keys().hasOnly([
+               'lessonId', 'verified', 'score', 'of', 'method',
+               'reviewedAt', 'reviewedBy', 'reviewedByName'
+             ])
+          && request.resource.data.keys().hasAll([
+               'lessonId', 'verified', 'score', 'of', 'method',
+               'reviewedAt', 'reviewedBy', 'reviewedByName'
+             ])
+          && request.resource.data.lessonId == lessonId
+          && lessonId.size() > 0 && lessonId.size() <= 100
+          && request.resource.data.verified == true
+          && request.resource.data.reviewedBy == request.auth.uid
+          && request.resource.data.reviewedByName is string
+          && request.resource.data.reviewedByName.size() > 0
+          && request.resource.data.reviewedByName.size() <= 120
+          && request.resource.data.reviewedAt == request.time
+          && request.resource.data.method in [
+               'oral', 'live-observation', 'work-reviewed'
+             ]
+          && request.resource.data.score is int
+          && request.resource.data.of is int
+          && request.resource.data.of >= 0
+          && request.resource.data.of <= 100
+          && request.resource.data.score >= 0
+          && request.resource.data.score <= request.resource.data.of;
+        allow update, delete: if false;
       }
 
       /* A teacher's note about a child.
@@ -654,7 +723,16 @@ service cloud.firestore {
       allow read: if isOwner(uid) || isAdmin();
 
       allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly([
+             'uid', 'email', 'reason', 'status', 'requestedAt'
+           ])
+        && request.resource.data.keys().hasAll([
+             'uid', 'email', 'reason', 'status', 'requestedAt'
+           ])
         && request.resource.data.uid == uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() <= 500
         && request.resource.data.status == 'pending'
         && request.resource.data.requestedAt == request.time;
 
