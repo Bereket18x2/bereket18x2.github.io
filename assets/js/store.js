@@ -18,7 +18,7 @@ import { initializeApp }
 import {
   getAuth, onAuthStateChanged,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut as fbSignOut, sendEmailVerification, sendPasswordResetEmail
+  signOut as fbSignOut, deleteUser, sendEmailVerification, sendPasswordResetEmail
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc,
@@ -31,6 +31,7 @@ import {
    a freshly-fetched store.js pull a stale config.js, which is exactly
    the staleness the cache-bust exists to prevent. */
 import { firebaseConfig, CONSENT_VERSION, countryByCode } from '@config';
+import { subjectsFor } from '@lessons';
 import { validateName, validateAge, validateEnrollableTrack, validatePassword,
          validateEmail, validateComment, validateCountry, validateQuestion,
          validateAnswer, TRACKS, isStaff }
@@ -144,6 +145,8 @@ export const Store = {
       throw new Error('የሚያስተምሩትን ትምህርት ቢያንስ አንድ ይምረጡ።');
     }
     if (!String(parish || '').trim()) throw new Error('የሚያገለግሉበትን ደብር ይጻፉ።');
+    const permitted = new Set([...subjectsFor('bible'), ...subjectsFor('zema')].map(s => s.id));
+    if (subjects.some(id => !permitted.has(id))) throw new Error('ትክክለኛ የትምህርት ክፍል ይምረጡ።');
 
     let cred;
     try { cred = await createUserWithEmailAndPassword(auth, email, password); }
@@ -169,7 +172,12 @@ export const Store = {
         consentGivenAt: serverTimestamp(),
         consentVersion: CONSENT_VERSION
       });
-    } catch (e) { fail(e); }
+    } catch (e) {
+      // Avoid leaving an Auth-only account if the profile write fails.
+      try { await deleteUser(cred.user); }
+      catch (rollback) { console.error('Teacher signup cleanup failed:', rollback?.code); }
+      fail(e);
+    }
 
     lastVerificationError = null;
     try { await sendEmailVerification(cred.user); }
@@ -201,6 +209,12 @@ export const Store = {
        auto-renewal in either case: the term ends and the parent chooses
        again. */
     const plan = (track === 'bible' && prepaidTerm) ? 'term' : 'monthly';
+
+    const allowedSubjects = new Set(subjectsFor(track).map(s => s.id));
+    if (!Array.isArray(selectedSubjects) || selectedSubjects.length === 0 ||
+        selectedSubjects.some(id => !allowedSubjects.has(id))) {
+      throw new Error('በመረጡት ክፍል ውስጥ የሚገኝ ትምህርት ይምረጡ።');
+    }
 
     /* Consent is checked here as well as in the form, and required again by
        the rules on create, so an account cannot exist without a consent
@@ -258,7 +272,13 @@ export const Store = {
         consentGivenAt: serverTimestamp(),
         consentVersion: CONSENT_VERSION
       });
-    } catch (e) { fail(e); }
+    } catch (e) {
+      // Signup is not complete if the Firestore profile was rejected.
+      // Delete the new Auth identity rather than leaving a broken login.
+      try { await deleteUser(cred.user); }
+      catch (rollback) { console.error('Student signup cleanup failed:', rollback?.code); }
+      fail(e);
+    }
 
     /* The account exists whether or not the mail goes out, so a send
        failure must not fail registration — but it must not vanish
