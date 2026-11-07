@@ -66,7 +66,8 @@ export const TRACKS = {
        assertions in tests/pricing.test.mjs turn themselves off with it.
        That round trip is tested in both directions in
        tests/validators.test.mjs, so it stays a real switch. */
-    enrollable: true,
+    // Closed again by school request, 2026-11-07: advertise coming soon.
+    enrollable: false,
     hasQuizzes: false,
     hasExams: false,
     hasScores: false,

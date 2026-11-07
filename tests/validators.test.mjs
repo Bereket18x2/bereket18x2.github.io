@@ -92,10 +92,10 @@ console.log('\nenrolment is gated separately from validity');
    BOTH directions, or closing a course again is a change nobody has
    tested — hence the synthetic closed track below. */
 accepts('zema is a VALID track', () => validateTrack('zema'));
-accepts('zema is enrollable', () => validateEnrollableTrack('zema'));
+refuses('zema enrollment is paused', () => validateEnrollableTrack('zema'));
 accepts('bible is enrollable', () => validateEnrollableTrack('bible'));
 refuses('unknown track is not enrollable', () => validateEnrollableTrack('history'));
-check('both tracks are offered', enrollableTracks().map(t => t.id), ['bible', 'zema']);
+check('only Bible is currently offered', enrollableTracks().map(t => t.id), ['bible']);
 check('both tracks exist', Object.keys(TRACKS), ['bible', 'zema']);
 check('an adult zema student passes the age gate', validateAge(30, 'zema').ok, true);
 

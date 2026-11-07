@@ -7,8 +7,8 @@
 /* ---------------------------------------------------------------
    TOKENS
 
-   Two themes: night (the default — a Ge'ez manuscript read by
-   lamplight) and day (dawn over the highlands, parchment and pale
+   Two themes: night (a Ge'ez manuscript read by
+   lamplight) and day (the default, parchment and pale
    gold). Every colour in this file is a token defined here and
    overridden wholesale under [data-theme="day"]. Nothing below the
    token blocks may contain a literal colour, with one exception:
@@ -23,14 +23,14 @@
   color-scheme: dark;
 
   /* surfaces */
-  --bg:          #111726;
-  --surface:     #19202F;
-  --surface-2:   #232C3E;
-  --line:        #2C3648;
+  --bg:          #17283D;
+  --surface:     #20364D;
+  --surface-2:   #29435A;
+  --line:        #53677A;
 
   /* text */
-  --text:        #EFE3C8;
-  --text-dim:    #A99E88;
+  --text:        #F8EBCF;
+  --text-dim:    #D8CAAE;
 
   /* accents: gold leaf, rubric crimson, and the green of growing things */
   --accent:      #E8A73C;
@@ -38,7 +38,7 @@
   --accent-ink:  #2A1B04;   /* text placed ON gold */
   --accent-text: #E8A73C;   /* gold used AS text */
   --danger:      #B22F30;
-  --danger-text: #E4756F;
+  --danger-text: #F28D88;
   --success:     #3B8266;
   --success-text: #6FBF95;
 
@@ -50,15 +50,15 @@
 
   /* the page ground behind the starfield */
   --sky-gradient:
-    radial-gradient(1100px 650px at 88% -8%, rgb(var(--danger-rgb) / .20), transparent 60%),
-    linear-gradient(180deg, #05070D 0%, #0B1020 45%, var(--bg) 100%);
+    radial-gradient(ellipse at 80% 0%, #34688B, transparent 56%),
+    linear-gradient(180deg, #173F62, var(--bg) 88%);
 
   /* harag interlace. A data URI cannot interpolate a custom property,
      so the whole image is the token and each theme supplies its own. */
-  --harag-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='26' viewBox='0 0 40 26'%3E%3Cg fill='none' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M0 13C6 2 14 2 20 13S34 24 40 13' stroke='%23E8A73C'/%3E%3Cpath d='M0 13C6 24 14 24 20 13S34 2 40 13' stroke='%23B22F30'/%3E%3C/g%3E%3Cg stroke='%23E8A73C' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M0 11v4M0 13h2M38 13h2M18 13h4M20 11v4'/%3E%3C/g%3E%3C/svg%3E");
+  --harag-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2226%22%20viewBox%3D%220%200%2064%2026%22%3E%3Cpath%20fill%3D%22%2320364D%22%20d%3D%22M0%200h64v26H0z%22%2F%3E%3Cpath%20stroke%3D%22%23D7A947%22%20stroke-width%3D%222%22%20fill%3D%22none%22%20d%3D%22M0%202h64M0%2024h64M0%2013L16%203l16%2010-16%2010zM32%2013L48%203l16%2010-16%2010z%22%2F%3E%3Cpath%20fill%3D%22%23A34A35%22%20stroke%3D%22%23D7A947%22%20d%3D%22m16%207%207%206-7%206-7-6zm32%200%207%206-7%206-7-6z%22%2F%3E%3Cpath%20fill%3D%22%23D7A947%22%20d%3D%22m16%2010%203%203-3%203-3-3zm32%200%203%203-3%203-3-3z%22%2F%3E%3C%2Fsvg%3E");
 
   /* card faces + inert chrome */
-  --card-face: linear-gradient(135deg, #2A1B04 0%, #55131B 45%, #19202F 100%);
+  --card-face: linear-gradient(135deg, #2A1B04 0%, #55131B 45%, #20364D 100%);
   --card-chip: linear-gradient(135deg, #F5D68A, #C1841E);
   --card-text: #F6E9C9;
   --stripe:    #111;
@@ -79,7 +79,9 @@
   --f-body:    'Noto Sans Ethiopic', system-ui, sans-serif;
   --f-util:    'Space Grotesk', ui-monospace, monospace;
 
-  --r: 4px;
+  --track-blue: #20364D;
+  --track-red: #772D28;
+  --r: 12px;
   --shell: 1120px;
 }
 
@@ -89,18 +91,18 @@
 :root[data-theme="day"] {
   color-scheme: light;
 
-  --bg:          #F7EFDD;
-  --surface:     #FFFBF2;
-  --surface-2:   #F1E5CC;
-  --line:        #D6C4A0;
+  --bg:          #F3E3C4;
+  --surface:     #FFF5DF;
+  --surface-2:   #EAD5AB;
+  --line:        #B99861;
 
-  --text:        #2B2118;
-  --text-dim:    #5C4A36;
+  --text:        #30251B;
+  --text-dim:    #66513C;
 
   --accent:      #E8A73C;
   --accent-hi:   #F5BC5A;
   --accent-ink:  #2A1B04;
-  --accent-text: #7A4E0B;
+  --accent-text: #795019;
   --danger:      #B22F30;
   --danger-text: #8E1F20;
   --success:     #3B8266;
@@ -109,14 +111,14 @@
   --accent-rgb:  138 85 18;
   --danger-rgb:  142 31 32;
   --success-rgb: 31 91 65;
-  --shadow-rgb:  90 70 40;
+  --shadow-rgb:  65 42 19;
   --sheen-rgb:   255 255 255;
 
   --sky-gradient:
-    radial-gradient(1100px 650px at 88% -8%, rgb(var(--accent-rgb) / .16), transparent 60%),
-    linear-gradient(180deg, #FBF3E2 0%, #F7EFDD 45%, #F2E6CE 100%);
+    radial-gradient(ellipse at 13% 6%, #FFF5DF, transparent 48%),
+    linear-gradient(155deg, #E7CFA0, #F3E3C4 52%, #F9EED8);
 
-  --harag-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='26' viewBox='0 0 40 26'%3E%3Cg fill='none' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M0 13C6 2 14 2 20 13S34 24 40 13' stroke='%23A9741B'/%3E%3Cpath d='M0 13C6 24 14 24 20 13S34 2 40 13' stroke='%238E1F20'/%3E%3C/g%3E%3Cg stroke='%23A9741B' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M0 11v4M0 13h2M38 13h2M18 13h4M20 11v4'/%3E%3C/g%3E%3C/svg%3E");
+  --harag-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2226%22%20viewBox%3D%220%200%2064%2026%22%3E%3Cpath%20fill%3D%22%2320364D%22%20d%3D%22M0%200h64v26H0z%22%2F%3E%3Cpath%20stroke%3D%22%23D7A947%22%20stroke-width%3D%222%22%20fill%3D%22none%22%20d%3D%22M0%202h64M0%2024h64M0%2013L16%203l16%2010-16%2010zM32%2013L48%203l16%2010-16%2010z%22%2F%3E%3Cpath%20fill%3D%22%23A34A35%22%20stroke%3D%22%23D7A947%22%20d%3D%22m16%207%207%206-7%206-7-6zm32%200%207%206-7%206-7-6z%22%2F%3E%3Cpath%20fill%3D%22%23D7A947%22%20d%3D%22m16%2010%203%203-3%203-3-3zm32%200%203%203-3%203-3-3z%22%2F%3E%3C%2Fsvg%3E");
 
   --card-face: linear-gradient(135deg, #3A2A0A 0%, #6B2028 45%, #2B3348 100%);
   --card-text: #F6E9C9;
@@ -137,8 +139,35 @@
 body.sky {
   background:
     var(--sky-gradient);
+  background-attachment: fixed;
 }
 body.sky > *:not(#sky) { position: relative; z-index: 1; }
+
+/* A chapel window frames the highland miniature. The picture stays in normal
+   flow at narrow widths so neither language collides with the artwork. */
+.school-hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: clamp(24px, 4vw, 64px); align-items: center; position: relative; }
+.school-hero__copy { min-width: 0; }
+.school-hero h1 { font-size: clamp(2rem, 3.8vw, 3.25rem); line-height: 1.22; text-wrap: balance; }
+.school-hero__art {
+  padding: 6px; border: 1px solid var(--line); border-radius: 48% 48% 18px 18px;
+  background: var(--surface); box-shadow: 0 16px 38px rgb(var(--shadow-rgb) / .18);
+}
+.school-hero__art img { display: block; width: 100%; height: auto; aspect-ratio: 1.27;
+  object-fit: cover; border-radius: inherit; }
+.grid-2.track-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+.track-art { float: right; width: clamp(76px, 8vw, 102px); height: auto; margin: 0 0 12px 16px;
+  border-radius: 48% 48% 8px 8px; box-shadow: 0 4px 12px rgb(var(--shadow-rgb) / .14); }
+@media (prefers-reduced-motion: no-preference) {
+  .school-hero__art { animation: chapel-rise 1.1s ease-out both; }
+  .track-art { transition: transform .45s ease; }
+  @media (hover: hover) { .track-card:hover .track-art { transform: perspective(400px) rotateY(-6deg) translateY(-3px); } }
+}
+@keyframes chapel-rise { from { opacity: .3; transform: perspective(1000px) translateY(12px) rotateX(4deg); } }
+@media (max-width: 760px) {
+  .school-hero, .grid-2.track-cards { grid-template-columns: 1fr; }
+  .school-hero__art { width: min(100%, 440px); justify-self: center; }
+  .school-hero__art img { aspect-ratio: 1.65; }
+}
 
 /* gold glow seated behind the landing hero, above the starfield */
 .aurora {
@@ -1048,3 +1077,56 @@ td.num { font-family: var(--f-util); }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* Manuscript edition: ornaments frame content, never sit behind reading text.
+   All colours inherit the palette so forms, lessons and night mode stay legible. */
+body.sky {
+  background-image: radial-gradient(ellipse at top, rgb(var(--sheen-rgb) / .2), transparent 65%), var(--sky-gradient);
+  border-inline: 6px double var(--accent);
+  min-height: 100vh;
+}
+body.sky::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  box-shadow: inset 0 0 65px rgb(var(--shadow-rgb) / .12);
+}
+#sky { opacity: .18; }
+.harag { height: 28px; opacity: 1; border-block: 3px double var(--accent); background-color: var(--surface-2); }
+.harag--thin { height: 18px; opacity: .8; background-size: 28px 18px; }
+.nav { border-bottom: 3px double var(--line); }
+.brand { font-family: var(--f-display); font-weight: 700; }
+h1, h2, h3 { font-family: var(--f-display); }
+h1 { color: var(--text); }
+.school-hero { padding-block: clamp(28px, 5vw, 64px); }
+.school-hero .aurora { display: none; }
+.school-hero__art { border: 6px double var(--accent); padding: 8px; background: var(--surface-2); box-shadow: 0 12px 32px rgb(var(--shadow-rgb) / .16); }
+.school-hero__art img { filter: saturate(.75) sepia(.18); }
+.panel { box-shadow: 0 4px 16px rgb(var(--shadow-rgb) / .05); border-radius: 6px; }
+.track-card { position: relative; border: 5px double var(--accent); border-radius: 24px 24px 8px 8px; padding: 26px; background: var(--track-blue); color: var(--card-text); }
+.track-card:nth-child(2) { background: var(--track-red); }
+.track-card .muted, .track-card .eyebrow { color: var(--card-text); }
+.track-card h3 { color: var(--card-text); }
+.track-card .track-art { border: 2px solid var(--accent); }
+.track-card::after { content: ''; display: block; height: 18px; margin-top: 20px; background: var(--harag-image) repeat-x center; }
+.btn { border-radius: 100px; }
+.btn--gold { box-shadow: 0 3px 0 rgb(var(--shadow-rgb) / .15); }
+.footer { border-top: 4px double var(--accent); }
+@media (max-width: 600px) {
+  body.sky { border-inline-width: 3px; }
+  .school-hero__art { border-width: 4px; padding: 4px; }
+  .track-card { padding: 20px; }
+  .school-hero h1 { font-size: 1.9rem; line-height: 1.4; }
+}
+
+/* A main element carrying both classes still needs phone gutters. */
+.shell.section { padding-inline: 24px; }
+
+/* Public plans echo the reference's framed folios without a combined offer. */
+.plan-card { border: 4px double var(--accent); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 32px 24px; }
+.plan-card .btn { margin-top: auto; }
+.plan-art { object-fit: cover; border-radius: 50% 50% 8px 8px; }
+.plan-price { font: 700 2.5rem var(--f-display); margin: 8px 0; color: var(--accent-text); }
+.plan-price small { font: 400 1rem var(--f-body); color: var(--text-dim); }
+.public-intro { max-width: 65ch; font-size: 1.15rem; margin-bottom: 32px; }
+.public-subjects { list-style: none; padding: 0; }
+.public-subjects li { display: flex; gap: 12px; padding-block: 12px; border-bottom: 1px solid var(--line); }
+.track-card h2 { color: var(--card-text); }

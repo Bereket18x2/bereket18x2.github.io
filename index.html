@@ -8,14 +8,14 @@
 <script>
   try {
     var t = localStorage.getItem('eotc.theme');
-    if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'day' : 'night';
+    if (!t) t = 'day';
     document.documentElement.setAttribute('data-theme', t);
-  } catch (e) { document.documentElement.setAttribute('data-theme', 'night'); }
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'day'); }
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/style.css?v=manuscript1">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="shortcut icon" href="assets/favicon.svg">
 <meta property="og:title" content="ፍኖተ ያሬድ · Finote Yared — EOTC school for children in the diaspora">
@@ -55,7 +55,7 @@
       </svg>
       ፍኖተ ያሬድ
     </a>
-    <div class="nav-links">
+    <div class="nav-links"><a href="plans.html" data-am="የክፍያ ዕቅዶች" data-en="Plans">የክፍያ ዕቅዶች</a><a href="about.html" data-am="ስለ እኛ" data-en="About us">ስለ እኛ</a>
       <a href="index.html" aria-current="page" data-am="መነሻ" data-en="Home">መነሻ</a>
       <a href="#signin" data-am="ግባ" data-en="Sign in">ግባ</a>
       <a class="btn btn--gold" href="register.html" data-am="ተመዝገብ" data-en="Sign up">ተመዝገብ</a>
@@ -67,7 +67,8 @@
 
 <main class="shell">
 
-  <section class="section" style="position:relative">
+  <section class="section school-hero">
+    <div class="school-hero__copy">
     <div class="aurora"></div>
     <p class="eyebrow" data-am="እንኳን ደህና መጡ · ለወላጆችና ለልጆች · በአማርኛ" data-en="Welcome · for parents and children · in Amharic">እንኳን ደህና መጡ · ለወላጆችና ለልጆች · በአማርኛ</p>
     <h1><span data-am="ልጆቻችን እምነታቸውን" data-en="Let our children learn their faith">ልጆቻችን እምነታቸውን</span><br><span data-am="በአባቶቻቸው ቋንቋ ይማሩ።" data-en="in their parents' language.">በአባቶቻቸው ቋንቋ ይማሩ።</span></h1>
@@ -80,6 +81,10 @@
       <a class="btn btn--gold" href="register.html" data-am="ልጅዎን ያስመዝግቡ" data-en="Register your child">ልጅዎን ያስመዝግቡ</a>
       <a class="btn btn--ghost" href="dashboard.html" data-am="ትምህርቶቹን ይመልከቱ" data-en="View the lessons">ትምህርቶቹን ይመልከቱ</a>
     </div>
+    </div>
+    <div class="school-hero__art" aria-hidden="true">
+      <img src="./assets/highland-school.webp" width="1000" height="667" alt="" fetchpriority="high">
+    </div>
   </section>
 
   <div class="harag harag--thin"></div>
@@ -87,24 +92,28 @@
   <section class="section">
     <p class="eyebrow" data-am="የምናስተምረው" data-en="What we teach">የምናስተምረው</p>
     <h2 style="margin:0 0 6px" data-am="ሁለት የትምህርት ክፍሎች" data-en="Two schools, one place">ሁለት የትምህርት ክፍሎች</h2>
-    <p class="muted small" style="max-width:56ch;margin:0 0 20px" data-am="ልጅዎ አንዱን ወይም ሁለቱንም መከታተል ይችላል። ሁለቱም በአማርኛ፣ ሁለቱም ለልጆች ተብለው የተዘጋጁ ናቸው።" data-en="Your child can follow one track or both. Both are in Amharic, and both are made for children.">ልጅዎ አንዱን ወይም ሁለቱንም መከታተል ይችላል። ሁለቱም በአማርኛ፣ ሁለቱም ለልጆች ተብለው የተዘጋጁ ናቸው።</p>
+    <p class="muted small" style="max-width:56ch;margin:0 0 20px" data-am="የመጽሐፍ ቅዱስ ትምህርት ምዝገባ ክፍት ነው። የዜማ ትምህርት በቅርቡ ይጀምራል።" data-en="Bible enrollment is open. Zema is coming soon.">የመጽሐፍ ቅዱስ ትምህርት ምዝገባ ክፍት ነው። የዜማ ትምህርት በቅርቡ ይጀምራል።</p>
 
-    <div class="grid-2">
-      <div class="panel">
+    <div class="grid-2 track-cards" id="learning-paths">
+      <div class="panel track-card">
+        <img src="./assets/manuscript.webp" class="track-art" width="320" height="427" loading="lazy" alt="">
         <p class="eyebrow" data-am="፩ · የቅዱሳት መጻሕፍት ትምህርት" data-en="1 · Bible study">፩ · የቅዱሳት መጻሕፍት ትምህርት</p>
         <!-- The five subject names, exactly as SUBJECTS lists them in
              assets/js/lessons.js. tests/curriculum.test.mjs asserts this
              page names every current subject and no retired one, so the
              homepage cannot drift into advertising a course we do not
              teach the way it once advertised ወንጌለ ዮሐንስ. -->
-        <h3 data-am="አምስቱ የትምህርት ክፍሎች" data-en="Five subjects">አምስቱ የትምህርት ክፍሎች</h3>
+        <h2 data-am="የመጽሐፍ ቅዱስ ትምህርት" data-en="Bible study">የመጽሐፍ ቅዱስ ትምህርት</h2><h3 data-am="አምስቱ የትምህርት ክፍሎች" data-en="Five subjects">አምስቱ የትምህርት ክፍሎች</h3>
         <p class="muted small" data-am="አምስቱ አዕማደ ምስጢራት፣ ሥርዓተ ቤተ ክርስቲያን፣ የመጽሐፍ ቅዱስ ታሪክ፣ የቤተ ክርስቲያን ታሪክና ክርስቲያናዊ ሥነ ምግባር። ለ፯–፲፫ ዓመት ልጆች።" data-en="The Five Pillars of Mystery, the Order of the Church, Bible History, Church History, and Christian Conduct. For children aged 7 to 13.">አምስቱ አዕማደ ምስጢራት፣ ሥርዓተ ቤተ ክርስቲያን፣ የመጽሐፍ ቅዱስ ታሪክ፣ የቤተ ክርስቲያን ታሪክና ክርስቲያናዊ ሥነ ምግባር። ለ፯–፲፫ ዓመት ልጆች።</p>
+<a class="btn btn--gold" href="register.html" data-am="ትምህርቱን ይጀምሩ →" data-en="Start Bible study →">ትምህርቱን ይጀምሩ →</a>
       </div>
 
-      <div class="panel">
+      <div class="panel track-card">
+        <img src="./assets/kebero.webp" class="track-art" width="320" height="427" loading="lazy" alt="">
         <p class="eyebrow" data-am="፪ · የዜማ ትምህርት ቤት" data-en="2 · Zema school">፪ · የዜማ ትምህርት ቤት</p>
-        <h3 data-am="ሰባቱ የዜማ ትምህርቶች" data-en="Seven subjects of zema">ሰባቱ የዜማ ትምህርቶች</h3>
-        <p class="muted small" data-am="ውዳሴ ማርያም፣ መዝሙረ ዳዊት፣ አቋቋም፣ ጾመ ድጓ፣ ምዕራፍ፣ ቅዳሴ እና ዝማሬ መዋሥዕት። ሦስቱ የቅዱስ ያሬድ ዜማዎች — ግዕዝ፣ ዕዝልና አራራይ። ከ፯ ዓመት ጀምሮ ለሁሉም ክፍት ነው።" data-en="Wudase Mariam, Mezmure Dawit, Aquaquam, Tsome Digua, Miraf, Kidase, and Zimare Mewasit. St. Yared's three modes — Ge'ez, Izil and Araray. Open from age 7 upward.">ውዳሴ ማርያም፣ መዝሙረ ዳዊት፣ አቋቋም፣ ጾመ ድጓ፣ ምዕራፍ፣ ቅዳሴ እና ዝማሬ መዋሥዕት። ሦስቱ የቅዱስ ያሬድ ዜማዎች — ግዕዝ፣ ዕዝልና አራራይ። ከ፯ ዓመት ጀምሮ ለሁሉም ክፍት ነው።</p>
+        <h2 data-am="የዜማ ትምህርት" data-en="Zema">የዜማ ትምህርት</h2><h3 data-am="ሰባቱ የዜማ ትምህርቶች" data-en="Seven subjects of zema">ሰባቱ የዜማ ትምህርቶች</h3>
+        <p class="muted small" data-am="ውዳሴ ማርያም፣ መዝሙረ ዳዊት፣ አቋቋም፣ ጾመ ድጓ፣ ምዕራፍ፣ ቅዳሴ እና ዝማሬ መዋሥዕት። ሦስቱ የቅዱስ ያሬድ ዜማዎች — ግዕዝ፣ ዕዝልና አራራይ። ከ፯ ዓመት ጀምሮ፤ በቅርቡ ይጀምራል።" data-en="Wudase Mariam, Mezmure Dawit, Aquaquam, Tsome Digua, Miraf, Kidase, and Zimare Mewasit. St. Yared's three modes — Ge'ez, Izil and Araray. Ages 7 and up; coming soon.">ውዳሴ ማርያም፣ መዝሙረ ዳዊት፣ አቋቋም፣ ጾመ ድጓ፣ ምዕራፍ፣ ቅዳሴ እና ዝማሬ መዋሥዕት። ሦስቱ የቅዱስ ያሬድ ዜማዎች — ግዕዝ፣ ዕዝልና አራራይ። ከ፯ ዓመት ጀምሮ፤ በቅርቡ ይጀምራል።</p>
+<button class="btn btn--gold" disabled data-am="በቅርቡ ይጀምራል" data-en="Coming soon">በቅርቡ ይጀምራል</button>
       </div>
     </div>
   </section>
@@ -222,9 +231,9 @@
     <p class="eyebrow" data-am="የትምህርት ክፍሎች" data-en="The subjects">የትምህርት ክፍሎች</p>
     <h2 style="margin:0 0 6px" data-am="ልጅዎ የሚማረው" data-en="What your child learns">ልጅዎ የሚማረው</h2>
     <p class="muted small" style="max-width:56ch;margin:0 0 20px"
-       data-am="ሁሉም ትምህርት በአማርኛ ነው። አንዱን ክፍል ወይም ሁለቱንም መከታተል ይችላሉ።"
-       data-en="Every lesson is in Amharic. Your child can follow one track or both.">
-      ሁሉም ትምህርት በአማርኛ ነው። አንዱን ክፍል ወይም ሁለቱንም መከታተል ይችላሉ።
+       data-am="ሁሉም ትምህርት በአማርኛ ነው። የዜማ ትምህርት በቅርቡ ይጀምራል።"
+       data-en="Every lesson is in Amharic. Zema is coming soon.">
+      ሁሉም ትምህርት በአማርኛ ነው። የዜማ ትምህርት በቅርቡ ይጀምራል።
     </p>
     <div class="grid-2" id="homeSubjects"></div>
   </section>
@@ -415,8 +424,8 @@ function renderPrices() {
     `A ${B.termMonths}-month course, $${B.termFullUSD} in total. Prepaid it is $${B.termPrepaidUSD}, saving $${B.termSavingUSD}.`);
   set('homeZemaPrice', `$${Z.flatUSD}`, `$${Z.flatUSD}`);
   set('homeZemaNote',
-    `የመረጡት ትምህርት ብዛት ምንም ይሁን ዋጋው አንድ ነው። ከተመዘገቡ በኋላ ትምህርት መጨመር በአንዳንዱ $${Z.addSubjectUSD} ነው።`,
-    `The same price whichever subjects are chosen. Adding one after enrolment is $${Z.addSubjectUSD} each.`);
+    `በቅርቡ ይጀምራል። የመረጡት ትምህርት ብዛት ምንም ይሁን ዋጋው አንድ ነው። ከተመዘገቡ በኋላ ትምህርት መጨመር በአንዳንዱ $${Z.addSubjectUSD} ነው።`,
+    `Coming soon. The same price whichever subjects are chosen. Adding one after enrolment is $${Z.addSubjectUSD} each.`);
 }
 
 /* The certificate a child actually receives, built by the same function

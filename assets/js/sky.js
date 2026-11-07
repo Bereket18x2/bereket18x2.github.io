@@ -34,6 +34,35 @@
   let dpr = 1, W = 0, H = 0, motes = [], shootingStars = [], t = 0;
   let running = true, rafId = null;
 
+  // Paint once, then drift three translucent layers without rebuilding gradients per frame.
+  const cloud = document.createElement('canvas');
+  cloud.width = 360;
+  cloud.height = 120;
+  const paint = cloud.getContext('2d');
+  function paintCloud() {
+    paint.clearRect(0, 0, 360, 120);
+    const light = cssVar('--sheen-rgb', '255 255 255');
+    for (const [x, y, rx, ry] of [[75,80,68,27],[126,62,66,45],[184,55,65,50],[231,70,74,35],[282,81,65,22]]) {
+      paint.save();
+      paint.translate(x, y);
+      paint.scale(rx, ry);
+      const g = paint.createRadialGradient(-.12, -.2, .06, 0, 0, 1);
+      g.addColorStop(0, 'rgb(' + light + ' / .85)');
+      g.addColorStop(.58, 'rgb(' + light + ' / .52)');
+      g.addColorStop(1, 'rgb(' + light + ' / 0)');
+      paint.fillStyle = g;
+      paint.fillRect(-1, -1, 2, 2);
+      paint.restore();
+    }
+  }
+  function drawClouds(day) {
+    ctx.globalAlpha = day ? .62 : .12;
+    const width = Math.min(680, Math.max(260, W * .49));
+    for (const [x, y, phase] of [[-.18,.13,0],[.66,.34,2],[.2,.81,4]]) {
+      ctx.drawImage(cloud, W*x + Math.sin(t*.12 + phase)*24, H*y, width, width/3);
+    }
+    ctx.globalAlpha = 1;
+  }
   function seed() {
     const count = Math.round((W * H) / 7000);
     motes = Array.from({ length: count }, () => ({
@@ -67,6 +96,7 @@
     readPalette();
     ctx.clearRect(0, 0, W, H);
     const day = isDay();
+    drawClouds(day);
     for (const m of motes) {
       ctx.globalAlpha = day ? 0.35 : 0.75;
       ctx.fillStyle = m.gold ? ACCENT : (day ? ACCENT : TEXT);
@@ -97,6 +127,7 @@
     t += 0.016;
     ctx.clearRect(0, 0, W, H);
     const day = isDay();
+    drawClouds(day);
 
     for (const m of motes) {
       if (day) {
@@ -175,6 +206,7 @@
   });
 
   readPalette();
+  paintCloud();
   resize();
   if (reduceMotion) drawStatic();   // one frame, no loop, no drift
   else frame();
