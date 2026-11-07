@@ -18,10 +18,10 @@ import { initializeApp }
 import {
   getAuth, onAuthStateChanged,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut as fbSignOut, sendEmailVerification, sendPasswordResetEmail
+  signOut as fbSignOut, deleteUser, sendEmailVerification, sendPasswordResetEmail
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
-  getFirestore, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc,
+  getFirestore, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, writeBatch,
   collection, getDocs, query, where, orderBy, increment, serverTimestamp,
   getAggregateFromServer, count, sum
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -31,6 +31,7 @@ import {
    a freshly-fetched store.js pull a stale config.js, which is exactly
    the staleness the cache-bust exists to prevent. */
 import { firebaseConfig, CONSENT_VERSION, countryByCode } from '@config';
+import { subjectsFor, findLesson } from '@lessons';
 import { validateName, validateAge, validateEnrollableTrack, validatePassword,
          validateEmail, validateComment, validateCountry, validateQuestion,
          validateAnswer, TRACKS, isStaff }
@@ -144,6 +145,8 @@ export const Store = {
       throw new Error('የሚያስተምሩትን ትምህርት ቢያንስ አንድ ይምረጡ።');
     }
     if (!String(parish || '').trim()) throw new Error('የሚያገለግሉበትን ደብር ይጻፉ።');
+    const permitted = new Set([...subjectsFor('bible'), ...subjectsFor('zema')].map(s => s.id));
+    if (subjects.some(id => !permitted.has(id))) throw new Error('ትክክለኛ የትምህርት ክፍል ይምረጡ።');
 
     let cred;
     try { cred = await createUserWithEmailAndPassword(auth, email, password); }
@@ -169,7 +172,12 @@ export const Store = {
         consentGivenAt: serverTimestamp(),
         consentVersion: CONSENT_VERSION
       });
-    } catch (e) { fail(e); }
+    } catch (e) {
+      // Avoid leaving an Auth-only account if the profile write fails.
+      try { await deleteUser(cred.user); }
+      catch (rollback) { console.error('Teacher signup cleanup failed:', rollback?.code); }
+      fail(e);
+    }
 
     lastVerificationError = null;
     try { await sendEmailVerification(cred.user); }
@@ -201,6 +209,12 @@ export const Store = {
        auto-renewal in either case: the term ends and the parent chooses
        again. */
     const plan = (track === 'bible' && prepaidTerm) ? 'term' : 'monthly';
+
+    const allowedSubjects = new Set(subjectsFor(track).map(s => s.id));
+    if (!Array.isArray(selectedSubjects) || selectedSubjects.length === 0 ||
+        selectedSubjects.some(id => !allowedSubjects.has(id))) {
+      throw new Error('በመረጡት ክፍል ውስጥ የሚገኝ ትምህርት ይምረጡ።');
+    }
 
     /* Consent is checked here as well as in the form, and required again by
        the rules on create, so an account cannot exist without a consent
@@ -258,7 +272,13 @@ export const Store = {
         consentGivenAt: serverTimestamp(),
         consentVersion: CONSENT_VERSION
       });
-    } catch (e) { fail(e); }
+    } catch (e) {
+      // Signup is not complete if the Firestore profile was rejected.
+      // Delete the new Auth identity rather than leaving a broken login.
+      try { await deleteUser(cred.user); }
+      catch (rollback) { console.error('Student signup cleanup failed:', rollback?.code); }
+      fail(e);
+    }
 
     /* The account exists whether or not the mail goes out, so a send
        failure must not fail registration — but it must not vanish
@@ -329,6 +349,49 @@ export const Store = {
     catch (e) { fail(e); }
     snaps.forEach((d) => { out[d.id] = d.data(); });
     return out;
+  },
+
+  /* Staff reviews are a distinct, tightly-scoped collection. Browser
+     practice scores NEVER count as staff-reviewed attainment. */
+  async reviewsOf(uid) {
+    const out = {};
+    let snaps;
+    try { snaps = await getDocs(collection(db, 'users', uid, 'reviews')); }
+    catch (e) { fail(e); }
+    snaps.forEach(d => { out[d.id] = d.data(); });
+    return out;
+  },
+
+  async recordReview(uid, lessonId, { score = 0, of = 0, method = 'live-observation' } = {}) {
+    const me = await this.current();
+    if (!isStaff(me && me.role)) {
+      throw new Error('የመምህር ግምገማ መመዝገብ ለተፈቀደላቸው መምህራን ብቻ ነው።');
+    }
+    const lesson = findLesson(lessonId);
+    if (!lesson || lesson.draft === true) {
+      throw new Error('ትምህርቱ አልተጠናቀቀም፤ የረቂቅ ትምህርት ግምገማ አይመዘገብም።');
+    }
+    if (!['oral', 'live-observation', 'work-reviewed'].includes(method)) {
+      throw new Error('ትክክለኛ የግምገማ መንገድ ይምረጡ።');
+    }
+    if (!Number.isInteger(score) || !Number.isInteger(of) || of < 0 ||
+        of > 100 || score < 0 || score > of ||
+        (lesson.questions?.length > 0 ? of === 0 : score !== 0 || of !== 0)) {
+      throw new Error('ትክክለኛ የመምህር ውጤት ይግቡ።');
+    }
+    const data = {
+      lessonId,
+      verified: true,
+      score,
+      of,
+      method,
+      reviewedAt: serverTimestamp(),
+      reviewedBy: me.uid,
+      reviewedByName: me.fullName || me.email || 'መምህር'
+    };
+    try { await setDoc(doc(db, 'users', uid, 'reviews', lessonId), data); }
+    catch (e) { fail(e); }
+    return true;
   },
 
   /* Admin only — the rules reject this for everyone else, which is the
@@ -740,64 +803,45 @@ export const Store = {
     return !!active;
   },
 
-  /* ---------------- money ----------------
-
-     The financial record lives in /payments/{uid}, NOT on the child's
-     document. A parish may have to keep receipts for years; COPPA argues
-     for deleting a child's record promptly. Those are only both
-     satisfiable if the two are separable, so a payment record is about
-     the PARENT — their name, their email, what they paid — and the
-     child's document keeps only the access grant (`paid`, `paidUntil`).
-     See docs/RETENTION.md §6.
-
-     Three writes, in this order on purpose:
-
-       1. the access grant, so the family gets what they paid for
-       2. the immutable receipt
-       3. the running summary
-
-     If step 2 or 3 fails, the family still has the access they paid for
-     and the parish is missing a line in its books — a bookkeeping gap a
-     teacher can fix. The other order leaves a parent who has handed over
-     $105 with a locked account, which is the worse failure. */
+  /* Commit the access grant, immutable receipt and payment summary
+     atomically. Provider-level idempotency needs a verified payment ID
+     and remains unavailable until church payment integration exists. */
   async recordPayment(uid, { amountPaid, paidUntil, subjects, guardianName, email,
                              kind = 'term' }) {
     const me = await this.current();
     if (!isStaff(me && me.role)) {
       throw new Error('ክፍያ ማረጋገጥ የሚችሉት መምህራን ብቻ ናቸው።');
     }
-    const amount = Math.max(0, Number(amountPaid) || 0);
+    const amount = Number(amountPaid);
+    if (!Number.isFinite(amount) || amount < 0) {
+      throw new Error('ትክክለኛ የክፍያ መጠን ያስገቡ።');
+    }
     const subs = Array.isArray(subjects) ? subjects : [];
-
+    const batch = writeBatch(db);
     const grant = { paid: true };
-    if (paidUntil) grant.paidUntil = paidUntil;          // 'YYYY-MM-DD'
+    if (paidUntil) grant.paidUntil = paidUntil;
     if (Array.isArray(subjects)) grant.selectedSubjects = subs;
-    try { await updateDoc(doc(db, 'users', uid), grant); }
-    catch (e) { fail(e); }
-
-    await this._recordReceipt(uid, {
+    batch.update(doc(db, 'users', uid), grant);
+    this._queueReceipt(batch, uid, {
       amount, periodUntil: paidUntil || '', subjects: subs, kind,
       guardianName, email, me
     });
+    try { await batch.commit(); } catch (e) { fail(e); }
     return true;
   },
 
-  /* The receipt and the summary. Separated out because adding a Zema
-     subject later takes the same two writes without touching `paid` or
-     `paidUntil` — an add-on buys curriculum, not more time. */
-  async _recordReceipt(uid, { amount, periodUntil, subjects, kind, guardianName, email, me }) {
-    try {
-      await addDoc(collection(db, 'payments', uid, 'entries'), {
-        amount,
-        at: serverTimestamp(),
-        periodUntil: periodUntil || '',
-        subjects: subjects || [],
-        kind,
-        recordedBy: me.uid,
-        recordedByName: me.fullName || me.guardianName || ''
-      });
-    } catch (e) { fail(e); }
-
+  /* Queued by both initial payments and extra-subject purchases. */
+  _queueReceipt(batch, uid, { amount, periodUntil, subjects, kind, guardianName, email, me }) {
+    const receipt = doc(collection(db, 'payments', uid, 'entries'));
+    batch.set(receipt, {
+      amount,
+      at: serverTimestamp(),
+      periodUntil: periodUntil || '',
+      subjects: subjects || [],
+      kind,
+      recordedBy: me.uid,
+      recordedByName: me.fullName || me.guardianName || ''
+    });
     const summary = {
       uid,
       totalPaid: increment(amount),
@@ -806,17 +850,10 @@ export const Store = {
       recordedBy: me.uid,
       recordedByName: me.fullName || me.guardianName || ''
     };
-    /* The parent's identity is copied onto the payment record on purpose.
-       After the child's document is deleted this has to still say who
-       paid, or it is not a financial record — and it must say so WITHOUT
-       carrying the child's name, age or scores alongside. */
     if (guardianName) summary.guardianName = guardianName;
     if (email) summary.email = email;
     if (periodUntil) summary.lastPaidUntil = periodUntil;
-
-    try { await setDoc(doc(db, 'payments', uid), summary, { merge: true }); }
-    catch (e) { fail(e); }
-    return true;
+    batch.set(doc(db, 'payments', uid), summary, { merge: true });
   },
 
   /* What a family has been charged. The parent can read their own; a
@@ -1025,29 +1062,26 @@ export const Store = {
     return u ? this.subjectRequestOf(u.uid) : null;
   },
 
-  /* Fulfilling one is two writes and they are NOT a transaction: the
-     subjects land on the student first, so a failure between them leaves
-     the parent with what they paid for and the request still in the
-     queue. The other order would take the request off the queue and give
-     them nothing. */
+  /* Grant subjects with their receipt in one atomic commit; a failed
+     financial write must never leave curriculum granted without a receipt. */
   async fulfilSubjectRequest(uid, subjects, { amount = 0, guardianName, email } = {}) {
     const me = await this.current();
     if (!isStaff(me && me.role)) throw new Error('ይህን ማድረግ የሚችሉት መምህራን ብቻ ናቸው።');
-
-    try { await updateDoc(doc(db, 'users', uid), { selectedSubjects: subjects }); }
-    catch (e) { fail(e); }
-
-    /* An add-on buys curriculum, not more time, so paid/paidUntil are
-       untouched — a $10 subject must not quietly extend a term. */
-    if (Number(amount) > 0) {
-      await this._recordReceipt(uid, {
-        amount: Number(amount), periodUntil: '', subjects,
+    const payment = Number(amount);
+    if (!Number.isFinite(payment) || payment < 0) {
+      throw new Error('ትክክለኛ የክፍያ መጠን ያስገቡ።');
+    }
+    const batch = writeBatch(db);
+    batch.update(doc(db, 'users', uid), { selectedSubjects: subjects });
+    if (payment > 0) {
+      this._queueReceipt(batch, uid, {
+        amount: payment, periodUntil: '', subjects,
         kind: 'subject-addon', guardianName, email, me
       });
     }
-
+    try { await batch.commit(); } catch (e) { fail(e); }
     try { await deleteDoc(doc(db, 'subjectRequests', uid)); }
-    catch (e) { /* the subjects are theirs; a stale request is harmless */ }
+    catch (e) { /* A leftover request must not undo a paid grant. */ }
     return true;
   },
 

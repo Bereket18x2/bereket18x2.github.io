@@ -239,7 +239,8 @@ For whoever implements this later:
 2. A scheduled job. Spark has no scheduler; this needs Blaze Cloud Functions or
    an external cron hitting an endpoint.
 3. A deletion routine covering: the user document, the `progress` subcollection,
-   the `comments` subcollection (§2b), the `questions` subcollection (§2c), the
+   the `comments` subcollection (§2b), the `reviews` subcollection
+   (teacher-verified results), the `questions` subcollection (§2c), the
    `consents` subcollection, the `deletionRequests/{uid}` and
    `subjectRequests/{uid}` documents — Firestore does **not** cascade, see
    `docs/DELETION.md` — the Auth account, the certificate decision from §2, and

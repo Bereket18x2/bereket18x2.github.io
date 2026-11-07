@@ -215,6 +215,22 @@ check('and so does whitespace', searchCountries('   ').length, COUNTRIES.length)
 check('nothing matches nonsense, and it does not throw',
   searchCountries('zzzzqqq'), []);
 
+/* The Firestore enrollment boundary must recognize the same 248 country
+   mappings as the browser. A regional price cannot be based on a region
+   invented by someone editing a network request. */
+{
+  const ruleText = readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8');
+  const { braced } = await import('./extract.mjs');
+  const fn = braced(ruleText, 'function countryMatchesRegion', 'country/region rule');
+  for (const region of REGION_IDS) {
+    const row = fn.split('\n').find(line => line.includes("d.region == '" + region + "'"));
+    const actual = row ? [...row.matchAll(/'([A-Z]{2})'/g)].map(m => m[1]) : [];
+    const expected = COUNTRIES.filter(c => c.region === region).map(c => c.code);
+    check('Firestore country mapping matches config for ' + region,
+      actual, expected);
+  }
+}
+
 /* ---- and the same assertions against the markup that actually ships ----
 
    The combobox is only worth having if the page really carries one.

@@ -604,7 +604,7 @@ export function addMonths(from, months) {
    write free text about their own understanding, and a parent reads both
    that and the teacher's answer. That is a new category of information
    about a minor, so it is a new text to agree to rather than a typo fix. */
-export const CONSENT_VERSION = '2026-09-20';
+export const CONSENT_VERSION = '2026-11-03';
 
 /* ---------------- certificate signatories — PARKED, UNUSED ----------------
 

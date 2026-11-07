@@ -43,6 +43,7 @@
 </script>
 </head>
 <body class="sky">
+<a class="skip-link" href="#main-content">ወደ ዋና ይዘት ይሂዱ / Skip to content</a>
 <canvas id="sky"></canvas>
 
 <div class="harag"></div>
@@ -65,7 +66,7 @@
   </nav>
 </div>
 
-<main class="shell">
+<main id="main-content" class="shell">
 
   <section class="section school-hero">
     <div class="school-hero__copy">
@@ -84,6 +85,28 @@
     </div>
     <div class="school-hero__art" aria-hidden="true">
       <img src="./assets/highland-school.webp" width="1000" height="667" alt="" fetchpriority="high">
+    </div>
+  </section>
+
+  <section class="learning-path" aria-labelledby="learningPathTitle">
+    <p class="eyebrow" data-am="የትምህርት መንገዳችን" data-en="How learning works">የትምህርት መንገዳችን</p>
+    <h2 id="learningPathTitle" data-am="በሦስት እርምጃዎች ይማሩ" data-en="Learn in three steps">በሦስት እርምጃዎች ይማሩ</h2>
+    <div class="learning-path__grid">
+      <article class="learning-step">
+        <span class="learning-step__number" aria-hidden="true">፩</span>
+        <h3 data-am="ይመልከቱ" data-en="Watch">ይመልከቱ</h3>
+        <p data-am="በራስዎ ፍጥነት የቪዲዮ ትምህርቶችን ይከታተሉ።" data-en="Watch video lessons at your own pace.">በራስዎ ፍጥነት የቪዲዮ ትምህርቶችን ይከታተሉ።</p>
+      </article>
+      <article class="learning-step">
+        <span class="learning-step__number" aria-hidden="true">፪</span>
+        <h3 data-am="ይለማመዱ" data-en="Practice">ይለማመዱ</h3>
+        <p data-am="በመጽሐፍ ቅዱስ ክፍል ጥያቄዎችን ይመልሱ፤ በዜማ ክፍል ዜማውን ይለማመዱ።" data-en="Answer Bible-study questions or practise Zema chants.">በመጽሐፍ ቅዱስ ክፍል ጥያቄዎችን ይመልሱ፤ በዜማ ክፍል ዜማውን ይለማመዱ።</p>
+      </article>
+      <article class="learning-step">
+        <span class="learning-step__number" aria-hidden="true">፫</span>
+        <h3 data-am="ይከታተሉ" data-en="Track progress">ይከታተሉ</h3>
+        <p data-am="የጥናት ሰዓትና የተጠናቀቁ ትምህርቶችን በአንድ ቦታ ይመልከቱ።" data-en="View completed lessons and study time in one place.">የጥናት ሰዓትና የተጠናቀቁ ትምህርቶችን በአንድ ቦታ ይመልከቱ።</p>
+      </article>
     </div>
   </section>
 
