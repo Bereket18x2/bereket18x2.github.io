@@ -55,7 +55,7 @@
 
   /* harag interlace. A data URI cannot interpolate a custom property,
      so the whole image is the token and each theme supplies its own. */
-  --harag-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2226%22%20viewBox%3D%220%200%2064%2026%22%3E%3Cpath%20fill%3D%22%2320364D%22%20d%3D%22M0%200h64v26H0z%22%2F%3E%3Cpath%20stroke%3D%22%23D7A947%22%20stroke-width%3D%222%22%20fill%3D%22none%22%20d%3D%22M0%202h64M0%2024h64M0%2013L16%203l16%2010-16%2010zM32%2013L48%203l16%2010-16%2010z%22%2F%3E%3Cpath%20fill%3D%22%23A34A35%22%20stroke%3D%22%23D7A947%22%20d%3D%22m16%207%207%206-7%206-7-6zm32%200%207%206-7%206-7-6z%22%2F%3E%3Cpath%20fill%3D%22%23D7A947%22%20d%3D%22m16%2010%203%203-3%203-3-3zm32%200%203%203-3%203-3-3z%22%2F%3E%3C%2Fsvg%3E");
+  --harag-image: url("../harag.svg");
 
   /* card faces + inert chrome */
   --card-face: linear-gradient(135deg, #2A1B04 0%, #55131B 45%, #20364D 100%);
@@ -119,7 +119,6 @@
     radial-gradient(ellipse at 13% 6%, #FFF5DF, transparent 48%),
     linear-gradient(155deg, #E7CFA0, #F3E3C4 52%, #F9EED8);
 
-  --harag-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2264%22%20height%3D%2226%22%20viewBox%3D%220%200%2064%2026%22%3E%3Cpath%20fill%3D%22%2320364D%22%20d%3D%22M0%200h64v26H0z%22%2F%3E%3Cpath%20stroke%3D%22%23D7A947%22%20stroke-width%3D%222%22%20fill%3D%22none%22%20d%3D%22M0%202h64M0%2024h64M0%2013L16%203l16%2010-16%2010zM32%2013L48%203l16%2010-16%2010z%22%2F%3E%3Cpath%20fill%3D%22%23A34A35%22%20stroke%3D%22%23D7A947%22%20d%3D%22m16%207%207%206-7%206-7-6zm32%200%207%206-7%206-7-6z%22%2F%3E%3Cpath%20fill%3D%22%23D7A947%22%20d%3D%22m16%2010%203%203-3%203-3-3zm32%200%203%203-3%203-3-3z%22%2F%3E%3C%2Fsvg%3E");
 
   --card-face: linear-gradient(135deg, #3A2A0A 0%, #6B2028 45%, #2B3348 100%);
   --card-text: #F6E9C9;
@@ -1222,4 +1221,28 @@ h1 { color: var(--text); }
 .public-subjects li { display: flex; gap: 12px; padding-block: 12px; border-bottom: 1px solid var(--line); }
 .track-card h2 { color: var(--card-text); }
 
+/* The miniature is a proportional window into the supplied manuscript sheet:
+   (480, 355), 420 × 240 of 1280 × 853. Keep the figures whole at every width. */
+.manuscript-leaf {
+  width: min(100%, 31rem); justify-self: center; margin: 0;
+  padding: clamp(10px, 1.8vw, 22px); background: var(--surface);
+  border: 5px double var(--accent-text); box-shadow: 0 10px 32px rgb(var(--shadow-rgb) / .12);
+}
+.leaf-miniature {
+  aspect-ratio: 420 / 240;
+  background: url("../illuminations.webp") 55.814% 57.912% / 304.762% 355.417% no-repeat;
+  border-radius: 48% 48% 2px 2px; outline: 1px solid var(--line);
+}
+.manuscript-leaf figcaption { text-align: center; padding-top: .8rem; color: var(--text-dim); }
+.manuscript-leaf blockquote { margin: 0; color: var(--danger-text); font: 700 clamp(1.3rem, 3vw, 2.2rem)/1.55 var(--f-display); }
+.manuscript-leaf small { font-family: var(--f-display); }
+.map-preview-link { display: inline-block; margin-block-start: .75rem; padding-block: .55rem; color: var(--accent-text); text-underline-offset: .3em; }
+.harag, .track-card::after { background-size: auto 100%; }
+.eyebrow { font-family: var(--f-display); }
+.panel:not(.track-card) { border-block-start: 3px double var(--line); }
 .jm-traveller { pointer-events: none; }
+.jm-map { width: min(100%, 54rem); margin-inline: auto; }
+@media (max-width: 600px) {
+  .shell.section { padding-inline: 16px; }
+  .jm-wrap.panel { padding: 4px; }
+}

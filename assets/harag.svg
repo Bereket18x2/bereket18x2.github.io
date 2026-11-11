@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 28" width="96" height="28">
+  <path fill="#343323" d="M0 0h96v28H0z"/>
+  <path fill="#234d43" d="M0 14 12 3l12 11-12 11zm48 0L60 3l12 11-12 11z"/>
+  <g fill="none" stroke-linejoin="round">
+    <path id="braid" stroke="#d69d39" stroke-width="6" d="m-12 3 24 22L36 3l24 22L84 3l24 22m-120 0L12 3l24 22L60 3l24 22 24-22"/>
+    <use href="#braid" stroke="#973f24"/>
+    <path stroke="#92351e" stroke-width="2.5" d="m-12 3 24 22L36 3l24 22L84 3l24 22"/>
+    <path stroke="#edc46a" stroke-width="1.5" d="M0 1h96M0 27h96"/>
+  </g>
+  <g fill="#e0ac45"><path d="m12 9 4 5-4 5-4-5zm48 0 4 5-4 5-4-5z"/><circle cx="36" cy="14" r="2.4"/><circle cx="84" cy="14" r="2.4"/></g>
+</svg>
