@@ -1221,3 +1221,5 @@ h1 { color: var(--text); }
 .public-subjects { list-style: none; padding: 0; }
 .public-subjects li { display: flex; gap: 12px; padding-block: 12px; border-bottom: 1px solid var(--line); }
 .track-card h2 { color: var(--card-text); }
+
+.jm-traveller { pointer-events: none; }

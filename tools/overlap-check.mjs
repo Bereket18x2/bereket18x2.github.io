@@ -160,7 +160,7 @@ for (const demo of DEMOS) {
     let d;
     try { d = JSON.parse(m[1]); } catch (e) { console.log(`  ?? demo=${demo} w=${width}: bad json`); failures++; continue; }
     if (d.error) { console.log(`  !! demo=${demo} w=${width}: ${d.error}`); failures++; continue; }
-    if (d.skipped) { rows.push([demo, width, 'no map (zema/blank)', 0]); continue; }
+    if (d.skipped) { failures++; rows.push([demo, width, 'demo map missing', 1]); continue; }
 
     const problems = [];
     const others = [...d.stations, ...d.flags, ...d.traveller];

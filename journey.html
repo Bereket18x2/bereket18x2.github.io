@@ -53,7 +53,7 @@
       <a href="dashboard.html">ትምህርቶች</a>
       <a href="journey.html" aria-current="page">ጉዞዬ</a>
       <a href="admin.html" id="adminLink" style="display:none">አስተዳደር</a>
-      <a href="#" id="out">ውጣ</a>
+      <a href="index.html#signout" id="out">ውጣ</a>
       <button class="theme-toggle" type="button" id="themeToggle" aria-label="ገጽታ ቀይር"></button>
     </div>
   </nav>
@@ -182,7 +182,6 @@
 </footer>
 
 <script type="module">
-import { Store, requireAuth } from '@store';
 import { SUBJECTS, subjectsFor, lessonsForSubject, findLesson } from '@lessons';
 import { hasScores } from '@validators';
 import { isLessonComplete, streakFrom } from '@stats';
@@ -214,17 +213,20 @@ const readGender = () => {
 };
 let form = readGender() || 'neutral';
 
-let u = null;
-if (demo === null) {
-  u = await requireAuth();   // no requirePaid: an ended term keeps its record
+try {
+  if (demo === null) {
+    const { Store, requireAuth } = await import('@store');
+    const u = await requireAuth();
+    if (u) await paint(u, Store);
+  } else {
+    $('out').hidden = true;
+    await paint(null, null);
+  }
+} catch (e) {
+  fail('ካርታውን መጫን አልተቻለም። ግንኙነትዎን አረጋግጠው ገጹን እንደገና ይክፈቱ።');
 }
 
-if (demo !== null || u) {
-  try { await paint(); }
-  catch (e) { fail('ካርታውን መጫን አልተቻለም። ግንኙነትዎን አረጋግጠው ገጹን እንደገና ይክፈቱ።'); }
-}
-
-async function paint() {
+async function paint(u, Store) {
   let progress = {};
   let streak = 0;
   const track = demo === null ? u.track : 'bible';
@@ -232,7 +234,7 @@ async function paint() {
   if (demo === null) {
     if (u.role === 'admin') $('adminLink').style.display = '';
     Store.touch();
-    progress = await Store.progressOf(u.uid).catch(() => ({}));
+    progress = await Store.progressOf(u.uid);
     streak = streakFrom(progress);
   }
 
