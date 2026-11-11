@@ -14,7 +14,7 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Abyssinica+SIL&family=Noto+Sans+Ethiopic:wght@400;500;600;700&family=Noto+Serif+Ethiopic:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css?v=illumination2">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="shortcut icon" href="assets/favicon.svg">
@@ -42,7 +42,8 @@
 }
 </script>
 </head>
-<body class="sky">
+<body class="illuminated sky">
+<div class="illum-page" aria-hidden="true"><i></i><i></i></div>
 <a class="skip-link" href="#main-content">ወደ ዋና ይዘት ይሂዱ / Skip to content</a>
 <canvas id="sky"></canvas>
 
@@ -95,7 +96,7 @@
 
   <section class="learning-path" aria-labelledby="learningPathTitle">
     <p class="eyebrow" data-am="የትምህርት መንገዳችን" data-en="How learning works">የትምህርት መንገዳችን</p>
-    <h2 id="learningPathTitle" data-am="በሦስት እርምጃዎች ይማሩ" data-en="Learn in three steps">በሦስት እርምጃዎች ይማሩ</h2>
+    <h2 class="illum-head" id="learningPathTitle" data-am="በሦስት እርምጃዎች ይማሩ" data-en="Learn in three steps">በሦስት እርምጃዎች ይማሩ</h2>
     <div class="learning-path__grid">
       <article class="learning-step">
         <span class="learning-step__number" aria-hidden="true">፩</span>
@@ -119,11 +120,12 @@
 
   <section class="section">
     <p class="eyebrow" data-am="የምናስተምረው" data-en="What we teach">የምናስተምረው</p>
-    <h2 style="margin:0 0 6px" data-am="ሁለት የትምህርት ክፍሎች" data-en="Two schools, one place">ሁለት የትምህርት ክፍሎች</h2>
+    <div class="illum-rule" aria-hidden="true"><span class="illum-rule__mark"></span></div>
+      <h2 class="illum-head" style="margin:0 0 6px" data-am="ሁለት የትምህርት ክፍሎች" data-en="Two schools, one place">ሁለት የትምህርት ክፍሎች</h2>
     <p class="muted small" style="max-width:56ch;margin:0 0 20px" data-am="የመጽሐፍ ቅዱስ ትምህርት ምዝገባ ክፍት ነው። የዜማ ትምህርት በቅርቡ ይጀምራል።" data-en="Bible enrollment is open. Zema is coming soon.">የመጽሐፍ ቅዱስ ትምህርት ምዝገባ ክፍት ነው። የዜማ ትምህርት በቅርቡ ይጀምራል።</p>
 
     <div class="grid-2 track-cards" id="learning-paths">
-      <div class="panel track-card">
+      <div class="panel track-card illum-frame"><span class="illum-corner" aria-hidden="true"></span><span class="illum-corner" aria-hidden="true"></span><span class="illum-corner" aria-hidden="true"></span><span class="illum-corner" aria-hidden="true"></span>
         <img src="./assets/manuscript.webp" class="track-art" width="320" height="427" loading="lazy" alt="">
         <p class="eyebrow" data-am="፩ · የቅዱሳት መጻሕፍት ትምህርት" data-en="1 · Bible study">፩ · የቅዱሳት መጻሕፍት ትምህርት</p>
         <!-- The five subject names, exactly as SUBJECTS lists them in
@@ -136,7 +138,7 @@
 <a class="btn btn--gold" href="register.html" data-am="ትምህርቱን ይጀምሩ →" data-en="Start Bible study →">ትምህርቱን ይጀምሩ →</a>
       </div>
 
-      <div class="panel track-card">
+      <div class="panel track-card illum-frame"><span class="illum-corner" aria-hidden="true"></span><span class="illum-corner" aria-hidden="true"></span><span class="illum-corner" aria-hidden="true"></span><span class="illum-corner" aria-hidden="true"></span>
         <img src="./assets/kebero.webp" class="track-art" width="320" height="427" loading="lazy" alt="">
         <p class="eyebrow" data-am="፪ · የዜማ ትምህርት ቤት" data-en="2 · Zema school">፪ · የዜማ ትምህርት ቤት</p>
         <h2 data-am="የዜማ ትምህርት" data-en="Zema">የዜማ ትምህርት</h2><h3 data-am="ሰባቱ የዜማ ትምህርቶች" data-en="Seven subjects of zema">ሰባቱ የዜማ ትምህርቶች</h3>
@@ -203,7 +205,7 @@
   <section class="section" style="padding-top:0">
     <div class="panel">
       <p class="eyebrow" data-am="መምህራኖቻችን" data-en="Our teachers">መምህራኖቻችን</p>
-      <h2 style="margin:0 0 10px" data-am="የታወቁና ብቁ የቤተ ክርስቲያን መምህራን" data-en="Well-known, qualified church teachers">የታወቁና ብቁ የቤተ ክርስቲያን መምህራን</h2>
+      <h2 class="illum-head" style="margin:0 0 10px" data-am="የታወቁና ብቁ የቤተ ክርስቲያን መምህራን" data-en="Well-known, qualified church teachers">የታወቁና ብቁ የቤተ ክርስቲያን መምህራን</h2>
       <p class="muted" style="max-width:64ch"
         data-am="እያንዳንዱ ትምህርት የሚሰጠው በኢትዮጵያ ኦርቶዶክስ ተዋሕዶ ቤተ ክርስቲያን ዘንድ በሚታወቁ፣ ብቁ በሆኑና ዓመታት ያስተማሩ ቀሳውስት፣ መጋቢያንና ሊቃውንት ነው። ልጅዎ የሚማረው ካልተረጋገጠ ምንጭ ሳይሆን ከቤተ ክርስቲያኒቱ ትምህርተ ሃይማኖት ጋር ከተጣጣመ ትምህርት ነው።"
         data-en="Every lesson is taught by recognized, qualified priests, deacons, and scholars of the Ethiopian Orthodox Tewahedo Church with years of teaching experience. What your child learns is grounded in the Church's own teaching, not an unverified source.">
@@ -257,7 +259,7 @@
        old copy did, listing lesson topics that had been deleted. -->
   <section class="section">
     <p class="eyebrow" data-am="የትምህርት ክፍሎች" data-en="The subjects">የትምህርት ክፍሎች</p>
-    <h2 style="margin:0 0 6px" data-am="ልጅዎ የሚማረው" data-en="What your child learns">ልጅዎ የሚማረው</h2>
+    <h2 class="illum-head" style="margin:0 0 6px" data-am="ልጅዎ የሚማረው" data-en="What your child learns">ልጅዎ የሚማረው</h2>
     <p class="muted small" style="max-width:56ch;margin:0 0 20px"
        data-am="ሁሉም ትምህርት በአማርኛ ነው። የዜማ ትምህርት በቅርቡ ይጀምራል።"
        data-en="Every lesson is in Amharic. Zema is coming soon.">
@@ -272,7 +274,7 @@
   <section class="section" style="padding-top:0">
     <div class="panel">
       <p class="eyebrow" data-am="የምስክር ወረቀት" data-en="Certificate">የምስክር ወረቀት</p>
-      <h2 style="margin:0 0 6px" data-am="ልጅዎ የሚያገኘው" data-en="What your child earns">ልጅዎ የሚያገኘው</h2>
+      <h2 class="illum-head" style="margin:0 0 6px" data-am="ልጅዎ የሚያገኘው" data-en="What your child earns">ልጅዎ የሚያገኘው</h2>
       <p class="muted small" style="max-width:60ch;margin:0 0 18px"
          data-am="ልጅዎ አንዱን የትምህርት ክፍል ሲያጠናቅቅ የምስክር ወረቀት ያገኛል — ማውረድና ማተም ይችላሉ። የትምህርት ጊዜው ቢያልቅም ያገኙት ወረቀት አይጠፋም።"
          data-en="When your child finishes a subject they receive a certificate to download and print. It stays theirs even after the term ends.">

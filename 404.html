@@ -31,28 +31,30 @@
 
 <style>
   :root {
-    --bg:        #17283D;   /* --bg */
-    --surface:   #20364D;   /* --surface */
-    --line:      #53677A;   /* --line */
-    --text:      #F8EBCF;   /* --text */
-    --text-dim:  #D8CAAE;   /* --text-dim */
-    --accent:    #E8A73C;   /* --accent */
-    --crimson:   #B22F30;   /* --danger */
-    color-scheme: dark;
+    --bg:        #F3E3C4;   /* --bg */
+    --surface:   #FFF5DF;   /* --surface */
+    --line:      #B99861;   /* --line */
+    --text:      #30251B;   /* --text */
+    --text-dim:  #66513C;   /* --text-dim */
+    --accent:    #795019;   /* --accent-text */
+    --crimson:   #8E1F20;   /* --danger-text */
+    color-scheme: light;
   }
-  /* Dawn over the highlands, matching [data-theme="day"] in style.css.
-     Driven by the system here rather than by the theme toggle: this
-     page loads no script, and a stored preference is not worth one. */
-  @media (prefers-color-scheme: light) {
+  /* The parchment ground is the DEFAULT here as it is everywhere else,
+     so the tokens above are already ብራና. This block is kept only for
+     the sanctuary-blue variant, which a visitor gets when their device
+     asks for a dark interface — this page loads no script, so it
+     cannot read the stored theme preference. */
+  @media (prefers-color-scheme: dark) {
     :root {
-      --bg:       #F3E3C4;
-      --surface:  #FFF5DF;
-      --line:     #B99861;
-      --text:     #30251B;
-      --text-dim: #66513C;
-      --accent:   #795019;
-      --crimson:  #8E1F20;
-      color-scheme: light;
+      --bg:       #17283D;
+      --surface:  #20364D;
+      --line:     #53677A;
+      --text:     #F8EBCF;
+      --text-dim: #D8CAAE;
+      --accent:   #E8A73C;
+      --crimson:  #B22F30;
+      color-scheme: dark;
     }
   }
 
@@ -124,7 +126,8 @@
 </style>
 </head>
 
-<body>
+<body class="illuminated">
+<div class="illum-page" aria-hidden="true"><i></i><i></i></div>
 <a class="skip-link" href="#main-content">ወደ ዋና ይዘት ይሂዱ / Skip to content</a>
 <div class="harag"></div>
 

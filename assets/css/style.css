@@ -48,6 +48,11 @@
   --shadow-rgb:  0 0 0;
   --sheen-rgb:   255 255 255;
 
+  /* The same three inks, lifted for the sanctuary-blue ground. */
+  --ink-gold:   #E8A73C;
+  --ink-rubric: #C9534A;
+  --ink-leaf:   #5BA37C;
+
   /* the page ground behind the starfield */
   --sky-gradient:
     radial-gradient(ellipse at 80% 0%, #34688B, transparent 56%),
@@ -75,9 +80,31 @@
   --brand-amex:     #006FCF;
   --brand-on:       #fff;
 
-  --f-display: 'Noto Serif Ethiopic', Georgia, serif;
+  /* THE HAND.
+
+     Abyssinica SIL is SIL's Ethiopic face, drawn after the scribal
+     hand used on ብራና — the vellum of a manuscript. It is what gives a
+     heading the look of something written rather than typeset, which
+     is the whole point of this theme.
+
+     It is used for DISPLAY ONLY. Body text stays Noto Sans Ethiopic
+     because the readers are children of seven to thirteen, and a
+     manuscript hand at 16px on a phone is handsome and hard to read.
+     The tradition is in the headings; the legibility is in the body.
+
+     Noto Serif Ethiopic sits behind it so a blocked CDN degrades to a
+     serif Ethiopic rather than to a Latin fallback that cannot render
+     ፊደል at all. */
+  --f-display: 'Abyssinica SIL', 'Noto Serif Ethiopic', Georgia, serif;
   --f-body:    'Noto Sans Ethiopic', system-ui, sans-serif;
   --f-util:    'Space Grotesk', ui-monospace, monospace;
+
+  /* Illumination. The three ornament colours of an Ethiopian
+     manuscript, named so a rule or a corner piece can reach for them
+     without a literal hex anywhere below the token blocks. */
+  --ink-gold:   #C08A2E;
+  --ink-rubric: #A33A2C;
+  --ink-leaf:   #2F6B4F;
 
 
   --track-blue: #20364D;
@@ -1162,6 +1189,175 @@ body { line-height: 1.7; }
   .learning-path { padding: 16px; }
   .learning-step, .panel { padding: 16px; }
 }
+/* ================= illumination =================
+
+   The ornament of an Ethiopian manuscript, drawn rather than
+   photographed: interlace rules, corner pieces, framed panels and a
+   rubricated opening letter.
+
+   EVERY PIECE IS CSS OR AN INLINE SVG DATA URI. No image files, no
+   sprite sheet, no build step — the same reasoning CLAUDE.md gives for
+   the country flags. A family on a slow connection in Addis gets the
+   whole ornament in the stylesheet they were already downloading,
+   rather than twenty more requests.
+
+   Each piece also degrades to nothing: remove the rule and the page is
+   plainer but never broken, because none of them carries meaning that
+   the text does not also carry.
+   =============================================== */
+
+/* ---- the opening letter ----
+   A rubricated initial, the way a Ge'ez page opens. Applied to the
+   first letter of a section's lead paragraph. Deliberately NOT on
+   every paragraph: an initial that repeats is a pattern, not an
+   opening. */
+.illum-open::first-letter {
+  float: inline-start;
+  font-family: var(--f-display);
+  font-size: 3.1em;
+  line-height: .86;
+  padding-inline-end: .09em;
+  padding-block-start: .04em;
+  color: var(--ink-rubric);
+}
+
+/* ---- a ruled divider ----
+   Gold rule, lozenge, gold rule — the band that separates passages on
+   a manuscript page. Built from borders and one rotated square, so it
+   scales with the font rather than with a fixed image. */
+.illum-rule {
+  display: flex; align-items: center; gap: 12px;
+  margin: 26px 0; color: var(--ink-gold);
+}
+.illum-rule::before, .illum-rule::after {
+  content: ''; flex: 1; height: 0;
+  border-top: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  height: 3px;
+  opacity: .55;
+}
+.illum-rule__mark {
+  flex: none; width: 10px; height: 10px;
+  transform: rotate(45deg);
+  background: currentColor;
+  box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / .18);
+}
+
+/* ---- a framed panel ----
+   The double border of an illuminated frame: a gold keyline, a
+   breathing gap, then a hairline. `.panel` already carries the
+   surface; this adds the frame without touching it, so a panel can be
+   framed or plain. */
+.illum-frame {
+  position: relative;
+  border: 2px solid var(--ink-gold);
+  box-shadow: inset 0 0 0 1px var(--surface), inset 0 0 0 4px rgb(var(--accent-rgb) / .35);
+}
+
+/* ---- corner pieces ----
+   Four quarter-rosettes, one per corner, as pseudo-elements on the
+   frame's own children so the frame keeps its two pseudo-elements for
+   the border. Drawn as a conic sweep rather than an SVG so there is
+   nothing to fetch and nothing to escape.
+
+   aria-hidden is unnecessary: a background image is already invisible
+   to a screen reader. */
+.illum-frame > .illum-corner {
+  position: absolute; width: 18px; height: 18px; pointer-events: none;
+  background:
+    radial-gradient(circle at 100% 100%, transparent 58%, var(--ink-gold) 59%, var(--ink-gold) 72%, transparent 73%),
+    radial-gradient(circle at 100% 100%, transparent 28%, var(--ink-rubric) 29%, var(--ink-rubric) 38%, transparent 39%);
+}
+.illum-frame > .illum-corner:nth-child(1) { inset-block-start: 4px; inset-inline-start: 4px; }
+.illum-frame > .illum-corner:nth-child(2) { inset-block-start: 4px; inset-inline-end: 4px; transform: rotate(90deg); }
+.illum-frame > .illum-corner:nth-child(3) { inset-block-end: 4px; inset-inline-end: 4px; transform: rotate(180deg); }
+.illum-frame > .illum-corner:nth-child(4) { inset-block-end: 4px; inset-inline-start: 4px; transform: rotate(270deg); }
+
+/* ---- an interlace side band ----
+   The plaited border that runs down the margin of a manuscript page.
+   A repeating linear-gradient rather than an image: two strands
+   crossing, tiled vertically. */
+.illum-band {
+  border-inline-start: 10px solid transparent;
+  border-image: repeating-linear-gradient(
+      180deg,
+      var(--ink-gold) 0 6px,
+      var(--ink-rubric) 6px 12px,
+      var(--ink-leaf) 12px 18px
+    ) 10 / 10px / 0 stretch;
+}
+
+/* ---- a section heading, rubricated ----
+   The heading sits between two short gold rules, the way a chapter
+   title is set off on a page. Uses flex so the rules shrink and the
+   title never wraps under them. */
+.illum-head {
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; text-align: center;
+}
+.illum-head::before, .illum-head::after {
+  content: ''; flex: 1 1 0; max-width: 90px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--ink-gold));
+}
+.illum-head::after { background: linear-gradient(270deg, transparent, var(--ink-gold)); }
+
+/* ---- the page border ----
+   The woven band that runs down both margins of an illuminated page,
+   framing everything on it.
+
+   Fixed rather than absolute, so it stays with the reader down a long
+   page the way a real margin does, and it reuses --harag-image: the
+   same plait as the horizontal bands, turned on its side. One token
+   drives every edge, so a theme that changes the plait changes all
+   four at once.
+
+   pointer-events:none and aria-hidden are both needed — it sits over
+   the page's own stacking context, and it is decoration a screen
+   reader must not announce.
+
+   Hidden below 900px. On a phone the margins are the few pixels a
+   long Amharic word needs, and ornament that costs legibility is
+   ornament in the wrong place. */
+.illum-page { display: none; }
+@media (min-width: 900px) {
+  .illum-page { display: block; }
+  .illum-page i {
+    position: fixed; z-index: 2; pointer-events: none;
+    background-image: var(--harag-image);
+    background-repeat: repeat-y;
+    background-size: 22px auto;
+    width: 22px; top: 0; bottom: 0;
+    opacity: .85;
+  }
+  .illum-page i:nth-child(1) { inset-inline-start: 0; }
+  .illum-page i:nth-child(2) { inset-inline-end: 0; }
+  /* the content is inset so the band never runs under a line of text */
+  body.illuminated { padding-inline: 22px; }
+}
+
+/* ---- the cross mark ----
+   A small Ethiopian cross as a text ornament, drawn with two bars and
+   four lozenges in one element. Used to open a blessing line or to
+   mark a section, never as a bullet. */
+.illum-cross {
+  display: inline-block; width: 1em; height: 1em;
+  vertical-align: -.12em; color: var(--ink-gold);
+  background:
+    linear-gradient(currentColor, currentColor) center/100% 22% no-repeat,
+    linear-gradient(currentColor, currentColor) center/22% 100% no-repeat;
+}
+
+/* On a phone the margin band and the corner pieces are ornament
+   competing for the little width there is, so the band goes and the
+   corners shrink. The frame and the rules stay: they are what makes
+   it read as a manuscript. */
+@media (max-width: 720px) {
+  .illum-band { border-inline-start-width: 6px; border-image-width: 6px; }
+  .illum-frame > .illum-corner { width: 12px; height: 12px; }
+  .illum-open::first-letter { font-size: 2.6em; }
+  .illum-head::before, .illum-head::after { max-width: 40px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .folio, .course, .tier { transition: none; }
