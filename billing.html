@@ -159,7 +159,6 @@
       </p>
       <p class="small" style="margin:0 0 4px"><b id="contactName"></b></p>
       <p class="small" style="margin:0 0 4px">📧 <a id="contactEmail" href="#"></a></p>
-      <p class="small" style="margin:0">📞 <span id="contactPhone"></span></p>
     </div>
 
     <!-- ---------------- FAQ ---------------- -->
@@ -203,7 +202,7 @@
 <footer class="footer">
   <div class="shell between">
     <span>ፍኖተ ያሬድ · TewahedoDevs</span>
-    <span class="small"><a href="privacy.html">የግላዊነት መመሪያ</a> · <a href="terms.html">የአገልግሎት ሁኔታዎች</a> · ለጥያቄ፡ info@example.org</span>
+    <span class="small"><a href="privacy.html">የግላዊነት መመሪያ</a> · <a href="terms.html">የአገልግሎት ሁኔታዎች</a> · <a href="mailto:tewahedodevs@gmail.com">tewahedodevs@gmail.com</a></span>
   </div>
 </footer>
 
@@ -241,7 +240,6 @@ if (u) {
   $('contactName').textContent = CHURCH_CONTACT.name;
   $('contactEmail').textContent = CHURCH_CONTACT.email;
   $('contactEmail').href = 'mailto:' + CHURCH_CONTACT.email;
-  $('contactPhone').textContent = CHURCH_CONTACT.phone;
 
   /* Three states, not two. A parent whose term is still running does not
      need to be sold to again; one whose term has FINISHED needs to be

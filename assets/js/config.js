@@ -633,6 +633,5 @@ export const CERTIFICATE_SIGNATORIES = {
    edit rather than a search across every page. */
 export const CHURCH_CONTACT = {
   name: 'ፍኖተ ያሬድ · TewahedoDevs',
-  email: 'info@example.org',
-  phone: '+1 (000) 000-0000'
+  email: 'tewahedodevs@gmail.com'
 };

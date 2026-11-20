@@ -1432,6 +1432,13 @@ h1 { color: var(--text); }
 .manuscript-leaf figcaption { text-align: center; padding-top: .8rem; color: var(--text-dim); }
 .manuscript-leaf blockquote { margin: 0; color: var(--danger-text); font: 700 clamp(1.3rem, 3vw, 2.2rem)/1.55 var(--f-display); }
 .manuscript-leaf small { font-family: var(--f-display); }
+.zema-miniature { margin: 1rem 0; }
+.zema-miniature img {
+  display: block; width: 100%; height: auto;
+  padding: 4px; border: 3px double var(--accent);
+  border-radius: 12px 12px 3px 3px; background: var(--surface);
+}
+.zema-miniature figcaption { margin-block-start: .55rem; font-size: .85em; }
 .map-preview-link { display: inline-block; margin-block-start: .75rem; padding-block: .55rem; color: var(--accent-text); text-underline-offset: .3em; }
 .harag, .track-card::after { background-size: auto 100%; }
 .eyebrow { font-family: var(--f-display); }

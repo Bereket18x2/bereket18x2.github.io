@@ -66,25 +66,6 @@
   <p class="eyebrow" data-am="ምዝገባ" data-en="Registration">ምዝገባ</p>
   <h1 style="font-size:2rem" data-am="መለያ ይክፈቱ" data-en="Create an account">መለያ ይክፈቱ</h1>
 
-  <!-- Who is registering. A teacher's request is reviewed by hand; a
-       parent's account is created immediately. -->
-  <div class="tiers" style="margin:18px 0">
-    <label class="tier">
-      <input type="radio" name="accountType" value="parent" checked>
-      <span class="tier__body">
-        <b data-am="ወላጅ ነኝ — ልጄን አስመዘግባለሁ" data-en="I am a parent — enrolling my child">ወላጅ ነኝ — ልጄን አስመዘግባለሁ</b>
-        <span class="muted small" data-am="መለያው የእርስዎ ነው፤ የተማሪው መረጃ በእሱ ሥር ይመዘገባል።" data-en="The account is yours; the student is registered under it.">መለያው የእርስዎ ነው፤ የተማሪው መረጃ በእሱ ሥር ይመዘገባል።</span>
-      </span>
-    </label>
-    <label class="tier">
-      <input type="radio" name="accountType" value="teacher">
-      <span class="tier__body">
-        <b data-am="መምህር ነኝ" data-en="I am a teacher">መምህር ነኝ</b>
-        <span class="muted small" data-am="ጥያቄዎ በአስተዳዳሪ ታይቶ ይጸድቃል። እስከዚያ ድረስ ወደ ተማሪዎች መረጃ አይደርሱም።" data-en="Your request is reviewed by an administrator. Until then you cannot reach any student data.">ጥያቄዎ በአስተዳዳሪ ታይቶ ይጸድቃል። እስከዚያ ድረስ ወደ ተማሪዎች መረጃ አይደርሱም።</span>
-      </span>
-    </label>
-  </div>
-
   <form id="form" class="panel" novalidate>
 
     <!-- ============ shared account fields ============ -->
@@ -187,34 +168,6 @@
       <p class="help">ስለ ልጅዎ የምንሰበስበው መረጃ ይህ ብቻ ነው — ስም፣ ዕድሜና የትምህርት ክፍል። አድራሻ ወይም የልጅ ኢሜይል አንጠይቅም።</p>
     </div>
 
-    <!-- ============ TEACHER ============ -->
-    <div id="teacherPane" hidden>
-      <div class="harag harag--thin" style="margin:22px 0"></div>
-      <p class="eyebrow" style="margin-bottom:14px">የመምህር መረጃ</p>
-
-      <div class="field">
-        <label for="phone">ስልክ ቁጥር</label>
-        <input class="input" id="phone" type="tel" autocomplete="tel">
-      </div>
-
-      <div class="field">
-        <label for="parish">የሚያገለግሉበት ደብር</label>
-        <input class="input" id="parish" autocomplete="organization">
-      </div>
-
-      <div class="field">
-        <label>የሚያስተምሯቸው ትምህርቶች</label>
-        <div id="teachSubjects" class="tiers"></div>
-      </div>
-
-      <p class="note small">
-        ጥያቄዎ እስኪጸድቅ ድረስ የተማሪዎችን መረጃ በምንም መንገድ ማየት አይችሉም።
-      </p>
-    </div>
-
-    <div class="harag harag--thin" style="margin:22px 0"></div>
-
-    <!-- ============ consent ============ -->
     <div class="field consent">
       <label class="consent-row" for="consent">
         <input type="checkbox" id="consent" required>
@@ -268,27 +221,6 @@ const mark = (input, msgEl, result) => {
   if (result.ok) { input.classList.add('is-valid'); msgEl.classList.add('valid'); msgEl.textContent = '✓'; }
   else { input.classList.add('is-invalid'); msgEl.classList.add('invalid'); msgEl.textContent = '✕ ' + result.message; }
 };
-
-/* ---------------- account type ---------------- */
-const accountType = () =>
-  document.querySelector('input[name="accountType"]:checked').value;
-
-function paintAccountType() {
-  const teacher = accountType() === 'teacher';
-  $('parentPane').hidden = teacher;
-  $('teacherPane').hidden = !teacher;
-  $('fullNameLabel').textContent = teacher ? 'የመምህሩ ሙሉ ስም' : 'የወላጅ / አሳዳጊ ሙሉ ሕጋዊ ስም';
-  $('emailLabel').textContent = teacher ? 'ኢሜይል — ይህ የመግቢያ አድራሻዎ ነው' : 'የወላጅ ኢሜይል — ይህ የመግቢያ አድራሻዎ ነው';
-  $('emailHelp').textContent = teacher
-    ? 'ወደ መለያው የሚገቡበትና የማረጋገጫ መልእክት የሚደርስዎት በዚህ አድራሻ ነው።'
-    : 'የወላጅ ወይም የአሳዳጊ ኢሜይል መሆን አለበት፤ የልጁ ኢሜይል አይደለም። ወደ መለያው የሚገቡበትና የማረጋገጫ መልእክት የሚደርስዎት በዚህ አድራሻ ነው።';
-  $('consentText').textContent = teacher
-    ? 'የአገልግሎቱን ሁኔታዎችና የግላዊነት መመሪያ አንብቤ ተቀብያለሁ።'
-    : 'እኔ የተማሪው ወላጅ ወይም አሳዳጊ መሆኔን፣ እንዲሁም ልጄ በዚህ ትምህርት ቤት እንዲመዘገብ መፍቀዴን አረጋግጣለሁ።';
-  submitBtn.textContent = teacher ? 'የመምህርነት ጥያቄ ላክ' : 'መለያ ክፈት';
-}
-document.querySelectorAll('input[name="accountType"]')
-  .forEach(r => r.addEventListener('change', () => { hideErr(); paintAccountType(); }));
 
 /* ---------------- track + pricing ---------------- */
 let chosenTrack = '';
@@ -643,14 +575,6 @@ const checkAge = () => {
   mark($('age'), $('ageMsg'), validateAge($('age').value, chosenTrack));
 };
 
-/* ---------------- teacher subjects ---------------- */
-$('teachSubjects').innerHTML = ['bible', 'zema'].flatMap(tr =>
-  subjectsFor(tr).map(s => `
-    <label class="tier">
-      <input type="checkbox" name="teachSubject" value="${s.id}">
-      <span class="tier__body"><b>${s.am}</b><span class="muted small">${TRACKS[tr].am}</span></span>
-    </label>`)).join('');
-
 /* ---------------- live field feedback ---------------- */
 $('fullName').addEventListener('blur', () => mark($('fullName'), $('fullNameMsg'), validateName($('fullName').value)));
 $('email').addEventListener('blur', () => mark($('email'), $('emailMsg'), validateEmail($('email').value)));
@@ -658,23 +582,18 @@ $('password').addEventListener('blur', () => mark($('password'), $('passwordMsg'
 $('studentName').addEventListener('blur', () => mark($('studentName'), $('studentNameMsg'), validateName($('studentName').value)));
 $('age').addEventListener('blur', checkAge);
 
-paintAccountType();
-
 /* ---------------- submit ---------------- */
 $('form').addEventListener('submit', async (e) => {
   e.preventDefault();
   hideErr();
   const v = id => $(id).value.trim();
-  const teacher = accountType() === 'teacher';
 
   const base = [validateName(v('fullName')), validateEmail(v('email')), validatePassword($('password').value)];
   const firstBase = base.find(r => !r.ok);
   if (firstBase) { showErr(firstBase.message); return; }
 
   if (!$('consent').checked) {
-    showErr(teacher
-      ? 'ለመቀጠል ሁኔታዎቹን መቀበል ያስፈልጋል።'
-      : 'ለመቀጠል የወላጅ/አሳዳጊ ማረጋገጫውን ምልክት ማድረግ ያስፈልጋል።');
+    showErr('ለመቀጠል የወላጅ/አሳዳጊ ማረጋገጫውን ምልክት ማድረግ ያስፈልጋል።');
     $('consent').focus();
     return;
   }
@@ -683,48 +602,39 @@ $('form').addEventListener('submit', async (e) => {
   submitBtn.textContent = 'በመላክ ላይ…';
 
   try {
-    if (teacher) {
-      const subjects = [...document.querySelectorAll('input[name="teachSubject"]:checked')].map(i => i.value);
-      await Store.createTeacherRequest({
-        fullName: v('fullName'), email: v('email'), password: $('password').value,
-        phone: v('phone'), subjects, parish: v('parish'),
-        consentGiven: true
-      });
-    } else {
-      if (!chosenTrack) { throw new Error('እባክዎ የትምህርት ክፍሉን ይምረጡ።'); }
-      /* Checked here as well as in store.js. The form is the courtesy;
-         store.js is the boundary, and it derives `region` from the code
-         rather than trusting anything this page sends. */
-      /* The hidden code is the record of what was chosen, not the text
-         in the box — a parent may have typed over it. Re-resolving it
-         through countryByCode means a code we do not recognise fails
-         here rather than reaching store.js. */
-      const countryCheck = validateCountry(countryByCode($('countryCode').value));
-      if (!countryCheck.ok) {
-        $('countryMsg').textContent = '✕ ' + countryCheck.message;
-        $('countryMsg').className = 'field-msg invalid';
-        $('country').classList.add('is-invalid');
-        $('country').focus();
-        throw new Error(countryCheck.message);
-      }
-      const nameCheck = validateName(v('studentName'));
-      if (!nameCheck.ok) throw new Error(nameCheck.message);
-      const ageCheck = validateAge(v('age'), chosenTrack);
-      if (!ageCheck.ok) throw new Error(ageCheck.message);
-
-      const subjects = chosenTrack === 'zema'
-        ? selectedZema()
-        : subjectsFor('bible').map(s => s.id);
-      if (subjects.length === 0) throw new Error('ቢያንስ አንድ ትምህርት ይምረጡ።');
-
-      await Store.createUser({
-        guardianName: v('fullName'), email: v('email'), password: $('password').value,
-        studentName: v('studentName'), age: Number(v('age')),
-        track: chosenTrack, selectedSubjects: subjects,
-        countryCode: $('countryCode').value,
-        prepaidTerm, consentGiven: true
-      });
+    if (!chosenTrack) { throw new Error('እባክዎ የትምህርት ክፍሉን ይምረጡ።'); }
+    /* Checked here as well as in store.js. The form is the courtesy;
+       store.js is the boundary, and it derives `region` from the code
+       rather than trusting anything this page sends. */
+    /* The hidden code is the record of what was chosen, not the text
+       in the box — a parent may have typed over it. Re-resolving it
+       through countryByCode means a code we do not recognise fails
+       here rather than reaching store.js. */
+    const countryCheck = validateCountry(countryByCode($('countryCode').value));
+    if (!countryCheck.ok) {
+      $('countryMsg').textContent = '✕ ' + countryCheck.message;
+      $('countryMsg').className = 'field-msg invalid';
+      $('country').classList.add('is-invalid');
+      $('country').focus();
+      throw new Error(countryCheck.message);
     }
+    const nameCheck = validateName(v('studentName'));
+    if (!nameCheck.ok) throw new Error(nameCheck.message);
+    const ageCheck = validateAge(v('age'), chosenTrack);
+    if (!ageCheck.ok) throw new Error(ageCheck.message);
+
+    const subjects = chosenTrack === 'zema'
+      ? selectedZema()
+      : subjectsFor('bible').map(s => s.id);
+    if (subjects.length === 0) throw new Error('ቢያንስ አንድ ትምህርት ይምረጡ።');
+
+    await Store.createUser({
+      guardianName: v('fullName'), email: v('email'), password: $('password').value,
+      studentName: v('studentName'), age: Number(v('age')),
+      track: chosenTrack, selectedSubjects: subjects,
+      countryCode: $('countryCode').value,
+      prepaidTerm, consentGiven: true
+    });
     location.href = 'dashboard.html';
   } catch (ex) {
     showErr(ex.message);
