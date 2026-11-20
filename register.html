@@ -29,7 +29,7 @@
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=12",
+    "@store":      "./assets/js/store.js?v=13",
     "@lessons":    "./assets/js/lessons.js?v=12",
     "@validators": "./assets/js/validators.js?v=12",
     "@coverage":   "./assets/js/coverage.js?v=12",
@@ -206,13 +206,10 @@ const err = $('err');
 const showErr = (m) => { err.textContent = m; err.style.display = 'block'; err.scrollIntoView({ block: 'nearest' }); };
 const hideErr = () => { err.style.display = 'none'; };
 const submitBtn = $('submitBtn');
-const submitLabel = submitBtn.textContent;
+let submitLabel = submitBtn.textContent;
 
-ready().then(async (u) => {
-  if (!u) return;
-  try { location.href = homeFor(await Store.current()); } catch (e) { /* stay */ }
-});
-
+const addingSibling = new URLSearchParams(location.search).has('family');
+let parent = null;
 const mark = (input, msgEl, result) => {
   input.classList.remove('is-valid', 'is-invalid');
   msgEl.classList.remove('valid', 'invalid');
@@ -582,13 +579,40 @@ $('password').addEventListener('blur', () => mark($('password'), $('passwordMsg'
 $('studentName').addEventListener('blur', () => mark($('studentName'), $('studentNameMsg'), validateName($('studentName').value)));
 $('age').addEventListener('blur', checkAge);
 
+if (addingSibling) {
+  $('form').hidden = true;
+  try {
+    parent = await Store.current();
+    if (!parent?.emailVerified || parent.role !== 'student' || parent.active === false) {
+      location.replace('index.html#signin');
+    } else {
+      for (const id of ['fullName', 'email', 'password', 'country']) $(id).closest('.field').hidden = true;
+      choose(countryByCode(parent.country));
+      const heading = document.querySelector('main h1');
+      heading.dataset.am = 'ሌላ ልጅ ያስመዝግቡ';
+      heading.dataset.en = 'Enroll another child';
+      heading.textContent = document.documentElement.lang === 'en' ? heading.dataset.en : heading.dataset.am;
+      submitLabel = 'ተማሪውን መዝግብ';
+      submitBtn.textContent = submitLabel;
+      $('form').hidden = false;
+    }
+  } catch (ex) {
+    $('form').before($('err'));
+    showErr(ex.message);
+  }
+} else {
+  ready().then(async user => {
+    if (user) location.href = homeFor(await Store.current());
+  }).catch(ex => showErr(ex.message));
+}
+
 /* ---------------- submit ---------------- */
 $('form').addEventListener('submit', async (e) => {
   e.preventDefault();
   hideErr();
   const v = id => $(id).value.trim();
 
-  const base = [validateName(v('fullName')), validateEmail(v('email')), validatePassword($('password').value)];
+  const base = addingSibling ? [] : [validateName(v('fullName')), validateEmail(v('email')), validatePassword($('password').value)];
   const firstBase = base.find(r => !r.ok);
   if (firstBase) { showErr(firstBase.message); return; }
 
@@ -628,14 +652,19 @@ $('form').addEventListener('submit', async (e) => {
       : subjectsFor('bible').map(s => s.id);
     if (subjects.length === 0) throw new Error('ቢያንስ አንድ ትምህርት ይምረጡ።');
 
-    await Store.createUser({
-      guardianName: v('fullName'), email: v('email'), password: $('password').value,
+    const enrolled = await Store.createUser({
+      sibling: addingSibling,
+      guardianName: parent?.guardianName || v('fullName'), email: parent?.email || v('email'), password: $('password').value,
       studentName: v('studentName'), age: Number(v('age')),
       track: chosenTrack, selectedSubjects: subjects,
       countryCode: $('countryCode').value,
       prepaidTerm, consentGiven: true
     });
-    location.href = 'dashboard.html';
+    if (addingSibling) {
+      try { await Store.selectStudent(enrolled); }
+      catch { /* the child is already enrolled and listed in the family picker */ }
+    }
+    location.href = addingSibling ? 'dashboard.html?family=added' : 'dashboard.html';
   } catch (ex) {
     showErr(ex.message);
     submitBtn.disabled = false;

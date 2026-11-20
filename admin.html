@@ -26,7 +26,7 @@
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=12",
+    "@store":      "./assets/js/store.js?v=13",
     "@lessons":    "./assets/js/lessons.js?v=12",
     "@validators": "./assets/js/validators.js?v=12",
     "@coverage":   "./assets/js/coverage.js?v=12",
@@ -221,17 +221,16 @@ if (me && me.role === 'admin') {
   let pending = [], teachers = [], rejected = [], students = [], requests = [];
 
   async function load() {
-    const [p, t, r, s] = await Promise.all([
-      Store.teachersByRole('pending_teacher').catch(() => []),
-      Store.teachersByRole('teacher').catch(() => []),
-      Store.teachersByRole('rejected').catch(() => []),
-      Store.allUsers().catch(() => [])
+    const [p, t, r, s, reqs] = await Promise.all([
+      Store.teachersByRole('pending_teacher'),
+      Store.teachersByRole('teacher'),
+      Store.teachersByRole('rejected'),
+      Store.allUsers(),
+      Store.allSubjectRequests()
     ]);
     pending = p; teachers = t; rejected = r; students = s;
-    requests = await Store.allSubjectRequests().catch(() => []);
+    requests = reqs;
   }
-
-  await load();
 
   /* ---------------- tabs ---------------- */
   const tabs = [...document.querySelectorAll('.tab')];
@@ -570,12 +569,19 @@ if (me && me.role === 'admin') {
     renderPending(); renderTeachers(); renderStudents();
     renderRequests(); renderRejected();
   }
-  renderAll();
+  try {
+    await load();
+    renderAll();
+  } catch {
+    say('ዝርዝሩን ማሳየት አልተቻለም። ግንኙነትዎን አረጋግጠው ገጹን እንደገና ይክፈቱ።', true);
+    document.querySelector('.tabs').hidden = true;
+    document.querySelectorAll('[data-pane]').forEach(pane => { pane.hidden = true; });
+  }
 
   /* Second wave, exactly as the teacher roster does it: the page is
      usable immediately from the user documents and the two computed
      columns fill in when Firestore has counted them server-side. */
-  Store.rosterStats(students, hasScores)
+  if (students.length) Store.rosterStats(students, hasScores)
     .then((m) => { studentStats = m; renderStudents(); })
     .catch(() => { /* the columns already render a dash for null */ });
 

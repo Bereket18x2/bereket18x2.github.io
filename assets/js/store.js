@@ -23,7 +23,7 @@ import {
 import {
   getFirestore, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, writeBatch,
   collection, getDocs, query, where, orderBy, increment, serverTimestamp,
-  getAggregateFromServer, count, sum
+  runTransaction, getAggregateFromServer, count, sum
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 /* Bare specifiers, resolved by the import map in each page's <head>.
@@ -31,6 +31,7 @@ import {
    a freshly-fetched store.js pull a stale config.js, which is exactly
    the staleness the cache-bust exists to prevent. */
 import { firebaseConfig, CONSENT_VERSION, countryByCode } from '@config';
+import { restoreSeen, serializeSeen, coverageOf } from './coverage.js';
 import { subjectsFor, findLesson } from '@lessons';
 import { validateName, validateAge, validateEnrollableTrack, validatePassword,
          validateEmail, validateComment, validateCountry, validateQuestion,
@@ -116,6 +117,20 @@ let lastVerificationError = null;
 
 /* ---------------- accounts + data ---------------- */
 
+// A page keeps the student it opened with, even when browser history restores
+// it after a profile switch. Firestore separately checks family membership.
+let pageStudent = null;
+function studentUid(account) {
+  if (!account || (pageStudent && pageStudent.account !== account.uid)) {
+    throw new Error('መለያዎ ተቀይሯል። ገጹን እንደገና ይክፈቱ።');
+  }
+  return pageStudent?.uid || account.uid;
+}
+function selectedUid(account) {
+  try { return sessionStorage.getItem('fy-student-' + account.uid) || account.uid; }
+  catch { return account.uid; }
+}
+
 export const Store = {
 
   /* Creates the auth account first, then the profile doc, then sends
@@ -188,8 +203,29 @@ export const Store = {
     return this.current();
   },
 
+  async familyStudents() {
+    await ready();
+    const account = auth.currentUser;
+    if (!account) throw new Error('መጀመሪያ ይግቡ።');
+    try {
+      const [first, siblings] = await Promise.all([
+        getDoc(doc(db, 'users', account.uid)),
+        getDocs(query(collection(db, 'users'), where('guardianUid', '==', account.uid)))
+      ]);
+      return [first, ...siblings.docs].map(snap => ({ uid: snap.id, name: snap.data().studentName }));
+    } catch (e) { fail(e); }
+  },
+
+  async selectStudent(uid) {
+    await ready();
+    const account = auth.currentUser;
+    if (!account) throw new Error('መጀመሪያ ይግቡ።');
+    try { sessionStorage.setItem('fy-student-' + account.uid, uid); }
+    catch { throw new Error('ተማሪ ለመቀየር በአሳሹ ውስጥ የጊዜያዊ ማከማቻ ፈቃድ ያስፈልጋል።'); }
+  },
+
   async createUser({ guardianName, email, password, studentName, age, track,
-                     selectedSubjects, prepaidTerm = false, countryCode, consentGiven }) {
+                     selectedSubjects, prepaidTerm = false, countryCode, consentGiven, sibling = false }) {
     if (!TRACKS[track]) throw new Error('እባክዎ የትምህርት ክፍሉን ይምረጡ።');
 
     /* The region is DERIVED from the country here, never sent by the
@@ -226,7 +262,7 @@ export const Store = {
     for (const check of [
       validateName(guardianName),
       validateEmail(email),
-      validatePassword(password),
+      ...(sibling ? [] : [validatePassword(password)]),
       validateName(studentName),
       validateEnrollableTrack(track),
       validateAge(age, track)
@@ -234,19 +270,24 @@ export const Store = {
       if (!check.ok) throw new Error(check.message);
     }
 
-    let cred;
-    try {
-      cred = await createUserWithEmailAndPassword(auth, email, password);
-    } catch (e) { fail(e); }
-
-    const uid = cred.user.uid;
+    let account;
+    if (sibling) {
+      await ready();
+      account = auth.currentUser;
+      if (!account?.emailVerified) throw new Error('የወላጅ መለያዎን ያረጋግጡ።');
+    } else {
+      try { account = (await createUserWithEmailAndPassword(auth, email, password)).user; }
+      catch (e) { fail(e); }
+    }
+    const uid = sibling ? account.uid + '~' + doc(collection(db, 'users')).id : account.uid;
     try {
       await setDoc(doc(db, 'users', uid), {
         uid,
+        ...(sibling ? { guardianUid: account.uid } : {}),
         guardianName: guardianName.trim().replace(/\s+/g, ' '),
         // the normalised address off the credential — see the note in
         // createTeacherRequest; the rules compare this to the token
-        email: cred.user.email,
+        email: account.email,
         studentName: studentName.trim().replace(/\s+/g, ' '),
         age: Math.trunc(Number(age)),
         country: country.code,
@@ -261,7 +302,7 @@ export const Store = {
         selectedSubjects: Array.isArray(selectedSubjects) ? selectedSubjects : [],
         role: 'student',
         paid: false,
-        verified: false,
+        verified: account.emailVerified,
         studySeconds: 0,
         createdAt: serverTimestamp(),
         lastSeen: serverTimestamp(),
@@ -275,7 +316,8 @@ export const Store = {
     } catch (e) {
       // Signup is not complete if the Firestore profile was rejected.
       // Delete the new Auth identity rather than leaving a broken login.
-      try { await deleteUser(cred.user); }
+      if (sibling) fail(e);
+      try { await deleteUser(account); }
       catch (rollback) { console.error('Student signup cleanup failed:', rollback?.code); }
       fail(e);
     }
@@ -285,9 +327,10 @@ export const Store = {
        either. Swallowing it silently leaves a parent staring at an
        empty inbox with nothing to act on. Record it, log the real code
        for diagnosis, and show it on the verification gate. */
+    if (sibling) return uid;
     lastVerificationError = null;
     try {
-      await sendEmailVerification(cred.user);
+      await sendEmailVerification(account);
     } catch (e) {
       lastVerificationError = amharicError(e);
       console.error('sendEmailVerification failed:', e && e.code, e && e.message);
@@ -300,6 +343,8 @@ export const Store = {
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (e) { fail(e); }
+    pageStudent = null;
+    try { sessionStorage.removeItem('fy-student-' + auth.currentUser.uid); } catch {}
     await this.touch();
     return this.current();
   },
@@ -320,13 +365,18 @@ export const Store = {
     const u = auth.currentUser;
     if (!u) return null;
 
-    const ref = doc(db, 'users', u.uid);
+    const uid = selectedUid(u);
+    const ref = doc(db, 'users', uid);
     let snap;
     try { snap = await getDoc(ref); } catch (e) { fail(e); }
     if (!snap.exists()) return null;
 
     const data = snap.data();
-    const progress = await this.progressOf(u.uid).catch(() => ({}));
+    if (uid !== u.uid && (data.guardianUid !== u.uid || data.role !== 'student')) {
+      throw new Error('የተማሪውን መለያ መክፈት አልተቻለም።');
+    }
+    pageStudent = { account: u.uid, uid };
+    const progress = await this.progressOf(uid);
     const emailVerified = !!u.emailVerified;
 
     // The token is the truth; the doc is a cached copy for the admin
@@ -339,7 +389,7 @@ export const Store = {
       } catch (e) { /* read-only is fine */ }
     }
 
-    return { ...data, uid: u.uid, email: u.email || data.email, emailVerified, progress };
+    return { ...data, uid, email: u.email || data.email, emailVerified, progress };
   },
 
   async progressOf(uid) {
@@ -545,9 +595,8 @@ export const Store = {
   async addStudySeconds(seconds) {
     await ready();
     const u = auth.currentUser;
-    if (!u) return null;
     try {
-      await updateDoc(doc(db, 'users', u.uid), {
+      await updateDoc(doc(db, 'users', studentUid(u)), {
         studySeconds: increment(seconds),
         lastSeen: serverTimestamp()
       });
@@ -560,7 +609,7 @@ export const Store = {
     const u = auth.currentUser;
     if (!u) return;
     // The doc may not exist yet during registration; that is not an error.
-    try { await updateDoc(doc(db, 'users', u.uid), { lastSeen: serverTimestamp() }); }
+    try { await updateDoc(doc(db, 'users', studentUid(u)), { lastSeen: serverTimestamp() }); }
     catch (e) { /* ignore */ }
   },
 
@@ -570,7 +619,6 @@ export const Store = {
   async saveVideoCompletion(lessonId, coverage, sessionSeconds = 0, suspicious = false) {
     await ready();
     const u = auth.currentUser;
-    if (!u) return null;
 
     const record = {
       videoCompleted: true,
@@ -585,7 +633,7 @@ export const Store = {
       completedAt: serverTimestamp()
     };
     try {
-      await setDoc(doc(db, 'users', u.uid, 'progress', lessonId), record, { merge: true });
+      await setDoc(doc(db, 'users', studentUid(u), 'progress', lessonId), record, { merge: true });
     } catch (e) { fail(e); }
     return record;
   },
@@ -604,8 +652,8 @@ export const Store = {
   async saveCoverage(lessonId, { seenBuckets, bucketSeconds, videoSeconds, coverage }) {
     await ready();
     const u = auth.currentUser;
-    if (!u) return null;
 
+    const ref = doc(db, 'users', studentUid(u), 'progress', lessonId);
     const record = {
       seenBuckets: Array.isArray(seenBuckets) ? seenBuckets : [],
       bucketSeconds: Math.trunc(Number(bucketSeconds) || 0),
@@ -613,33 +661,37 @@ export const Store = {
       coverage: Math.min(1, Math.max(0, Number(coverage) || 0))
     };
     try {
-      await setDoc(doc(db, 'users', u.uid, 'progress', lessonId), record, { merge: true });
-    } catch (e) { /* best effort: the in-memory set carries on regardless */ }
-    return record;
+      return await runTransaction(db, async tx => {
+        const previous = await tx.get(ref);
+        const merged = restoreSeen(previous.data(), record.videoSeconds, record.bucketSeconds);
+        for (const bucket of record.seenBuckets) merged.add(bucket);
+        const next = { ...record, seenBuckets: serializeSeen(merged), coverage: coverageOf(merged, record.videoSeconds) };
+        tx.set(ref, next, { merge: true });
+        return next;
+      });
+    } catch (e) { fail(e); }
   },
 
   /* Best score wins — a retake can raise a mark but never lower it. */
   async saveQuiz(lessonId, score, of) {
     await ready();
     const u = auth.currentUser;
-    if (!u) return null;
 
-    const ref = doc(db, 'users', u.uid, 'progress', lessonId);
-    let prevScore = 0;
+    const ref = doc(db, 'users', studentUid(u), 'progress', lessonId);
     try {
-      const prev = await getDoc(ref);
-      if (prev.exists()) prevScore = Number(prev.data().score) || 0;
-    } catch (e) { /* treat as first attempt */ }
-
-    const record = {
-      done: true,
-      score: Math.max(Number(score), prevScore),
-      of: Number(of),
-      at: serverTimestamp()
-    };
-    // merge, or this would wipe the videoCompleted/coverage half
-    try { await setDoc(ref, record, { merge: true }); } catch (e) { fail(e); }
-    return record;
+      return await runTransaction(db, async tx => {
+        const previous = (await tx.get(ref)).data();
+        const keepBest = previous?.score > score;
+        const record = {
+          done: true,
+          score: keepBest ? previous.score : score,
+          of: keepBest ? previous.of : of,
+          at: serverTimestamp()
+        };
+        tx.set(ref, record, { merge: true });
+        return record;
+      });
+    } catch (e) { fail(e); }
   },
 
   /* Teachers confirm payment by hand. The rules allow this only for an
@@ -962,7 +1014,7 @@ export const Store = {
     if (!check.ok) throw new Error(check.message);
     if (typeof lessonId !== 'string' || !lessonId) throw new Error('ትምህርቱ አልታወቀም።');
     try {
-      await addDoc(collection(db, 'users', u.uid, 'questions'), {
+      await addDoc(collection(db, 'users', studentUid(u), 'questions'), {
         lessonId,
         text: String(text).trim(),
         askedAt: serverTimestamp(),
@@ -1020,7 +1072,7 @@ export const Store = {
     const u = auth.currentUser;
     if (!u) return false;
     try {
-      await updateDoc(doc(db, 'users', u.uid, 'questions', questionId), { read: true });
+      await updateDoc(doc(db, 'users', studentUid(u), 'questions', questionId), { read: true });
       return true;
     } catch (e) { return false; }
   },
@@ -1039,8 +1091,8 @@ export const Store = {
       throw new Error('ቢያንስ አንድ ትምህርት ይምረጡ።');
     }
     try {
-      await setDoc(doc(db, 'subjectRequests', u.uid), {
-        uid: u.uid,
+      await setDoc(doc(db, 'subjectRequests', studentUid(u)), {
+        uid: studentUid(u),
         subjects,
         status: 'pending',
         requestedAt: serverTimestamp()
@@ -1059,7 +1111,7 @@ export const Store = {
   async mySubjectRequest() {
     await ready();
     const u = auth.currentUser;
-    return u ? this.subjectRequestOf(u.uid) : null;
+    return u ? this.subjectRequestOf(studentUid(u)) : null;
   },
 
   /* Grant subjects with their receipt in one atomic commit; a failed
@@ -1104,7 +1156,7 @@ export const Store = {
     if (!version) throw new Error('የመመሪያው እትም አልታወቀም።');
 
     try {
-      await setDoc(doc(db, 'users', u.uid, 'consents', version), {
+      await setDoc(doc(db, 'users', studentUid(u), 'consents', version), {
         version,
         at: serverTimestamp()
       });
@@ -1114,7 +1166,7 @@ export const Store = {
        matters legally; this only saves the extra read on future page
        loads, so a failure here must not tell the parent their agreement
        did not register. */
-    try { await updateDoc(doc(db, 'users', u.uid), { consentVersion: version }); }
+    try { await updateDoc(doc(db, 'users', studentUid(u)), { consentVersion: version }); }
     catch (e) { /* the record stands; the cache catches up next time */ }
     return true;
   },
@@ -1124,7 +1176,7 @@ export const Store = {
     const u = auth.currentUser;
     if (!u || !version) return false;
     try {
-      const snap = await getDoc(doc(db, 'users', u.uid, 'consents', version));
+      const snap = await getDoc(doc(db, 'users', studentUid(u), 'consents', version));
       return snap.exists();
     } catch (e) { return false; }
   },
@@ -1436,7 +1488,13 @@ export const requireAuth = async ({ requirePaid = false } = {}) => {
 
   let user = null;
   try { user = await Store.current(); }
-  catch (e) { location.href = SIGN_IN_URL; return null; }
+  catch {
+    paintRolePanel({
+      title: 'የተማሪውን መረጃ መጫን አልተቻለም።',
+      body: 'ግንኙነትዎን አረጋግጠው ገጹን እንደገና ይክፈቱ።'
+    });
+    return null;
+  }
   if (!user) { location.href = SIGN_IN_URL; return null; }
 
   if (!user.emailVerified) {

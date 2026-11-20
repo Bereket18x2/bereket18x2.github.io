@@ -34,6 +34,12 @@ You do not need to verify identity separately. The request can only be written b
 someone signed in as that account, and the rules enforce that — the uid in the
 document is the uid that wrote it.
 
+The dashboard requests deletion for the whole sign-in. Before removing the
+first student, list the student documents where `guardianUid` equals the
+authenticated account UID. Apply the student-data steps below to each sibling
+as well as the first student. Each student has a separate payment record.
+The family shares a single Firebase Auth identity, which is removed once.
+
 ## 2. Take a backup first
 
 ```bash

@@ -30,7 +30,7 @@
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=12",
+    "@store":      "./assets/js/store.js?v=13",
     "@lessons":    "./assets/js/lessons.js?v=12",
     "@validators": "./assets/js/validators.js?v=12",
     "@coverage":   "./assets/js/coverage.js?v=12",
@@ -90,9 +90,15 @@
       <p class="muted small" style="margin:10px 0 0" id="watchNote">
         ጥያቄዎቹ የሚከፈቱት ትምህርቱን ቢያንስ ፺% ካዩ በኋላ ነው።
       </p>
+      <div id="watchSaveIssue" hidden>
+        <p class="note small" role="status">የተመለከቱት ጊዜ ወይም የቪዲዮው ክፍል ገና አልተመዘገበም። ገጹን ሳይዘጉ እንደገና ይሞክሩ።</p>
+        <button class="btn btn--ghost" type="button" id="retryWatch">የዕይታ ሂደቴን መዝግብ</button>
+      </div>
+      <button class="btn btn--ghost" id="retryVideo" type="button" hidden>እንደገና መዝግብ</button>
     </div>
 
     <div class="grid-2">
+      <div>
       <!-- removed entirely for Zema, which has no questions at all -->
       <div id="quizSection">
         <div class="between" style="margin-bottom:14px">
@@ -110,8 +116,12 @@
           <p class="eyebrow">ውጤት</p>
           <div class="stat" id="score"></div>
           <p class="muted small" id="verdict" style="margin:10px 0 16px"></p>
+          <p id="scoreSave" class="note small" role="status"></p>
+          <button id="retryScore" type="button" class="btn btn--ghost" hidden>ውጤቴን እንደገና መዝግብ</button>
           <a class="btn btn--gold" href="dashboard.html">ወደ ትምህርቶች ተመለስ</a>
         </div>
+
+      </div>
 
         <!-- ---------------- ask the teacher ----------------
 
@@ -192,7 +202,7 @@ import { Store, requireAuth } from '@store';
 import { findLesson, isFree, trackOfLesson, subjectById, FREE_PREVIEW_ID } from '@lessons';
 import { hasQuizzes, QUESTION_MAX_CHARS, validateQuestion } from '@validators';
 import { markBucket, coverageOf, isComplete, shortfallMessage, isSuspicious,
-         restoreSeen, serializeSeen, tooManyBuckets, BUCKET_SECONDS } from '@coverage';
+         restoreSeen, serializeSeen, tooManyBuckets, sameVideoLength, BUCKET_SECONDS } from '@coverage';
 
 const $ = id => document.getElementById(id);
 /* Falls back to whatever the free preview currently is, rather than to a
@@ -295,18 +305,30 @@ if (u && !L) {
   /* Only whole seconds are written; the fraction stays in `pending` for
      the next flush rather than being rounded away every 30 seconds.
      Capped at 120 because the rules refuse a larger single increment. */
+  const failedWrites = new Set();
+  function showSaveState(kind, failed) {
+    if (failed) failedWrites.add(kind);
+    else failedWrites.delete(kind);
+    $('watchSaveIssue').hidden = failedWrites.size === 0;
+  }
+
   async function flush() {
     const owed = Math.min(Math.floor(pending), 120);
     if (owed < 1) return;
     pending -= owed;
-    try { await Store.addStudySeconds(owed); }
-    catch (e) { pending += owed; }   // hand them back; the next flush retries
+    try {
+      await Store.addStudySeconds(owed);
+      showSaveState('time', pending >= 120);
+    } catch {
+      pending += owed;
+      showSaveState('time', true);
+    }   // hand them back; the next flush retries
   }
 
   /* ---------- coverage ----------
      Buckets, not elapsed time: skipping ahead leaves holes that can only
      be filled by going back and watching. See assets/js/coverage.js. */
-  let seen = new Set();
+  const seen = new Set(), seenThisSession = new Set();
   let duration = 0;
   let completed = false;
   let ytPlayer = null;        // set once the iframe API is ready
@@ -343,6 +365,11 @@ if (u && !L) {
   function seedFromStored() {
     if (seeded || !duration) return;
     seeded = true;
+    if (storedProgress?.videoCompleted && (!storedProgress.videoSeconds || sameVideoLength(storedProgress.videoSeconds, duration))) {
+      completed = true;
+      unlockQuiz();
+      $('watchNote').textContent = 'ይህን ቪዲዮ ማጠናቀቅዎ ተመዝግቧል።';
+    }
     if (tooManyBuckets(duration)) return;   // longer than we agreed to store
     const restored = restoreSeen(storedProgress, duration);
     if (restored.size) {
@@ -354,11 +381,13 @@ if (u && !L) {
 
   /* Only writes when the set actually grew, so the many stop() calls a
      student generates by clicking around cost nothing. */
+  let savingBuckets = 0;
   async function persistCoverage() {
     if (!duration || !seeded) return;
-    if (seen.size <= writtenBuckets) return;
+    if (seen.size <= Math.max(writtenBuckets, savingBuckets)) return;
     if (tooManyBuckets(duration)) return;
     const size = seen.size;
+    savingBuckets = size;
     try {
       await Store.saveCoverage(L.id, {
         seenBuckets: serializeSeen(seen),
@@ -366,8 +395,13 @@ if (u && !L) {
         videoSeconds: duration,
         coverage: coverageOf(seen, duration)
       });
-      writtenBuckets = size;
-    } catch (e) { /* keep the in-memory set; the next stop() retries */ }
+      writtenBuckets = Math.max(writtenBuckets, size);
+      showSaveState('coverage', false);
+    } catch {
+      showSaveState('coverage', writtenBuckets < size);
+    } finally {
+      if (savingBuckets === size) savingBuckets = 0;
+    }
   }
 
   function unlockQuiz() {
@@ -385,6 +419,19 @@ if (u && !L) {
       $('watchNote').className = 'note note--red small';
       return;                       // quiz stays locked
     }
+    if ($('retryVideo').disabled) return;
+    $('retryVideo').disabled = true;
+    $('watchNote').textContent = 'የቪዲዮ ሂደትዎ በመመዝገብ ላይ ነው…';
+    try {
+      await Store.saveVideoCompletion(L.id, cov, sessionSeconds, isSuspicious(coverageOf(seenThisSession, duration), sessionSeconds, duration));
+    } catch {
+      $('watchNote').textContent = 'የቪዲዮ ሂደትዎ አልተመዘገበም። ይህን ገጽ ሳይዘጉ እንደገና ይሞክሩ።';
+      $('retryVideo').hidden = false;
+      return;
+    } finally {
+      $('retryVideo').disabled = false;
+    }
+    $('retryVideo').hidden = true;
     completed = true;
     $('watchNote').textContent = quizzed
       ? 'ትምህርቱን በሙሉ ተመልክተዋል። ጥያቄዎቹ ተከፍተዋል።'
@@ -392,21 +439,14 @@ if (u && !L) {
     $('watchNote').className = 'muted small';
     unlockQuiz();
 
-    /* Flagged, never blocked. A student who covered the whole video in far
-       less wall-clock time than it runs has almost certainly scrubbed —
-       but a false positive costs a child an unfair suspicion, so this only
-       raises it for a teacher to look at. See coverage.js. */
-    const suspicious = isSuspicious(cov, sessionSeconds, duration);
-    try {
-      await Store.saveVideoCompletion(L.id, cov, sessionSeconds, suspicious);
-    } catch (e) { /* the unlock above still stands locally */ }
-
     /* A Zema lesson carries no quiz, so the video ending IS the whole
        lesson and the invitation belongs here. On a Bible lesson it would
        be premature — the quiz is still ahead — so that one waits for
        finish(). ACCEPTANCE 1 turns on this line and that one. */
     if (!quizzed) offerToAsk();
   }
+
+  $('retryVideo').addEventListener('click', onVideoEnded);
 
   /* ---------- still watching? ---------- */
   let stillTimer = null, stillLeft = 0;
@@ -475,6 +515,7 @@ if (u && !L) {
         if (!duration && ytPlayer.getDuration) duration = ytPlayer.getDuration() || 0;
         seedFromStored();
         markBucket(seen, t, duration);
+        markBucket(seenThisSession, t, duration);
         paintCoverage();
       }
 
@@ -558,6 +599,13 @@ if (u && !L) {
      looking at. Neither event alone covers the other's case. */
   window.addEventListener('blur', leave);
   window.addEventListener('focus', resume);
+  async function retryWatch() {
+    $('retryWatch').disabled = true;
+    try { await Promise.all([flush(), persistCoverage()]); }
+    finally { $('retryWatch').disabled = false; }
+  }
+  $('retryWatch').addEventListener('click', retryWatch);
+  window.addEventListener('online', retryWatch);
   window.addEventListener('pagehide', stop);
   window.addEventListener('beforeunload', stop);
 
@@ -599,7 +647,7 @@ if (u && !L) {
           },
           onStateChange: (e) => {
             if (e.data === YT.PlayerState.PLAYING) {
-              start();
+              resume();
             } else {
               /* Pausing, seeking (which surfaces as BUFFERING) or ending
                  breaks the run. Clearing it here as well as in start()
@@ -784,16 +832,28 @@ if (u && !L) {
     stop();
     const score = answers.filter((a, i) => a === L.questions[i].answer).length;
     const of = L.questions.length;
-    try { await Store.saveQuiz(L.id, score, of); } catch (e) { /* mark still shown */ }
     $('score').innerHTML = `${score}<small> / ${of}</small>`;
     $('verdict').textContent =
       score === of ? 'እግዚአብሔር ይስጥልኝ — ሁሉንም በትክክል መልሰዋል።'
       : score >= of - 1 ? 'በጣም ጥሩ። ትምህርቱን በድጋሚ ቢመለከቱት ይረዳል።'
       : 'ትምህርቱን በድጋሚ ተመልክተው እንደገና ይሞክሩ።';
     $('result').style.display = 'block';
-    $('result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    offerToAsk();
+    $('result').scrollIntoView({ block: 'nearest' });
+    $('scoreSave').textContent = 'ውጤትዎ በመመዝገብ ላይ ነው…';
+    $('retryScore').disabled = true;
+    try {
+      await Store.saveQuiz(L.id, score, of);
+      $('scoreSave').textContent = 'ውጤትዎ በተማሪው መዝገብ ተቀምጧል።';
+      $('retryScore').hidden = true;
+      offerToAsk();
+    } catch {
+      $('scoreSave').textContent = 'ውጤትዎ አልተመዘገበም። ይህን ገጽ ሳይዘጉ እንደገና ይሞክሩ።';
+      $('retryScore').hidden = false;
+    } finally {
+      $('retryScore').disabled = false;
+    }
   }
+  if (quizzed) $('retryScore').addEventListener('click', finish);
 }
 </script>
 <script src="assets/js/sky.js" defer></script>

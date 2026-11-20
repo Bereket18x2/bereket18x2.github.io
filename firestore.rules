@@ -31,7 +31,15 @@ service cloud.firestore {
     }
 
     function isOwner(uid) {
-      return signedIn() && request.auth.uid == uid;
+      return signedIn() && (request.auth.uid == uid
+        || (isSiblingKey(uid) && verified() && myRole() == 'student'
+          && get(/databases/$(database)/documents/users/$(uid)).data.guardianUid == request.auth.uid));
+    }
+
+    function isSiblingKey(uid) {
+      let parts = uid.split('~');
+      return parts.size() == 2 && parts[0] == request.auth.uid
+        && parts[1].matches('[a-zA-Z0-9]{20}');
     }
 
     // Read off the token, not off the user doc: the doc's `verified`
@@ -268,7 +276,8 @@ service cloud.firestore {
       //
       // pending_teacher and rejected match none of these except
       // isOwner — they read their own document and nothing else.
-      allow read: if isOwner(uid) || isMyStudentDoc() || isAdmin();
+      allow read: if isOwner(uid) || isMyStudentDoc() || isAdmin()
+        || (verified() && resource.data.get('guardianUid', '') == request.auth.uid && myRole() == 'student');
 
       /* Registration. Two shapes are allowed and no others, each pinned
          to an exact set of keys.
@@ -288,7 +297,14 @@ service cloud.firestore {
          consentGivenAt == request.time is what serverTimestamp()
          resolves to, so a client cannot backdate when consent was
          given. */
-      allow create: if isOwner(uid)
+      allow create: if signedIn() && (
+          (uid == request.auth.uid && !('guardianUid' in request.resource.data))
+          || (isSiblingKey(uid) && verified() && myRole() == 'student'
+            && request.resource.data.guardianUid == request.auth.uid
+            && request.resource.data.role == 'student'
+            && request.resource.data.country == myDoc().country
+            && request.resource.data.verified == true)
+        )
         && request.resource.data.uid == uid
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.consentVersion is string
@@ -298,7 +314,7 @@ service cloud.firestore {
           (
             request.resource.data.role == 'student'
             && request.resource.data.keys().hasOnly([
-                 'uid', 'role', 'guardianName', 'email', 'studentName', 'age',
+                 'uid', 'role', 'guardianUid', 'guardianName', 'email', 'studentName', 'age',
                  'country', 'region',
                  'track', 'selectedSubjects', 'plan',
                  'paid', 'verified', 'studySeconds',
@@ -407,6 +423,8 @@ service cloud.firestore {
         && isMyStudentDoc()
       ) || (
         isAdmin()
+        && !changed().hasAny(['guardianUid'])
+        && (!('guardianUid' in resource.data) || request.resource.data.role == 'student')
         && (
           !changed().hasAny(['role'])
           || assignableRole(request.resource.data.role)

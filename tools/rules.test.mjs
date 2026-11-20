@@ -174,6 +174,32 @@ const newStudent = {
   paid: false, studySeconds: 0,
   consentVersion: CV, consentGivenAt: serverTimestamp()
 };
+await seed();
+const siblingId = 'student1~abcdefghijklmnopqrst';
+const siblingProfile = {
+  ...newStudent, uid: siblingId, guardianUid: 'student1',
+  studentName: 'Second Child', email: EMAIL('student1'), verified: true
+};
+await t('a verified parent can enroll a sibling', () =>
+  assertSucceeds(setDoc(doc(AS('student1'), 'users', siblingId), siblingProfile)));
+await t('a parent can list their linked students', () =>
+  assertSucceeds(getDocs(query(collection(AS('student1'), 'users'), where('guardianUid', '==', 'student1')))));
+await t('a parent can record progress for their second child', () =>
+  assertSucceeds(setDoc(doc(AS('student1'), 'users', siblingId, 'progress', 'am1'), { done: true, score: 3, of: 4 })));
+await t('a parent can read their second child’s progress', () =>
+  assertSucceeds(getDoc(doc(AS('student1'), 'users', siblingId, 'progress', 'am1'))));
+await t('another family cannot read a sibling’s record', () =>
+  assertFails(getDoc(doc(AS('student2'), 'users', siblingId))));
+await t('another family cannot write a sibling’s progress', () =>
+  assertFails(setDoc(doc(AS('student2'), 'users', siblingId, 'progress', 'am1'), { done: true })));
+await t('a sibling has independent payment status', () =>
+  assertFails(updateDoc(doc(AS('student1'), 'users', siblingId), { paid: true })));
+await t('a student cannot change a family link', () =>
+  assertFails(updateDoc(doc(AS('student1'), 'users', siblingId), { guardianUid: 'student2' })));
+await t('family links require the matching authenticated parent', () =>
+  assertFails(setDoc(doc(AS('student2'), 'users', 'student2~abcdefghijklmnopqrst'), {
+    ...siblingProfile, uid: 'student2~abcdefghijklmnopqrst', email: EMAIL('student2')
+  })));
 const newTeacher = {
   uid: 'newbie', role: 'pending_teacher', fullName: 'Some Teacher',
   email: EMAIL('newbie'), phone: '+1000', teachesSubjects: ['amestu'],

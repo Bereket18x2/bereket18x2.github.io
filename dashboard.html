@@ -29,7 +29,7 @@
 <script type="importmap">
 {
   "imports": {
-    "@store":      "./assets/js/store.js?v=12",
+    "@store":      "./assets/js/store.js?v=13",
     "@lessons":    "./assets/js/lessons.js?v=12",
     "@validators": "./assets/js/validators.js?v=12",
     "@coverage":   "./assets/js/coverage.js?v=12",
@@ -70,6 +70,14 @@
     <p class="eyebrow">የተማሪ ገጽ</p>
     <h1 id="hello" style="font-size:2rem;margin-bottom:6px">…</h1>
     <p class="muted small" id="whoami" style="margin-bottom:26px">…</p>
+
+    <details class="panel" id="family" hidden>
+      <summary>የቤተሰቤ ተማሪዎች</summary>
+      <p><label for="familyStudent">ተማሪ ይምረጡ</label>
+        <select class="input" id="familyStudent" disabled></select></p>
+      <p id="familyError" class="note small" role="status" hidden></p>
+      <a class="btn btn--ghost" href="register.html?family=1">ሌላ ልጅ ያስመዝግቡ</a>
+    </details>
 
     <div id="payNote" class="note note--red" style="display:none;margin-bottom:22px">
       ክፍያ አልተፈጸመም። ከመጀመሪያው ነጻ ትምህርት በስተቀር ሌሎቹ ተቆልፈዋል።
@@ -237,7 +245,7 @@
       <p class="eyebrow">የመረጃ መብትዎ</p>
       <p class="muted small" style="margin:0 0 14px">
         ስለ ልጅዎ የያዝነው መረጃ በ<a href="privacy.html">የግላዊነት መመሪያ</a> ላይ ተዘርዝሯል።
-        መረጃው እንዲሰረዝ መጠየቅ ይችላሉ — ጥያቄው ለመምህራን ደርሶ በሰው እጅ ይፈጸማል።
+        ይህ ጥያቄ የቤተሰብዎን መለያና በሥሩ ያሉትን የሁሉም ልጆች መዝገቦች ይመለከታል። የአንድ ልጅ መረጃ ብቻ እንዲሰረዝ በኢሜይል ይጠይቁ። <a href="mailto:tewahedodevs@gmail.com">tewahedodevs@gmail.com</a>
       </p>
       <p id="delMsg" class="note small" style="display:none;margin-bottom:12px"></p>
       <button class="btn btn--ghost btn--sm" type="button" id="requestDeletion">የመረጃ ስረዛ ጠይቅ</button>
@@ -267,6 +275,29 @@ const u = await requireAuth();
 if (u) {
   $('authedContent').style.display = 'block';
   Store.touch();
+
+  if (u.role === 'student') {
+    const family = $('family'), picker = $('familyStudent'), message = $('familyError');
+    family.hidden = false;
+    if (new URLSearchParams(location.search).get('family') === 'added') {
+      family.open = true;
+      history.replaceState(null, '', location.pathname);
+    }
+    family.addEventListener('toggle', async () => {
+      if (!family.open || picker.options.length) return;
+      message.hidden = true;
+      try {
+        for (const child of await Store.familyStudents()) {
+          picker.add(new Option(child.name, child.uid, false, child.uid === u.uid));
+        }
+        picker.disabled = false;
+      } catch (ex) { message.hidden = false; message.textContent = ex.message; }
+    });
+    picker.addEventListener('change', async () => {
+      try { await Store.selectStudent(picker.value); location.reload(); }
+      catch (ex) { message.hidden = false; message.textContent = ex.message; }
+    });
+  }
 
   const track = TRACKS[u.track];
   const progress = u.progress || {};
@@ -733,7 +764,7 @@ if (u) {
   }
 
   delBtn.addEventListener('click', async () => {
-    if (!confirm('የልጅዎ መረጃ እንዲሰረዝ መጠየቅ ይፈልጋሉ? ጥያቄው ለመምህራን ይላካል።')) return;
+    if (!confirm('የቤተሰብዎ መለያና የሁሉም ልጆችዎ መረጃ እንዲሰረዝ መጠየቅ ይፈልጋሉ? ጥያቄው ለመምህራን ይላካል።')) return;
     delBtn.disabled = true;
     try {
       await Store.requestDeletion();
